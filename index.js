@@ -1,7 +1,7 @@
 window.onload = init;
 
 function init() {
-  refreshType()
+  refreshType();
 };
 
 function refreshType() {
@@ -14,7 +14,7 @@ function refreshType() {
   let typeSelector = document.getElementById('calculator-type');
   typeSelector.innerHTML = s;
 
-  refreshPiece()
+  refreshPiece();
 };
 
 function refreshPiece() {
@@ -28,7 +28,8 @@ function refreshPiece() {
   let pieceSelector = document.getElementById('calculator-piece');
   pieceSelector.innerHTML = s;  
 
-  refreshStat()
+  refreshStat();
+  refreshRecommended();
 };
 
 function refreshStat() {
@@ -53,6 +54,7 @@ function refreshStat() {
 
   refreshTiers();
   refreshScore();
+  refreshPriority();
 };
 
 function refreshTiers() {
@@ -72,7 +74,7 @@ function refreshTiers() {
     s += '<tr><td>' + cT['Score'] + sM + e + sM + cT['Single'] + sM + cT['Duo'] + sM + cT['Trio'] + sM + cT['Quad'] + sM + cT['Penta'] + '</td></tr>\n';
   });
 
-  s += '</table'
+  s += '</table>'
   let tierTable = document.getElementById('equivalence-table');
   tierTable.innerHTML = s;
 };
@@ -132,7 +134,7 @@ function refreshValues() {
 
     let sM = '</td><td>';
     let addVal = i === 5 ? 0.8 : 1;
-    s += '<td>' + statType + sM + maxValue + sM + parseInt(currPerc * 100) + '%' + sM + currDI.toFixed(2) + '%' + sM + (maxDI * addVal).toFixed(2) + '%' + '</td></tr>';
+    s += '<tr><td>' + statType + sM + maxValue + sM + parseInt(currPerc * 100) + '%' + sM + currDI.toFixed(2) + '%' + sM + (maxDI * addVal).toFixed(2) + '%' + '</td></tr>';
   };
 
   s += '</table>';
@@ -140,6 +142,56 @@ function refreshValues() {
   let valueTable = document.getElementById('calculator-values');
   valueTable.innerHTML = s;
 };
+
+function refreshPriority() {
+  let gearType = document.getElementById('calculator-type').value;
+  let pieceType = document.getElementById('calculator-piece').value;
+
+  let pieceStats = gear[gearType][pieceType]['Stats'];
+  let pieceStatsOrdered = [];
+  Object.keys(pieceStats).forEach((e) => {
+    pieceStatsOrdered.push({'Stat': e, 'DI': pieceStats[e]['DI'], 'Value': pieceStats[e]['Value']});
+  });
+
+  pieceStatsOrdered.sort((a,b) => {
+    return b['DI'] - a['DI'];
+  });
+
+  let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Max DI</th></tr>\n";
+  let sM = '</td><td>';
+  pieceStatsOrdered.forEach((e) => {
+    s += '<tr><td>' + e['Stat'] + sM + e['Value'] + sM + e['DI'].toFixed(2) + '%' + '</td></tr>';
+  });
+
+  s += '</table>';
+
+  let priorityTable = document.getElementById('priority-enchant');
+  priorityTable.innerHTML = s;
+}
+
+function refreshRecommended() {
+  let gearType = document.getElementById('calculator-type').value;
+  let piecesAvailable = Object.keys(gear[gearType]);
+  let statsList = [];
+  piecesAvailable.forEach((e) => {
+    let recommendedStats = Object.keys(gear[gearType][e]['Stats']).slice(0,5);
+    statsList.push(recommendedStats);
+  })
+
+  let s = "<table><tr>";
+  let sM = '</td><td>';
+  piecesAvailable.forEach((e) => {
+    s += '<th>' + e + '</th>';
+  })
+  s += '</tr>';
+  for(i = 0; i < 5; i++){
+    s += '<tr><td>' + statsList[0][i] + sM + statsList[1][i] + sM + statsList[2][i] + sM + statsList[3][i] + sM + statsList[4][i] + '</td></tr>'
+  };
+  s += '</table>';
+
+  let recommendedTable = document.getElementById('priority-best');
+  recommendedTable.innerHTML = s;
+}
 
 function updateValues(enchants, value) {
   let gearType = document.getElementById('calculator-type').value;
