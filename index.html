@@ -1,0 +1,126 @@
+<html>
+<head>
+  <title>LaTale Gear Score Calculator</title>
+  <script type="text/javascript" src="gear.js"></script>
+  <script type="text/javascript" src="tiers.js"></script>
+  <script type="text/javascript" src="index.js"></script>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="container" id="calculator-container">
+    <div id="calculator-input">
+      <div>
+        Type:
+        <select id="calculator-type" onchange="refreshPiece()"></select>
+        Piece:
+        <select id="calculator-piece" onchange="refreshStat()"></select>
+        Max DI:
+        <span id="calculator-max-di"></span>
+      </div>
+      <div>
+        1:
+        <select id="calculator-stat-1" onchange="refreshScore()"></select>
+        <input type="number" id="calculator-stat-1-input" onchange="refreshScore()">
+      </div>
+      <div>
+        2:
+        <select id="calculator-stat-2" onchange="refreshScore()"></select>
+        <input type="number" id="calculator-stat-2-input" onchange="refreshScore()">
+      </div>
+      <div>
+        3:
+        <select id="calculator-stat-3" onchange="refreshScore()"></select>
+        <input type="number" id="calculator-stat-3-input" onchange="refreshScore()">
+      </div>
+      <div>
+        4:
+        <select id="calculator-stat-4" onchange="refreshScore()"></select>
+        <input type="number" id="calculator-stat-4-input" onchange="refreshScore()">
+      </div>
+      <div>
+        5:
+        <select id="calculator-stat-5" onchange="refreshScore()"></select>
+        <input type="number" id="calculator-stat-5-input" onchange="refreshScore()">
+      </div>
+      <div id="calculator-buttons">
+        <button type="button" onclick="updateValues(0,0)">Clear</button>
+        <button type="button" onclick="updateValues(2,90)">Duo</button>
+        <button type="button" onclick="updateValues(3,90)">Trio</button>
+        <button type="button" onclick="updateValues(4,90)">Quad</button>
+        <button type="button" onclick="updateValues(5,90)">Penta</button>
+      </div>
+    </div>
+    <div id="calculator-results">
+      <div id="calculator-di">
+
+      </div>
+      <div id="calculator-percent">
+
+      </div>
+      <div id="calculator-tier">
+        
+      </div>
+    </div>
+    <div id="calculator-values">
+
+    </div>
+  </div>
+  <div class="container" id="tier-container">
+    <div id="tiers">
+      <h2>Tier Evaluation</h2>
+      <table>
+        <tr>
+          <th>Tier</th>
+          <th>Comment</th>
+          <th>Upgrade?</th>
+          <th>Min Enchants</th>
+        </tr>
+        <tr>
+          <td>F - E</td>
+          <td>Bad, replaces unfinished previous tier</td>
+          <td>N</td>
+          <td>Any</td>
+        </tr>
+        <tr>
+          <td>D - C</td>
+          <td>Minimum to replace previous tier</td>
+          <td>N</td>
+          <td>Duo</td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>Good growth over previous tier, worth upgrading</td>
+          <td>Y</td>
+          <td>Trio</td>
+        </tr>
+        <tr>
+          <td>A - S</td>
+          <td>Great growth, good spot to settle at</td>
+          <td>Y</td>
+          <td>Quad</td>
+        </tr>
+        <tr>
+          <td>SS - SSS</td>
+          <td>Perfectionism, only if you're rich</td>
+          <td>Y</td>
+          <td>Penta</td>
+        </tr>
+      </table>
+    </div>
+    <div id="equivalence">
+      <h2>Equivalence</h2>
+      <div id="equivalence-table">
+
+      </div>
+    </div>
+  </div>
+  <div class="container" id="priority-container">
+    <div id="priority-enchant">
+
+    </div>
+    <div id="priority-best">
+
+    </div>
+  </div>
+</body>
+</html>
