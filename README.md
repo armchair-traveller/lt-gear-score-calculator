@@ -1,1 +1,6 @@
-# lt-gear-score-calculator
+# LaTale Gear Score Calculator
+## About
+The LaTale Gear Score Calculator is a simple tool to evaluate the enchanted stats of your main equipment and rank them based on the % of potential damage increase (DI) they have with their current enchants vs the maximum possible DI for that item piece. Items are evaluated on a percentage basis and then given a tier ranking from F to SSS.
+
+## Usage
+Select your desired type of equipment and respective armor piece, then the stats in your gear (when applicable if the type of equipment can have multiple different stats, otherwise it will default to the only existing stats) and insert your enchanted values on the input boxes besides the stats, or press the buttons below to quickly switch to preset configurations based on 90% score. To the right the calculator will display your item's DI, its percentage score and the respective tier. Detailed information on the quality of each enchant can be seen on the right while descriptors for each tier and stat enchanting priority will be displayed below.
