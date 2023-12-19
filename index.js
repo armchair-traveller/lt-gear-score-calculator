@@ -19,14 +19,19 @@ function refreshType() {
 
 function refreshPiece() {
   let gearType = document.getElementById('calculator-type').value;
-  let pieceAvailable = Object.keys(gear[gearType]);
+  let piecesAvailable = Object.keys(gear[gearType]);
+  piecesAvailable.pop();
   let s = "";
-  pieceAvailable.forEach((e) => {
+  piecesAvailable.forEach((e) => {
     s += '<option value="' + e + '">' + e + '</option>\n';
   });
 
   let pieceSelector = document.getElementById('calculator-piece');
   pieceSelector.innerHTML = s;  
+
+  let typeLink = gear[gearType]['Sheet Link'];
+  let link = document.getElementById('calculator-link');
+  link.innerHTML = '<a href="' + typeLink + '">Detailed data</a>'
 
   refreshStat();
   refreshRecommended();
@@ -172,6 +177,7 @@ function refreshPriority() {
 function refreshRecommended() {
   let gearType = document.getElementById('calculator-type').value;
   let piecesAvailable = Object.keys(gear[gearType]);
+  piecesAvailable.pop();
   let statsList = [];
   piecesAvailable.forEach((e) => {
     let recommendedStats = Object.keys(gear[gearType][e]['Stats']).slice(0,5);

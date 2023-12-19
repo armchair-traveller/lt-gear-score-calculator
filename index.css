@@ -31,7 +31,7 @@ input {
 }
 
 #calculator-results {
-  font-size: 2.2em
+  font-size: 2.2em;
 }
 
 #calculator-results > * {
@@ -43,5 +43,9 @@ input {
 }
 
 #calculator-buttons > * {
-  margin-left: 5%
+  margin-left: 5%;
+}
+
+#calculator-link {
+  margin-top: 12px;
 }

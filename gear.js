@@ -221,6 +221,7 @@ const gear = {
         }        
       },
       "Optimal": ["Critical Damage", "Basic Stats %", "Strength/Magic", "Basic Stats", "Other (Non-damaging)"]
-    }
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/1orT5LEc09Cux9s3Ocmau4BRIHxCNa8t9j0Ibj2UOHUI/edit?usp=sharing"
   }
 }
