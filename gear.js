@@ -1,5 +1,5 @@
 const gear = {
-  "Armor":{
+  "[6000] Armor":{
     "Helmet":{
       "DI": 7.55,
       "Stats":{
@@ -40,7 +40,8 @@ const gear = {
           "DI": 1.70
         }
       },
-      "Optimal": ["Critical Damage", "Strength/Magic", "Normal Amp", "Basic Stats", "Other (Non-damaging)"]
+      "Optimal": ["Critical Damage", "Strength/Magic", "Normal Amp", "Basic Stats", "Other (Non-damaging)"],
+      "Type": "Type B"
     },
     "Chestplate":{
       "DI": 8.98,
@@ -86,7 +87,8 @@ const gear = {
           "DI": 0
         }
       },
-      "Optimal": ["Maximum Damage", "Attack/Intensity %", "Basic Stats %", "Strength/Magic", "Basic Stats"]
+      "Optimal": ["Maximum Damage", "Attack/Intensity %", "Basic Stats %", "Strength/Magic", "Basic Stats"],
+      "Type": "Type A"
     },
     "Fauld":{
       "DI": 8.98,
@@ -132,7 +134,8 @@ const gear = {
           "DI": 0
         }
       },
-      "Optimal": ["Maximum Damage", "Attack/Intensity %", "Basic Stats %", "Strength/Magic", "Basic Stats"]
+      "Optimal": ["Maximum Damage", "Attack/Intensity %", "Basic Stats %", "Strength/Magic", "Basic Stats"],
+      "Type": "Type A"
     },
     "Gloves":{
       "DI": 9.10,
@@ -178,7 +181,8 @@ const gear = {
           "DI": 0
         }
       },
-      "Optimal": ["Critical Damage", "Attack/Intensity %", "Boss Amp", "Strength/Magic", "Basic Stats"]
+      "Optimal": ["Critical Damage", "Attack/Intensity %", "Boss Amp", "Strength/Magic", "Basic Stats"],
+      "Type": "Type A"
     },
     "Boots":{
       "DI": 9.03,
@@ -220,8 +224,153 @@ const gear = {
           "DI": 1.70
         }        
       },
-      "Optimal": ["Critical Damage", "Basic Stats %", "Strength/Magic", "Basic Stats", "Other (Non-damaging)"]
+      "Optimal": ["Critical Damage", "Basic Stats %", "Strength/Magic", "Basic Stats", "Other (Non-damaging)"],
+      "Type": "Type A"
     },
     "Sheet Link": "https://docs.google.com/spreadsheets/d/1orT5LEc09Cux9s3Ocmau4BRIHxCNa8t9j0Ibj2UOHUI/edit?usp=sharing"
+  },
+  "[5000] Accessories":{
+    "Crystal":{
+      "DI": 4.55,
+      "Stats":{
+        "Critical Damage":{
+          "Value": 50,
+          "DI": 1.57
+        },
+        "Attack/Intensity":{
+          "Value": 130,
+          "DI": 1.04
+        },
+        "Strength/Magic":{
+          "Value": 10000,
+          "DI": 0.9
+        },
+        "Basic Stats":{
+          "Value": 6000,
+          "DI": 0.54
+        },
+        "Minimum Damage":{
+          "Value": 50,
+          "DI": 0.5
+        },
+      },
+      "Optimal": ["Critical Damage", "Attack/Intensity", "Strength/Magic", "Basic Stats", "Minimum Damage"],
+      "Type": "Type A"
+    },
+    "Glasses":{
+      "DI": 2.48,
+      "Stats":{
+        "Attack/Intensity":{
+          "Value": 130,
+          "DI": 1.04
+        },
+        "Strength/Magic":{
+          "Value": 10000,
+          "DI": 0.9
+        },
+        "Basic Stats":{
+          "Value": 6000,
+          "DI": 0.54
+        },
+        "Accuracy":{
+          "Value": 75,
+          "DI": 0
+        },
+        "Maximum HP":{
+          "Value": 25000,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Attack/Intensity", "Strength/Magic", "Basic Stats", "Accuracy", "Maximum HP"],
+      "Type": "Type B"
+    },
+    "Stockings":{
+      "DI": 3.24,
+      "Stats":{
+        "Attack/Intensity":{
+          "Value": 130,
+          "DI": 1.04
+        },
+        "Strength/Magic":{
+          "Value": 10000,
+          "DI": 0.9
+        },
+        "Basic Stats":{
+          "Value": 6000,
+          "DI": 0.54
+        },
+        "Static Damage":{
+          "Value": 15000,
+          "DI": 0.76
+        },
+        "Movement Speed":{
+          "Value": 50,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Attack/Intensity", "Strength/Magic", "Static Damage", "Basic Stats", "Movement Speed"],
+      "Type": "Type C"
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/1v-KGbiRoQkTeyNeCVOcQZJNZH1Up5tgwJh7uOiNIoqM/edit?usp=sharing"
+  },
+  "[4000] Weapon":{
+    "Main":{
+      "DI": 14.51,
+      "Stats":{
+        "Maximum Damage":{
+          "Value": 220,
+          "DI": 6.5
+        },
+        "Critical Damage":{
+          "Value": 130,
+          "DI": 4.7
+        },
+        "Attack/Intensity %":{
+          "Value": 13,
+          "DI": 2
+        },
+        "Strength/Magic %":{
+          "Value": 13,
+          "DI": 1.31
+        },
+        "Defense Penetration":{
+          "Value": 35,
+          "DI": 1
+        },
+      },
+      "Optimal": ["Maximum Damage", "Critical Damage", "Attack/Intensity %", "Strength/Magic %", "Defense Penetration"],
+      "Type": "Type A"
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/1A-ZMlTiZ2Qfn0QLZqi0JNtsZpmdDb-3zy6c_4sKDzF0/edit?usp=sharing"
+  },
+  "[3500] Badge 6":{
+    "Badge":{
+      "DI": 4.26,
+      "Stats":{
+        "Boss Amplification":{
+          "Value": 4,
+          "DI": 1.38
+        },
+        "Maximum Damage":{
+          "Value": 50,
+          "DI": 1.02
+        },
+        "Static Damage":{
+          "Value": 30000,
+          "DI": 0.72
+        },
+        "Strength/Magic":{
+          "Value": 10000,
+          "DI": 0.57
+        },
+        "Attack/Intensity":{
+          "Value": 100,
+          "DI": 0.57
+        },
+      },
+      "Optimal": ["Boss Amplification", "Maximum Damage", "Static Damage", "Strength/Magic", "Attack/Intensity"],
+      "Type": "Type A"
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/15i1iPZVCE6WbMmE47cx-dCk1X5KPqVEGCa_O-j4pzIw/edit?usp=sharing"
   }
 }

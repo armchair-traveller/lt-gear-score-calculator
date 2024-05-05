@@ -65,10 +65,7 @@ function refreshStat() {
 function refreshTiers() {
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
-  let tierType;
-  if (gearType === 'Armor') {
-    tierType = pieceType === 'Helmet' ? 'Type B' : 'Type A';
-  };
+  let tierType = gear[gearType][pieceType]["Type"]
   let tierEquivalence = tiers[gearType][tierType];
   let tierAvailable = Object.keys(tierEquivalence);
 
@@ -82,15 +79,14 @@ function refreshTiers() {
   s += '</table>'
   let tierTable = document.getElementById('equivalence-table');
   tierTable.innerHTML = s;
+
+
 };
 
 function refreshScore() {
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
-  let tierType;
-  if (gearType === 'Armor') {
-    tierType = pieceType === 'Helmet' ? 'Type B' : 'Type A';
-  };
+  let tierType = gear[gearType][pieceType]["Type"]
   let tierEquivalence = tiers[gearType][tierType];
   let tierAvailable = Object.keys(tierEquivalence);
 
@@ -138,7 +134,7 @@ function refreshValues() {
     let currDI = currPerc * maxDI;
 
     let sM = '</td><td>';
-    let addVal = i === 5 ? 0.8 : 1;
+    let addVal = i === 5 & (gearType === 'Armor' | gearType === 'Accessories (7k)') ? 0.8 : 1;
     s += '<tr><td>' + statType + sM + maxValue + sM + parseInt(currPerc * 100) + '%' + sM + currDI.toFixed(2) + '%' + sM + (maxDI * addVal).toFixed(2) + '%' + '</td></tr>';
   };
 
@@ -184,6 +180,7 @@ function refreshRecommended() {
     statsList.push(recommendedStats);
   })
 
+  
   let s = "<table><tr>";
   let sM = '</td><td>';
   piecesAvailable.forEach((e) => {
@@ -191,7 +188,14 @@ function refreshRecommended() {
   })
   s += '</tr>';
   for(i = 0; i < 5; i++){
-    s += '<tr><td>' + statsList[0][i] + sM + statsList[1][i] + sM + statsList[2][i] + sM + statsList[3][i] + sM + statsList[4][i] + '</td></tr>'
+    s += '<tr><td>'
+    for(j = 0; j < statsList.length; j++){
+      s += statsList[j][i]
+      if (j+1 !== statsList.length) {
+        s += sM
+      }
+    }
+    s += '</td></tr>'
   };
   s += '</table>';
 
