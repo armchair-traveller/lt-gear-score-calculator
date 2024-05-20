@@ -390,7 +390,7 @@ const tiers  = {
         "Duo": "60%",
         "Trio": "45%",
         "Quad": "40%",
-        "Penta": "30%",
+        "Penta": "26%",
         "Score": "26% - 35%"
       },
       "D":{
@@ -398,7 +398,7 @@ const tiers  = {
         "Duo": "80%",
         "Trio": "60%",
         "Quad": "45%",
-        "Penta": "40%",
+        "Penta": "36%",
         "Score": "36% - 45%"
       },
       "C":{
@@ -406,7 +406,7 @@ const tiers  = {
         "Duo": "100%",
         "Trio": "75%",
         "Quad": "60%",
-        "Penta": "50%",
+        "Penta": "46%",
         "Score": "46% - 56%"
       },
       "B":{
@@ -414,7 +414,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "90%",
         "Quad": "70%",
-        "Penta": "60%",
+        "Penta": "57%",
         "Score": "57% - 64%"
       },
       "A":{
@@ -422,7 +422,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "--",
         "Quad": "85%",
-        "Penta": "70%",
+        "Penta": "65%",
         "Score": "65% - 74%"
       },
       "S":{
@@ -430,7 +430,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "--",
         "Quad": "95%",
-        "Penta": "80%",
+        "Penta": "75%",
         "Score": "75% - 84%"
       },
       "SS":{
@@ -438,7 +438,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "--",
         "Quad": "--",
-        "Penta": "90%",
+        "Penta": "85%",
         "Score": "85% - 94%"
       },
       "SSS":{
@@ -464,7 +464,7 @@ const tiers  = {
         "Duo": "80%",
         "Trio": "50%",
         "Quad": "40%",
-        "Penta": "30%",
+        "Penta": "26%",
         "Score": "26% - 35%"
       },
       "D":{
@@ -472,7 +472,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "70%",
         "Quad": "50%",
-        "Penta": "40%",
+        "Penta": "36%",
         "Score": "36% - 45%"
       },
       "C":{
@@ -480,7 +480,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "85%",
         "Quad": "65%",
-        "Penta": "50%",
+        "Penta": "46%",
         "Score": "46% - 56%"
       },
       "B":{
@@ -488,7 +488,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "100%",
         "Quad": "80%",
-        "Penta": "60%",
+        "Penta": "57%",
         "Score": "57% - 64%"
       },
       "A":{
@@ -496,7 +496,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "--",
         "Quad": "90%",
-        "Penta": "70%",
+        "Penta": "65%",
         "Score": "65% - 74%"
       },
       "S":{
@@ -504,7 +504,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "--",
         "Quad": "100%",
-        "Penta": "80%",
+        "Penta": "75%",
         "Score": "75% - 84%"
       },
       "SS":{
@@ -512,7 +512,7 @@ const tiers  = {
         "Duo": "--",
         "Trio": "--",
         "Quad": "--",
-        "Penta": "90%",
+        "Penta": "85%",
         "Score": "85% - 94%"
       },
       "SSS":{
