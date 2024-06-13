@@ -91,6 +91,10 @@ function refreshScore() {
   let tierAvailable = Object.keys(tierEquivalence);
 
   totalDI = 0;
+  // hasUtility = false;
+
+  // utilityStats = ['Accuracy', 'Movement Speed']
+
   for (let i = 1; i < 6; i++) {
     let statType = document.getElementById('calculator-stat-' + i).value;
     let statValue = document.getElementById('calculator-stat-' + i + '-input').value;
@@ -98,13 +102,17 @@ function refreshScore() {
     let maxDI = gear[gearType][pieceType]["Stats"][statType]["DI"];
     let result = statValue / maxValue * maxDI;
     totalDI += result;
+
+    // if (utilityStats.includes(statType) & statValue / maxValue >= 0.4) {
+    //   hasUtility = true;
+    // };
   };
 
   let itemDI = parseInt(totalDI / gear[gearType][pieceType]["DI"] * 100);
   let resultPercent = document.getElementById('calculator-percent')
   resultPercent.innerHTML = 'Score: ' + itemDI + '%'
   let resultDI = document.getElementById('calculator-di');
-  resultDI.innerHTML = 'DI: ' + totalDI.toFixed(2) + '%';
+  resultDI.innerHTML = 'Rating: ' + totalDI.toFixed(2) + '%';
   
 
   let finalTier = 'F';
@@ -124,7 +132,7 @@ function refreshValues() {
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
 
-  let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Your %</th><th>Your DI</th><th>Max DI</th></tr>\n";
+  let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Your %</th><th>Your Rating</th><th>Max Rating</th></tr>\n";
   for (let i = 1; i < 6; i++) {
     let statType = document.getElementById('calculator-stat-' + i).value;
     let statValue = document.getElementById('calculator-stat-' + i + '-input').value;
@@ -158,7 +166,7 @@ function refreshPriority() {
     return b['DI'] - a['DI'];
   });
 
-  let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Max DI</th></tr>\n";
+  let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Max Rating</th></tr>\n";
   let sM = '</td><td>';
   pieceStatsOrdered.forEach((e) => {
     s += '<tr><td>' + e['Stat'] + sM + e['Value'] + sM + e['DI'].toFixed(2) + '%' + '</td></tr>';
@@ -168,7 +176,7 @@ function refreshPriority() {
 
   let priorityTable = document.getElementById('priority-enchant');
   priorityTable.innerHTML = s;
-}
+};
 
 function refreshRecommended() {
   let gearType = document.getElementById('calculator-type').value;
@@ -201,7 +209,7 @@ function refreshRecommended() {
 
   let recommendedTable = document.getElementById('priority-best');
   recommendedTable.innerHTML = s;
-}
+};
 
 function updateValues(enchants, value) {
   let gearType = document.getElementById('calculator-type').value;
@@ -220,4 +228,15 @@ function updateValues(enchants, value) {
   }
 
   refreshScore();
-}
+};
+
+// function increaseTier(currentTier) {
+//   if (currentTier === 'SSS') {
+//     return 'SSS';
+//   };
+
+//   let tiers = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+//   let newTier = tiers[tiers.indexOf(currentTier) + 1];
+
+//   return newTier;
+// };

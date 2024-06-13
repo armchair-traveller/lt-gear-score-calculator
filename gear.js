@@ -1,7 +1,7 @@
 const gear = {
   "[6000] Armor":{
     "Helmet":{
-      "DI": 7.55,
+      "DI": 9.25,
       "Stats":{
         "Critical Damage":{
           "Value": 100,
@@ -18,6 +18,10 @@ const gear = {
         "Strength/Magic": {
           "Value": 20000,
           "DI": 1.70
+        },
+        "Accuracy": {
+          "Value": 150,
+          "DI": 1.71
         },
         "Other (Non-damaging)": {
           "Value": 1,
@@ -40,8 +44,8 @@ const gear = {
           "DI": 1.70
         }
       },
-      "Optimal": ["Critical Damage", "Strength/Magic", "Normal Amp", "Basic Stats", "Other (Non-damaging)"],
-      "Type": "Type B"
+      "Optimal": ["Critical Damage", "Strength/Magic", "Normal Amp", "Basic Stats", "Accuracy"],
+      "Type": "Type A"
     },
     "Chestplate":{
       "DI": 8.98,
@@ -185,7 +189,7 @@ const gear = {
       "Type": "Type A"
     },
     "Boots":{
-      "DI": 9.03,
+      "DI": 10.74,
       "Stats":{
         "Critical Damage":{
           "Value": 150,
@@ -202,6 +206,10 @@ const gear = {
         "Basic Stats": {
           "Value": 16000,
           "DI": 1.36
+        },
+        "Movement Speed": {
+          "Value": 150,
+          "DI": 1.71
         },
         "Other (Non-damaging)": {
           "Value": 1,
@@ -224,7 +232,7 @@ const gear = {
           "DI": 1.70
         }        
       },
-      "Optimal": ["Critical Damage", "Basic Stats %", "Strength/Magic", "Basic Stats", "Other (Non-damaging)"],
+      "Optimal": ["Critical Damage", "Basic Stats %", "Strength/Magic", "Basic Stats", "Movement Speed"],
       "Type": "Type A"
     },
     "Sheet Link": "https://docs.google.com/spreadsheets/d/1orT5LEc09Cux9s3Ocmau4BRIHxCNa8t9j0Ibj2UOHUI/edit?usp=sharing"
