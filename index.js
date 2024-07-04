@@ -1,5 +1,8 @@
 window.onload = init;
 
+// todo:
+// add new columns on your % table for additional enchant maxes 
+
 function init() {
   refreshType();
 };
