@@ -9,7 +9,7 @@ h2 {
 table {
   font-family: arial, sans-serif;
   border-collapse: collapse;
-  width: 100%;
+  /* width: 100%; */
 }
 
 td, th {
@@ -28,6 +28,17 @@ input {
 
 .container > * {
   margin: 1%;
+}
+
+/* .text-note {
+  width: 50%;
+} */
+
+#calculator-values {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: start;
 }
 
 #calculator-results {

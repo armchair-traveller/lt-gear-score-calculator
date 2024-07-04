@@ -148,6 +148,10 @@ function refreshValues() {
 
   s += '</table>';
 
+  if (pieceType === "Earrings") {
+    s += '<br><span class="text-note"><span style="color: red;"><strong>Note:</strong></span> Defense Penetration is no longer a recommended stat as damage gain from going from 98 to 99 is lower than the damage gained from other stats</span>'
+  }
+
   let valueTable = document.getElementById('calculator-values');
   valueTable.innerHTML = s;
 };
@@ -221,7 +225,7 @@ function updateValues(enchants, value) {
     let maxValue = gear[gearType][pieceType]["Stats"][statType]["Value"];
 
     if (enchants >= i) {
-      statValue.value = ['Normal Amp', 'Boss Amp'].includes(statType) ? (value * maxValue / 100).toFixed(2) : parseInt(value * maxValue / 100);
+      statValue.value = ['Normal Amp', 'Boss Amp', 'Cooldown Reduction'].includes(statType) ? (value * maxValue / 100).toFixed(2) : parseInt(value * maxValue / 100);
     } else {
       statValue.value = "";
     };

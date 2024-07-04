@@ -1,4 +1,160 @@
 const gear = {
+  "[7000] Accessories":{
+    "Cloak":{
+      "DI": 6.21,
+      "Stats":{
+        "Critical Damage":{
+          "Value": 71,
+          "DI": 1.51
+        },
+        "Basic Stats %":{
+          "Value": 11,
+          "DI": 1.06
+        },
+        "Attack/Intensity":{
+          "Value": 121,
+          "DI": 1.04
+        },
+        "Static":{
+          "Value": 30001,
+          "DI": 1.92
+        },
+        "Basic Stats":{
+          "Value": 11001,
+          "DI": 0.67
+        },
+        "Boss Added %":{
+          "Value": 11,
+          "DI": 0.59
+        },
+        "Normal Added %":{
+          "Value": 11,
+          "DI": 0.22
+        },
+        "Strength/Magic":{
+          "Value": 14001,
+          "DI": 0.85
+        },
+        "Static %":{
+          "Value": 11,
+          "DI": 0.97
+        },
+        "Minimum Damage":{
+          "Value": 71,
+          "DI": 0.56
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Critical Damage", "Basic Stats %", "Attack/Intensity", "Static", "Basic Stats"],
+      "Type": "Type A"
+    },
+    "Earrings":{
+      "DI": 6.41,
+      "Stats":{
+        "Critical Damage":{
+          "Value": 71,
+          "DI": 1.51
+        },
+        "Maximum Damage":{
+          "Value": 71,
+          "DI": 1.26
+        },
+        "Attack/Intensity":{
+          "Value": 121,
+          "DI": 1.04
+        },
+        "Static":{
+          "Value": 30001,
+          "DI": 1.92
+        },
+        "Basic Stats":{
+          "Value": 11001,
+          "DI": 0.67
+        },
+        "Penetration":{
+          "Value": 41,
+          "DI": 1.00
+        },
+        "Normal Added %":{
+          "Value": 11,
+          "DI": 0.22
+        },
+        "Strength/Magic":{
+          "Value": 14001,
+          "DI": 0.85
+        },
+        "Static %":{
+          "Value": 11,
+          "DI": 0.97
+        },
+        "Minimum Damage":{
+          "Value": 71,
+          "DI": 0.56
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Critical Damage", "Maximum Damage", "Attack/Intensity", "Static", "Basic Stats"],
+      "Type": "Type A"
+    },
+    "Ring":{
+      "DI": 7.05,
+      "Stats":{
+        "Maximum Damage":{
+          "Value": 71,
+          "DI": 1.26
+        },
+        "Attack/Intensity %":{
+          "Value": 11,
+          "DI": 1.68
+        },
+        "Cooldown Reduction":{
+          "Value": 4,
+          "DI": 1.51
+        },
+        "Static":{
+          "Value": 30001,
+          "DI": 1.92
+        },
+        "Basic Stats":{
+          "Value": 11001,
+          "DI": 0.67
+        },
+        "Boss Added %":{
+          "Value": 11,
+          "DI": 0.59
+        },
+        "Strength/Magic":{
+          "Value": 14001,
+          "DI": 0.85
+        },
+        "Static %":{
+          "Value": 11,
+          "DI": 0.97
+        },
+        "Minimum Damage":{
+          "Value": 71,
+          "DI": 0.56
+        },
+        "Attack/Intensity":{
+          "Value": 121,
+          "DI": 1.04
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Maximum Damage", "Attack/Intensity %", "Cooldown Reduction", "Static", "Basic Stats"],
+      "Type": "Type A"
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/1jwj8XJT2Ing0JhxWCEX9TnT86gB869AvHGMulF6yt5o/edit?usp=sharing"
+  },
   "[6000] Armor":{
     "Helmet":{
       "DI": 9.25,
