@@ -1,19 +1,19 @@
 const gear = {
   "[7000] Accessories":{
     "Cloak":{
-      "DI": 6.21,
+      "DI": 6.66,
       "Stats":{
         "Critical Damage":{
           "Value": 71,
           "DI": 1.51
         },
         "Basic Stats %":{
-          "Value": 11,
-          "DI": 1.06
+          "Value": 13,
+          "DI": 1.29
         },
         "Attack/Intensity":{
-          "Value": 121,
-          "DI": 1.04
+          "Value": 161,
+          "DI": 1.26
         },
         "Static":{
           "Value": 30001,
