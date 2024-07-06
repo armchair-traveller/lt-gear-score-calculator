@@ -36,8 +36,8 @@ const gear = {
           "DI": 0.85
         },
         "Static %":{
-          "Value": 11,
-          "DI": 0.97
+          "Value": 8,
+          "DI": 0.71
         },
         "Minimum Damage":{
           "Value": 71,
@@ -87,8 +87,8 @@ const gear = {
           "DI": 0.85
         },
         "Static %":{
-          "Value": 11,
-          "DI": 0.97
+          "Value": 8,
+          "DI": 0.71
         },
         "Minimum Damage":{
           "Value": 71,
@@ -134,8 +134,8 @@ const gear = {
           "DI": 0.85
         },
         "Static %":{
-          "Value": 11,
-          "DI": 0.97
+          "Value": 8,
+          "DI": 0.71
         },
         "Minimum Damage":{
           "Value": 71,
