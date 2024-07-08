@@ -114,7 +114,7 @@ const gear = {
           "DI": 1.68
         },
         "Cooldown Reduction":{
-          "Value": 4.1,
+          "Value": 5.1,
           "DI": 1.51
         },
         "Static":{
