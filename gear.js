@@ -1,7 +1,7 @@
 const gear = {
   "[7000] Accessories":{
     "Cloak":{
-      "DI": 6.66,
+      "DI": 6.65,
       "Stats":{
         "Critical Damage":{
           "Value": 71,
@@ -13,7 +13,7 @@ const gear = {
         },
         "Attack/Intensity":{
           "Value": 161,
-          "DI": 1.26
+          "DI": 1.38
         },
         "Static":{
           "Value": 30001,
@@ -52,7 +52,7 @@ const gear = {
       "Type": "Type A"
     },
     "Earrings":{
-      "DI": 6.41,
+      "DI": 6.27,
       "Stats":{
         "Critical Damage":{
           "Value": 71,
@@ -103,7 +103,7 @@ const gear = {
       "Type": "Type A"
     },
     "Ring":{
-      "DI": 7.05,
+      "DI": 6.92,
       "Stats":{
         "Maximum Damage":{
           "Value": 71,
