@@ -34,7 +34,7 @@ function refreshPiece() {
 
   let typeLink = gear[gearType]['Sheet Link'];
   let link = document.getElementById('calculator-link');
-  link.innerHTML = '<a href="' + typeLink + '">Detailed data</a>'
+  link.innerHTML = '<a href="' + typeLink + '">Click here for detailed information on this piece of gear</a>'
 
   refreshStat();
   refreshRecommended();
@@ -134,8 +134,11 @@ function refreshScore() {
 function refreshValues() {
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
+  let tierType = gear[gearType][pieceType]["Type"]
+  let tierEquivalence = tiers[gearType][tierType];
+  let tierAvailable = Object.keys(tierEquivalence);
 
-  let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Your %</th><th>Your Rating</th><th>Max Rating</th></tr>\n";
+  let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Your %</th><th>Tier</th><th>Your Rating</th><th>Max Rating</th></tr>\n";
   for (let i = 1; i < 6; i++) {
     let statType = document.getElementById('calculator-stat-' + i).value;
     let statValue = document.getElementById('calculator-stat-' + i + '-input').value;
@@ -144,9 +147,16 @@ function refreshValues() {
     let currPerc = statValue / maxValue;
     let currDI = currPerc * maxDI;
 
+    let finalTier = 'F';
+    tierAvailable.forEach((e) => {
+      if (parseInt(currPerc * 100) >= parseInt(tierEquivalence[e]['Penta'])) {
+        finalTier = e;
+      }
+    });
+
     let sM = '</td><td>';
     let addVal = i === 5 & (gearType === 'Armor' | gearType === 'Accessories (7k)') ? 0.8 : 1;
-    s += '<tr><td>' + statType + sM + maxValue + sM + parseInt(currPerc * 100) + '%' + sM + currDI.toFixed(2) + '%' + sM + (maxDI * addVal).toFixed(2) + '%' + '</td></tr>';
+    s += '<tr><td>' + statType + sM + maxValue + sM + parseInt(currPerc * 100) + '%' + sM + finalTier + sM + currDI.toFixed(2) + '%' + sM + (maxDI * addVal).toFixed(2) + '%' + '</td></tr>';
   };
 
   s += '</table>';

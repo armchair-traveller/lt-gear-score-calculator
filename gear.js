@@ -1,4 +1,125 @@
 const gear = {
+  "[8000] Weapons":{
+    "Main":{
+      "DI": 11.51,
+      "Stats":{
+        "Maximum Damage":{
+          "Value": 221,
+          "DI": 3.54
+        },
+        "Critical Damage":{
+          "Value": 151,
+          "DI": 2.89
+        },
+        "Attack/Intensity %":{
+          "Value": 15,
+          "DI": 1.98
+        },
+        "Basic %":{
+          "Value": 15,
+          "DI": 1.75
+        },
+        "Basic Stats":{
+          "Value": 18001,
+          "DI": 1.35
+        },
+        "Minimum Damage":{
+          "Value": 251,
+          "DI": 1.78
+        },
+        "Attack/Intensity":{
+          "Value": 251,
+          "DI": 1.71
+        },
+        "Strength/Magic":{
+          "Value": 22001,
+          "DI": 1.65
+        },
+        "Defense Penetration":{
+          "Value": 51,
+          "DI": 1.10
+        },
+        "Static Damage":{
+          "Value": 25001,
+          "DI": 0.83
+        },
+        "Static Damage %":{
+          "Value": 11,
+          "DI": 0.65
+        },
+        "Boss Added %":{
+          "Value": 11,
+          "DI": 0.56
+        },
+        "Normal Added %":{
+          "Value": 11,
+          "DI": 0.20
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Maximum Damage", "Critical Damage", "Attack/Intensity %", "Basic Stats %", "Basic Stats"],
+      "Type": "Type A"
+    },
+    "Stone":{
+      "DI": 6.07,
+      "Stats":{
+        "Maximum Damage":{
+          "Value": 121,
+          "DI": 1.94
+        },
+        "Strength/Magic %":{
+          "Value": 10,
+          "DI": 1.17
+        },
+        "Attack/Intensity":{
+          "Value": 151,
+          "DI": 1.08
+        },
+        "Strength/Magic":{
+          "Value": 14001,
+          "DI": 1.05
+        },
+        "Basic Stats":{
+          "Value": 11001,
+          "DI": 0.82
+        },
+        "Minimum Damage":{
+          "Value": 151,
+          "DI": 1.07
+        },
+        "Static Damage":{
+          "Value": 20001,
+          "DI": 0.67
+        },
+        "Static Damage %":{
+          "Value": 10,
+          "DI": 0.59
+        },
+        "Accuracy":{
+          "Value": 51,
+          "DI": 0.49
+        },
+        "Boss Added":{
+          "Value": 23001,
+          "DI": 0.23
+        },
+        "Normal Added":{
+          "Value": 23001,
+          "DI": 0.16
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Maximum Damage", "Strength/Magic %", "Attack/Intensity", "Strength/Magic", "Basic Stats"],
+      "Type": "Type B"
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/1NOJnyXFQNtGKABTaJVBZ1iLKg5wOQghvcxaZwbarbMk/edit?usp=sharing"
+  },
   "[7000] Accessories":{
     "Cloak":{
       "DI": 6.65,
