@@ -7,7 +7,15 @@ function init() {
   refreshType();
 };
 
+function getGears(t) {
+  return t === "Minimum" ? gearMin : gearNormal;
+}
+
 function refreshType() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal;
+
   let typeAvailable = Object.keys(gear);
   let s = "";
   typeAvailable.forEach((e) => {
@@ -21,8 +29,13 @@ function refreshType() {
 };
 
 function refreshPiece() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal;
+
   let gearType = document.getElementById('calculator-type').value;
   let piecesAvailable = Object.keys(gear[gearType]);
+  piecesAvailable.pop();
   piecesAvailable.pop();
   let s = "";
   piecesAvailable.forEach((e) => {
@@ -41,6 +54,10 @@ function refreshPiece() {
 };
 
 function refreshStat() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal
+
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
   let statAvailable = Object.keys(gear[gearType][pieceType]['Stats']);
@@ -66,6 +83,10 @@ function refreshStat() {
 };
 
 function refreshTiers() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal
+
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
   let tierType = gear[gearType][pieceType]["Type"]
@@ -87,14 +108,24 @@ function refreshTiers() {
 };
 
 function refreshScore() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal
+
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
   let tierType = gear[gearType][pieceType]["Type"]
   let tierEquivalence = tiers[gearType][tierType];
   let tierAvailable = Object.keys(tierEquivalence);
 
+  
   totalDI = 0;
   // hasUtility = false;
+  
+  let potential = gear[gearType]["Potential"];
+  let potentialGainMin = 0;
+  let potentialGainMax = 0;
+  let decimalStats = ['Normal Amp', 'Boss Amp', 'Cooldown Reduction'];
 
   // utilityStats = ['Accuracy', 'Movement Speed']
 
@@ -105,15 +136,30 @@ function refreshScore() {
     let maxDI = gear[gearType][pieceType]["Stats"][statType]["DI"];
     let result = statValue / maxValue * maxDI;
     totalDI += result;
+    console.log(statValue === '')
 
-    // if (utilityStats.includes(statType) & statValue / maxValue >= 0.4) {
-    //   hasUtility = true;
-    // };
+    if (gearType === '[7000] Accessories' & statType === 'Static' & statValue !== '') {
+      potentialGainMin += maxDI * 0.04;
+      potentialGainMax += maxDI * 0.04;
+    }
+    else if (potential[0] === 1 & statValue !== ''){
+      if(decimalStats.includes(statType)) {
+        potentialGainMin += 0.1 / maxValue * maxDI;
+      }
+      else {
+        potentialGainMin += 1 / maxValue * maxDI;
+      }
+      potentialGainMax += maxDI * potential[1];
+    }
+    else if (potential[0] !== 0 & statValue !== '') {
+      potentialGainMin += maxDI * potential[0];
+      potentialGainMax += maxDI * potential[1];
+    };
   };
 
   let itemDI = parseInt(totalDI / gear[gearType][pieceType]["DI"] * 100);
-  let resultPercent = document.getElementById('calculator-percent')
-  resultPercent.innerHTML = 'Score: ' + itemDI + '%'
+  let resultPercent = document.getElementById('calculator-percent');
+  resultPercent.innerHTML = 'Score: ' + itemDI + '%';
   let resultDI = document.getElementById('calculator-di');
   resultDI.innerHTML = 'Rating: ' + totalDI.toFixed(2) + '%';
   
@@ -128,10 +174,42 @@ function refreshScore() {
   let resultTier = document.getElementById('calculator-tier');
   resultTier.innerHTML = finalTier + ' tier';
 
+  let potentialMin = parseInt((potentialGainMin * 2 + totalDI) / gear[gearType][pieceType]["DI"] * 100);
+  let potentialMax = parseInt((potentialGainMax * 2 + totalDI) / gear[gearType][pieceType]["DI"] * 100);
+  let potentialElement = document.getElementById('calculator-potential');
+  
+  let potentialText = 'Potential Lucent Score: ' + potentialMin + '%'
+  if (potentialMin !== potentialMax) {
+    potentialText += ' ~ ' + potentialMax + '%'
+  }
+
+  let finalTierMin = 'F';
+  let finalTierMax = 'F';
+  tierAvailable.forEach((e) => {
+    if (potentialMin >= parseInt(tierEquivalence[e]['Penta'])) {
+      finalTierMin = e;
+    }
+    if (potentialMax >= parseInt(tierEquivalence[e]['Penta'])) {
+      finalTierMax = e;
+    }
+  });
+  
+  potentialText += '<br>Potential Lucent Tier: ' + finalTierMin
+
+  if (finalTierMin !== finalTierMax) {
+    potentialText += " ~ " + finalTierMax
+  }
+
+  potentialElement.innerHTML = potentialText
+
   refreshValues();
 };
 
 function refreshValues() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal;
+
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
   let tierType = gear[gearType][pieceType]["Type"]
@@ -139,6 +217,7 @@ function refreshValues() {
   let tierAvailable = Object.keys(tierEquivalence);
 
   let s = "<table><tr><th>Stat</th><th>Max Value</th><th>Your %</th><th>Tier</th><th>Your Rating</th><th>Max Rating</th></tr>\n";
+  let limitDI = 0
   for (let i = 1; i < 6; i++) {
     let statType = document.getElementById('calculator-stat-' + i).value;
     let statValue = document.getElementById('calculator-stat-' + i + '-input').value;
@@ -155,21 +234,40 @@ function refreshValues() {
     });
 
     let sM = '</td><td>';
-    let addVal = i === 5 & (gearType === 'Armor' | gearType === 'Accessories (7k)') ? 0.8 : 1;
+    let addVal = i === 5 & (gearType === '[6000] Armor' | gearType === '[7000] Accessories') ? 0.8 : 1;
     s += '<tr><td>' + statType + sM + maxValue + sM + parseInt(currPerc * 100) + '%' + sM + finalTier + sM + currDI.toFixed(2) + '%' + sM + (maxDI * addVal).toFixed(2) + '%' + '</td></tr>';
+    limitDI += maxDI * addVal
   };
 
+  let limitTier = '';
+  tierAvailable.forEach((e) => {
+    if (parseInt(limitDI / gear[gearType][pieceType]["DI"] * 100) >= parseInt(tierEquivalence[e]['Penta'])) {
+      limitTier = e;
+    }
+  });
+
+  s += '<tr><td><strong>Max Score (Chosen Stats)</strong>' + sM + '<strong>' + (limitDI / gear[gearType][pieceType]["DI"] * 100).toFixed(0) + '%</strong>'
+  s += sM + '<strong>Max Tier</strong>' + sM + '<strong>' + limitTier + '</strong>'
+  s += sM + '<strong>Total</strong>' + sM + '<strong>' + (limitDI).toFixed(2) + '%</strong></td></tr>'
+  // s += '<tr><td>' + sM + sM + sM + sM + 'Total' + sM + (limitDI).toFixed(2) + '%</td></tr>'
+  // s += '<tr><td>' + sM + sM + sM + sM + 'Max Score' + sM + (limitDI / gear[gearType][pieceType]["DI"] * 100).toFixed(0) + '%</td></tr>'
   s += '</table>';
 
   if (pieceType === "Earrings") {
     s += '<br><span class="text-note"><span style="color: red;"><strong>Note:</strong></span> Defense Penetration is no longer a recommended stat as damage gain from going from 98 to 99 is lower than the damage gained from other stats</span>'
   }
 
+  
+
   let valueTable = document.getElementById('calculator-values');
   valueTable.innerHTML = s;
 };
 
 function refreshPriority() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal
+
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
 
@@ -196,8 +294,13 @@ function refreshPriority() {
 };
 
 function refreshRecommended() {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal
+
   let gearType = document.getElementById('calculator-type').value;
   let piecesAvailable = Object.keys(gear[gearType]);
+  piecesAvailable.pop();
   piecesAvailable.pop();
   let statsList = [];
   piecesAvailable.forEach((e) => {
@@ -229,6 +332,10 @@ function refreshRecommended() {
 };
 
 function updateValues(enchants, value) {
+  // let calculatorMode = document.getElementById('calculator-mode').value;
+  // let gear = getGears(calculatorMode)
+  gear = gearNormal
+
   let gearType = document.getElementById('calculator-type').value;
   let pieceType = document.getElementById('calculator-piece').value;
 

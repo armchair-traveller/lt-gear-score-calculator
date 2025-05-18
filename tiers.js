@@ -750,5 +750,81 @@ const tiers  = {
         "Score": "95%+"
       }
     },
+  },
+  "[9000] Accessories": {
+    "Type A":{
+      "F":{
+        "Single": "Any",
+        "Duo": "Any",
+        "Trio": "Any",
+        "Quad": "Any",
+        "Penta": "Any",
+        "Score": "00% - 25%"
+      },
+      "E":{
+        "Single": "--",
+        "Duo": "50%",
+        "Trio": "40%",
+        "Quad": "30%",
+        "Penta": "26%",
+        "Score": "26% - 35%"
+      },
+      "D":{
+        "Single": "--",
+        "Duo": "70%",
+        "Trio": "55%",
+        "Quad": "45%",
+        "Penta": "36%",
+        "Score": "36% - 45%"
+      },
+      "C":{
+        "Single": "--",
+        "Duo": "85%",
+        "Trio": "65%",
+        "Quad": "55%",
+        "Penta": "46%",
+        "Score": "46% - 56%"
+      },
+      "B":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "80%",
+        "Quad": "65%",
+        "Penta": "57%",
+        "Score": "57% - 64%"
+      },
+      "A":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "100%",
+        "Quad": "75%",
+        "Penta": "65%",
+        "Score": "65% - 74%"
+      },
+      "S":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "--",
+        "Quad": "90%",
+        "Penta": "75%",
+        "Score": "75% - 84%"
+      },
+      "SS":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "--",
+        "Quad": "100%",
+        "Penta": "85%",
+        "Score": "85% - 94%"
+      },
+      "SSS":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "--",
+        "Quad": "--",
+        "Penta": "95%",
+        "Score": "95%+"
+      }
+    },
   }
 }

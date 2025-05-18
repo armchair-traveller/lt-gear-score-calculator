@@ -2,14 +2,23 @@
 <head>
   <title>LaTale Gear Score Calculator</title>
   <script type="text/javascript" src="gear.js"></script>
+  <script type="text/javascript" src="gearMin.js"></script>
   <script type="text/javascript" src="tiers.js"></script>
   <script type="text/javascript" src="index.js"></script>
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
-  <h1>LaTale Gear Score Calculator</h1>
-  <span>Note that this is hypothetical damage, and it may not represent actual damage versus actual content</span>
-  <br><br>
+  <h1 style="text-align: center;">LaTale Gear Score Calculator</h1>
+  <h2 style="color: red;"><strong>⚠️ Note that this is hypothetical damage, and it may not represent actual damage versus actual content ⚠️<br>
+    Please also note this calculator only calculates for a single item, your other stats and items may change how well it performs</strong></h2>
+  <span>Numbers are currently based on 1 Attack/Intensity = 100 Strength/Magic. If you want more detailed tests with more stats and items, please use the <a href="https://kedanao.github.io/lt-damage-calculator/">Damage Calculator</a></span> and detailed sheets linked below<br>
+  <br>
+  <!-- Mode:
+  <select id="calculator-mode" onchange="refreshType()">
+    <option value="Maximum">Maximum</option>
+    <option value="Minimum">Minimum</option>
+  </select>
+  <span>Maximum mode is specifically for equipment before LL6 minimum damage change. <strong>Your scores may change once switching to Minimum mode</strong></span> -->
   <div class="container" id="calculator-container">
     <div id="calculator-input">
       <div>
@@ -66,10 +75,23 @@
       <div id="calculator-tier">
         
       </div>
+      <div id="calculator-potential">
+
+      </div>
     </div>
     <div id="calculator-values">
 
     </div>
+  </div>
+  <div>
+    <h3>Important notes</h3>
+    <ul>
+      <li><strong>Minimum Damage</strong>: Value only applies as long as your Minimum is lower than your Maximum. Any amount above is wasted</li>
+      <li><strong>Attack/Intensity vs Strength/Magic</strong>: Older items (8k and below) utilize 1:100 ratio, while newer items (9k and above) will use 1:110
+      <br>If you want to consider different numbers, please use the <a href="https://kedanao.github.io/lt-damage-calculator/">Damage Calculator</a> with your own stats and settings.</li>
+      <li><strong>Defense Penetration</strong>: Does not apply to summons, avoid in summon-heavy classes</li>
+      <li><strong>Back Attack Damage</strong>: Ignored within ratings due to class dependence. Can be worthwhile depending on class (functionally same as Critical when applicable)</li>
+    </ul>
   </div>
   <div class="container" id="tier-container">
     <div id="tiers">

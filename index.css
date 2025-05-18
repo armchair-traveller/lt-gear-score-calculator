@@ -61,3 +61,7 @@ input {
   margin-top: 12px;
   font-size: 1.1em;
 }
+
+#calculator-potential {
+  font-size: 0.5em;
+}
