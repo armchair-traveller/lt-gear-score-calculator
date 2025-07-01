@@ -345,7 +345,7 @@ function updateValues(enchants, value) {
     let maxValue = gear[gearType][pieceType]["Stats"][statType]["Value"];
 
     if (enchants >= i) {
-      statValue.value = ['Normal Amp', 'Boss Amp', 'Cooldown Reduction'].includes(statType) ? (value * maxValue / 100).toFixed(2) : parseInt(value * maxValue / 100);
+      statValue.value = ['Normal Amp', 'Boss Amp', 'Cooldown Reduction'].includes(statType) ? (value * maxValue / 100).toFixed(1) : parseInt(value * maxValue / 100);
     } else {
       statValue.value = "";
     };

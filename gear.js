@@ -1,4 +1,161 @@
 const gearNormal = {
+  "[9000] Accessories":{
+    "Crystal":{
+      "DI": 5.699,
+      "Stats":{
+        "Critical Damage":{
+          "Value": 81,
+          "DI": 1.470
+        },
+        "Basic Stats %":{
+          "Value": 13,
+          "DI": 1.206
+        },
+        "Minimum Damage":{
+          "Value": 101,
+          "DI": 1.168
+        },
+        "Boss Amp":{
+          "Value": 3.3,
+          "DI": 1.026
+        },
+        "Attack/Intensity":{
+          "Value": 151,
+          "DI": 0.829
+        },
+        "Strength/Magic":{
+          "Value": 16001,
+          "DI": 0.901
+        },
+        "Basic Stats":{
+          "Value": 12001,
+          "DI": 0.676
+        },
+        "Static Damage":{
+          "Value": 25001,
+          "DI": 0.452
+        },
+        "Static Damage %":{
+          "Value": 11,
+          "DI": 0.415
+        },
+        "Normal Added %":{
+          "Value": 11,
+          "DI": 0.239
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Critical Damage", "Basic Stats %", "Minimum Damage", "Boss Amp", "Attack/Intensity"],
+      "Type": "Type A"
+    },
+    "Glasses":{
+      "DI": 4.800,
+      "Stats":{
+        "Attack/Intensity %":{
+          "Value": 11,
+          "DI": 1.356
+        },
+        "Minimum Damage":{
+          "Value": 101,
+          "DI": 1.168
+        },
+        "Maximum Damage":{
+          "Value": 81,
+          "DI": 0.900
+        },
+        "Accuracy":{
+          "Value": 86,
+          "DI": 0.700
+        },
+        "Basic Stats":{
+          "Value": 12001,
+          "DI": 0.676
+        },
+        "Attack/Intensity":{
+          "Value": 151,
+          "DI": 0.829
+        },
+        "Strength/Magic":{
+          "Value": 16001,
+          "DI": 0.901
+        },
+        "Static Damage":{
+          "Value": 25001,
+          "DI": 0.452
+        },
+        "Static Damage %":{
+          "Value": 11,
+          "DI": 0.415
+        },
+        "Normal Added %":{
+          "Value": 11,
+          "DI": 0.239
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Attack/Intensity %", "Minimum Damage", "Maximum Damage", "Accuracy", "Basic Stats"],
+      "Type": "Type A"
+    },
+    "Stockings":{
+      "DI": 5.297,
+      "Stats":{
+        "Dual Damage":{
+          "Value": 71,
+          "DI": 1.610
+        },
+        "Minimum Damage":{
+          "Value": 101,
+          "DI": 1.168
+        },
+        "Normal Amp":{
+          "Value": 3.3,
+          "DI": 1.014
+        },
+        "Attack/Intensity":{
+          "Value": 151,
+          "DI": 0.829
+        },
+        "Basic Stats":{
+          "Value": 12001,
+          "DI": 0.676
+        },
+        "Strength/Magic":{
+          "Value": 16001,
+          "DI": 0.901
+        },
+        "Movement Speed":{
+          "Value": 81,
+          "DI": 0.700
+        },
+        "Static Damage":{
+          "Value": 25001,
+          "DI": 0.452
+        },
+        "Static Damage %":{
+          "Value": 11,
+          "DI": 0.415
+        },
+        "Normal Added %":{
+          "Value": 11,
+          "DI": 0.239
+        },
+        "Other (Non-damaging)":{
+          "Value": 1,
+          "DI": 0
+        },
+      },
+      "Optimal": ["Dual Damage", "Minimum Damage", "Normal Amp", "Attack/Intensity", "Basic Stats"],
+      "Type": "Type A"
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/1sN-2_7OVKn_fZlMOOreEBq2J3160lEsZrfShgoXFYWE/edit?usp=sharing",
+    "Potential": [0.12, 0.12]
+  },
   "[8000] Weapons":{
     "Main":{
       "DI": 11.51,

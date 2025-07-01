@@ -11,7 +11,7 @@
   <h1 style="text-align: center;">LaTale Gear Score Calculator</h1>
   <h2 style="color: red;"><strong>⚠️ Note that this is hypothetical damage, and it may not represent actual damage versus actual content ⚠️<br>
     Please also note this calculator only calculates for a single item, your other stats and items may change how well it performs</strong></h2>
-  <span>Numbers are currently based on 1 Attack/Intensity = 100 Strength/Magic. If you want more detailed tests with more stats and items, please use the <a href="https://kedanao.github.io/lt-damage-calculator/">Damage Calculator</a></span> and detailed sheets linked below<br>
+  <span>Numbers are currently based on 1 Attack/Intensity = 110 Strength/Magic. If you want more detailed tests with more stats and items, please use the <a href="https://kedanao.github.io/lt-damage-calculator/">Damage Calculator</a></span> and detailed sheets linked below<br>
   <br>
   <!-- Mode:
   <select id="calculator-mode" onchange="refreshType()">
@@ -87,8 +87,10 @@
     <h3>Important notes</h3>
     <ul>
       <li><strong>Minimum Damage</strong>: Value only applies as long as your Minimum is lower than your Maximum. Any amount above is wasted</li>
-      <li><strong>Attack/Intensity vs Strength/Magic</strong>: Older items (8k and below) utilize 1:100 ratio, while newer items (9k and above) will use 1:110
-      <br>If you want to consider different numbers, please use the <a href="https://kedanao.github.io/lt-damage-calculator/">Damage Calculator</a> with your own stats and settings.</li>
+      <li><strong>Attack/Intensity vs Strength/Magic</strong>: Older items (8k and below) utilize 1:100 ratio, while newer items (9k and above) use 1:110
+      <br>Note that the calculator also considers higher strength/magic % than attack/intensity %, and a value of 12% strength/magic ratio
+      <br>Generally this means flat strength/magic is superior to flat attack/intensity, however attack/intensity % is superior to strength/magic %
+      <br>If you want to consider different numbers, please use the <a href="https://kedanao.github.io/lt-damage-calculator/">Damage Calculator</a> with your own stats and settings</li>
       <li><strong>Defense Penetration</strong>: Does not apply to summons, avoid in summon-heavy classes</li>
       <li><strong>Back Attack Damage</strong>: Ignored within ratings due to class dependence. Can be worthwhile depending on class (functionally same as Critical when applicable)</li>
     </ul>
