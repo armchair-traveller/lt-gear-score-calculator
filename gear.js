@@ -5,47 +5,58 @@ const gearNormal = {
       "Stats":{
         "Critical Damage":{
           "Value": 81,
-          "DI": 1.470
+          "DI": 1.470,
+          "Potential": [12,12]
         },
         "Basic Stats %":{
           "Value": 13,
-          "DI": 1.206
+          "DI": 1.206,
+          "Potential": [1.5,1.5]
         },
         "Minimum Damage":{
           "Value": 101,
-          "DI": 1.168
+          "DI": 1.168,
+          "Potential": [15,15]
         },
         "Boss Amp":{
           "Value": 3.3,
-          "DI": 1.026
+          "DI": 1.026,
+          "Potential": [0.4,0.4]
         },
         "Attack/Intensity":{
           "Value": 151,
-          "DI": 0.829
+          "DI": 0.829,
+          "Potential": [22,22]
         },
         "Strength/Magic":{
           "Value": 16001,
-          "DI": 0.901
+          "DI": 0.901,
+          "Potential": [2400,2400]
         },
         "Basic Stats":{
           "Value": 12001,
-          "DI": 0.676
+          "DI": 0.676,
+          "Potential": [1800,1800]
         },
         "Static Damage":{
           "Value": 25001,
-          "DI": 0.452
+          "DI": 0.452,
+          "Potential": [3750,3750]
         },
         "Static Damage %":{
           "Value": 11,
-          "DI": 0.415
+          "DI": 0.415,
+          "Potential": [1.5,1.5]
         },
         "Normal Added %":{
           "Value": 11,
-          "DI": 0.239
+          "DI": 0.239,
+          "Potential": [1.5,1.5]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Critical Damage", "Basic Stats %", "Minimum Damage", "Boss Amp", "Attack/Intensity"],
@@ -56,47 +67,58 @@ const gearNormal = {
       "Stats":{
         "Attack/Intensity %":{
           "Value": 11,
-          "DI": 1.356
+          "DI": 1.356,
+          "Potential": [1.5,1.5]
         },
         "Minimum Damage":{
           "Value": 101,
-          "DI": 1.168
+          "DI": 1.168,
+          "Potential": [15,15]
         },
         "Maximum Damage":{
           "Value": 81,
-          "DI": 0.900
+          "DI": 0.900,
+          "Potential": [12,12]
         },
         "Accuracy":{
           "Value": 86,
-          "DI": 0.700
+          "DI": 0.700,
+          "Potential": [12,12]
         },
         "Basic Stats":{
           "Value": 12001,
-          "DI": 0.676
+          "DI": 0.676,
+          "Potential": [1800,1800]
         },
         "Attack/Intensity":{
           "Value": 151,
-          "DI": 0.829
+          "DI": 0.829,
+          "Potential": [22,22]
         },
         "Strength/Magic":{
           "Value": 16001,
-          "DI": 0.901
+          "DI": 0.901,
+          "Potential": [2400,2400]
         },
         "Static Damage":{
           "Value": 25001,
-          "DI": 0.452
+          "DI": 0.452,
+          "Potential": [3750,3750]
         },
         "Static Damage %":{
           "Value": 11,
-          "DI": 0.415
+          "DI": 0.415,
+          "Potential": [1.5,1.5]
         },
         "Normal Added %":{
           "Value": 11,
-          "DI": 0.239
+          "DI": 0.239,
+          "Potential": [1.5,1.5]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Attack/Intensity %", "Minimum Damage", "Maximum Damage", "Accuracy", "Basic Stats"],
@@ -107,47 +129,58 @@ const gearNormal = {
       "Stats":{
         "Dual Damage":{
           "Value": 71,
-          "DI": 1.610
+          "DI": 1.610,
+          "Potential": [10,10]
         },
         "Minimum Damage":{
           "Value": 101,
-          "DI": 1.168
+          "DI": 1.168,
+          "Potential": [15,15]
         },
         "Normal Amp":{
           "Value": 3.3,
-          "DI": 1.014
+          "DI": 1.014,
+          "Potential": [0.4,0.4]
         },
         "Attack/Intensity":{
           "Value": 151,
-          "DI": 0.829
+          "DI": 0.829,
+          "Potential": [22,22]
         },
         "Basic Stats":{
           "Value": 12001,
-          "DI": 0.676
+          "DI": 0.676,
+          "Potential": [1800,1800]
         },
         "Strength/Magic":{
           "Value": 16001,
-          "DI": 0.901
+          "DI": 0.901,
+          "Potential": [2400,2400]
         },
         "Movement Speed":{
-          "Value": 81,
-          "DI": 0.700
+          "Value": 71,
+          "DI": 0.700,
+          "Potential": [10,10]
         },
         "Static Damage":{
           "Value": 25001,
-          "DI": 0.452
+          "DI": 0.452,
+          "Potential": [3750,3750]
         },
         "Static Damage %":{
           "Value": 11,
-          "DI": 0.415
+          "DI": 0.415,
+          "Potential": [1.5,1.5]
         },
         "Normal Added %":{
           "Value": 11,
-          "DI": 0.239
+          "DI": 0.239,
+          "Potential": [1.5,1.5]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Dual Damage", "Minimum Damage", "Normal Amp", "Attack/Intensity", "Basic Stats"],
@@ -162,59 +195,73 @@ const gearNormal = {
       "Stats":{
         "Maximum Damage":{
           "Value": 221,
-          "DI": 3.54
+          "DI": 3.54,
+          "Potential": [26,26]
         },
         "Critical Damage":{
           "Value": 151,
-          "DI": 2.89
+          "DI": 2.89,
+          "Potential": [18,18]
         },
         "Attack/Intensity %":{
           "Value": 15,
-          "DI": 1.98
+          "DI": 1.98,
+          "Potential": [1.5,1.5]
         },
         "Basic %":{
           "Value": 15,
-          "DI": 1.75
+          "DI": 1.75,
+          "Potential": [1.5,1.5]
         },
         "Basic Stats":{
           "Value": 18001,
-          "DI": 1.35
+          "DI": 1.35,
+          "Potential": [2200,2200]
         },
         "Minimum Damage":{
           "Value": 251,
-          "DI": 1.78
+          "DI": 1.78,
+          "Potential": [30,30]
         },
         "Attack/Intensity":{
           "Value": 251,
-          "DI": 1.71
+          "DI": 1.71,
+          "Potential": [30,30]
         },
         "Strength/Magic":{
           "Value": 22001,
-          "DI": 1.65
+          "DI": 1.65,
+          "Potential": [2600,2600]
         },
         "Defense Penetration":{
           "Value": 51,
-          "DI": 1.10
+          "DI": 1.10,
+          "Potential": [6,6]
         },
         "Static Damage":{
           "Value": 25001,
-          "DI": 0.83
+          "DI": 0.83,
+          "Potential": [3000,3000]
         },
         "Static Damage %":{
           "Value": 11,
-          "DI": 0.65
+          "DI": 0.65,
+          "Potential": [1.5,1.5]
         },
         "Boss Added %":{
           "Value": 11,
-          "DI": 0.56
+          "DI": 0.56,
+          "Potential": [1.5,1.5]
         },
         "Normal Added %":{
           "Value": 11,
-          "DI": 0.20
+          "DI": 0.20,
+          "Potential": [1.5,1.5]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Maximum Damage", "Critical Damage", "Attack/Intensity %", "Basic Stats %", "Basic Stats"],
@@ -225,51 +272,63 @@ const gearNormal = {
       "Stats":{
         "Maximum Damage":{
           "Value": 121,
-          "DI": 1.94
+          "DI": 1.94,
+          "Potential": [14,14]
         },
         "Strength/Magic %":{
           "Value": 10,
-          "DI": 1.17
+          "DI": 1.17,
+          "Potential": [1,1]
         },
         "Attack/Intensity":{
           "Value": 151,
-          "DI": 1.08
+          "DI": 1.08,
+          "Potential": [18,18]
         },
         "Strength/Magic":{
           "Value": 14001,
-          "DI": 1.05
+          "DI": 1.05,
+          "Potential": [1700,1700]
         },
         "Basic Stats":{
           "Value": 11001,
-          "DI": 0.82
+          "DI": 0.82,
+          "Potential": [1300,1300]
         },
         "Minimum Damage":{
           "Value": 151,
-          "DI": 1.07
+          "DI": 1.07,
+          "Potential": [18,18]
         },
         "Static Damage":{
           "Value": 20001,
-          "DI": 0.67
+          "DI": 0.67,
+          "Potential": [2400,2400]
         },
         "Static Damage %":{
           "Value": 10,
-          "DI": 0.59
+          "DI": 0.59,
+          "Potential": [1,1]
         },
         "Accuracy":{
           "Value": 51,
-          "DI": 0.49
+          "DI": 0.49,
+          "Potential": [6,6]
         },
         "Boss Added":{
           "Value": 23001,
-          "DI": 0.23
+          "DI": 0.23,
+          "Potential": [2800,2800]
         },
         "Normal Added":{
           "Value": 23001,
-          "DI": 0.16
+          "DI": 0.16,
+          "Potential": [2800,2800]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Maximum Damage", "Strength/Magic %", "Attack/Intensity", "Strength/Magic", "Basic Stats"],
@@ -284,47 +343,58 @@ const gearNormal = {
       "Stats":{
         "Critical Damage":{
           "Value": 71,
-          "DI": 1.56
+          "DI": 1.56,
+          "Potential": [5,10]
         },
         "Basic Stats %":{
           "Value": 13,
-          "DI": 1.39
+          "DI": 1.39,
+          "Potential": [1,2]
         },
         "Attack/Intensity":{
           "Value": 161,
-          "DI": 1.21
+          "DI": 1.21,
+          "Potential": [12,24]
         },
         "Strength/Magic":{
           "Value": 14001,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [1050,2100]
         },
         "Basic Stats":{
           "Value": 11001,
-          "DI": 0.74
+          "DI": 0.74,
+          "Potential": [825,1650]
         },
         "Minimum Damage":{
           "Value": 71,
-          "DI": 0.58
+          "DI": 0.58,
+          "Potential": [5,10]
         },
         "Boss Added %":{
-          "Value": 11,
-          "DI": 0.29
+          "Value": 8,
+          "DI": 0.29,
+          "Potential": [1,2]
         },
         "Normal Added %":{
-          "Value": 11,
-          "DI": 0.18
+          "Value": 8,
+          "DI": 0.18,
+          "Potential": [1,2]
         },
         "Static":{
           "Value": 30001,
-          "DI": 0.79
+          "DI": 0.79,
+          "Potential": [1200,1200]
         },
         "Static %":{
           "Value": 8,
-          "DI": 0.44
+          "DI": 0.44,
+          "Potential": [1,2]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Critical Damage", "Basic Stats %", "Attack/Intensity", "Strength/Magic", "Basic Stats"],
@@ -335,47 +405,58 @@ const gearNormal = {
       "Stats":{
         "Critical Damage":{
           "Value": 71,
-          "DI": 1.56
+          "DI": 1.56,
+          "Potential": [5,10]
         },
         "Maximum Damage":{
           "Value": 71,
-          "DI": 1.32
+          "DI": 1.32,
+          "Potential": [5,10]
         },
         "Attack/Intensity":{
           "Value": 121,
-          "DI": 0.91
+          "DI": 0.91,
+          "Potential": [9,18]
         },
         "Strength/Magic":{
           "Value": 14001,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [1050,2100]
         },
         "Basic Stats":{
           "Value": 11001,
-          "DI": 0.74
+          "DI": 0.74,
+          "Potential": [825,1650]
         },
         "Static":{
           "Value": 30001,
-          "DI": 0.79
+          "DI": 0.79,
+          "Potential": [1200,1200]
         },
         "Penetration":{
           "Value": 41,
-          "DI": 1.00
+          "DI": 1.00,
+          "Potential": [3,6]
         },
         "Normal Added %":{
-          "Value": 11,
-          "DI": 0.18
+          "Value": 8,
+          "DI": 0.18,
+          "Potential": [1,2]          
         },
         "Static %":{
           "Value": 8,
-          "DI": 0.44
+          "DI": 0.44,
+          "Potential": [1,2]
         },
         "Minimum Damage":{
           "Value": 71,
-          "DI": 0.58
+          "DI": 0.58,
+          "Potential": [5,10]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Critical Damage", "Maximum Damage", "Attack/Intensity", "Strength/Magic", "Basic Stats"],
@@ -386,47 +467,58 @@ const gearNormal = {
       "Stats":{
         "Maximum Damage":{
           "Value": 71,
-          "DI": 1.32
+          "DI": 1.32,
+          "Potential": [5,10]
         },
         "Attack/Intensity %":{
           "Value": 11,
-          "DI": 1.68
+          "DI": 1.68,
+          "Potential": [1,2]
         },
         "Cooldown Reduction":{
           "Value": 5.1,
-          "DI": 1.56
+          "DI": 1.56,
+          "Potential": [0.3,0.7]
         },
         "Attack/Intensity":{
           "Value": 121,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [9,18]
         },
         "Basic Stats":{
           "Value": 11001,
-          "DI": 0.74
+          "DI": 0.74,
+          "Potential": [825,1650]
         },
         "Static":{
           "Value": 30001,
-          "DI": 0.79
+          "DI": 0.79,
+          "Potential": [1200,1200]
         },
         "Boss Added %":{
-          "Value": 11,
-          "DI": 0.29
+          "Value": 8,
+          "DI": 0.29,
+          "Potential": [1,2]
         },
         "Strength/Magic":{
           "Value": 14001,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [1050,2100]
         },
         "Static %":{
           "Value": 8,
-          "DI": 0.44
+          "DI": 0.44,
+          "Potential": [1,2]
         },
         "Minimum Damage":{
           "Value": 71,
-          "DI": 0.58
+          "DI": 0.58,
+          "Potential": [5,10]
         },
         "Other (Non-damaging)":{
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
       },
       "Optimal": ["Maximum Damage", "Attack/Intensity %", "Cooldown Reduction", "Attack/Intensity", "Basic Stats"],
@@ -441,43 +533,53 @@ const gearNormal = {
       "Stats":{
         "Critical Damage":{
           "Value": 100,
-          "DI": 2.91
+          "DI": 2.91,
+          "Potential": [7,15]
         },
         "Basic Stats": {
           "Value": 16000,
-          "DI": 1.36
+          "DI": 1.36,
+          "Potential": [1200,2400]
         },
         "Normal Amp":{
           "Value": 4,
-          "DI": 1.59
+          "DI": 1.59,
+          "Potential": [0.3,0.6]
         },
         "Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Accuracy": {
           "Value": 150,
-          "DI": 1.71
+          "DI": 1.71,
+          "Potential": [11,23]
         },
         "Other (Non-damaging)": {
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
         "Attack/Intensity": {
           "Value": 170,
-          "DI": 1.29
+          "DI": 1.29,
+          "Potential": [12,25]
         },
         "Minimum Damage": {
           "Value": 100,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [7,15]
         },
         "Static %": {
           "Value": 10,
-          "DI": 0.48
+          "DI": 0.48,
+          "Potential": [1,2]
         },
         "Only Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         }
       },
       "Optimal": ["Critical Damage", "Strength/Magic", "Normal Amp", "Basic Stats", "Accuracy"],
@@ -488,43 +590,53 @@ const gearNormal = {
       "Stats":{
         "Maximum Damage":{
           "Value": 100,
-          "DI": 2.39
+          "DI": 2.39,
+          "Potential": [7,15]
         },
         "Attack/Intensity %":{
           "Value": 15,
-          "DI": 2.27
+          "DI": 2.27,
+          "Potential": [1,2]
         },
         "Basic Stats %":{
           "Value": 18,
-          "DI": 1.62
+          "DI": 1.62,
+          "Potential": [1,3]
         },
         "Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Basic Stats": {
           "Value": 16000,
-          "DI": 1.36
+          "DI": 1.36,
+          "Potential": [1200,2400]
         },
         "Attack/Intensity": {
           "Value": 170,
-          "DI": 1.29
+          "DI": 1.29,
+          "Potential": [12,25]
         },
         "Minimum Damage": {
           "Value": 100,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [7,15]
         },
         "Static %": {
           "Value": 10,
-          "DI": 0.48
+          "DI": 0.48,
+          "Potential": [1,2]
         },
         "Only Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Other (Non-damaging)": {
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         }
       },
       "Optimal": ["Maximum Damage", "Attack/Intensity %", "Basic Stats %", "Strength/Magic", "Basic Stats"],
@@ -535,43 +647,53 @@ const gearNormal = {
       "Stats":{
         "Maximum Damage":{
           "Value": 100,
-          "DI": 2.39
+          "DI": 2.39,
+          "Potential": [7,15]
         },
         "Attack/Intensity %":{
           "Value": 15,
-          "DI": 2.27
+          "DI": 2.27,
+          "Potential": [1,2]
         },
         "Basic Stats %":{
           "Value": 18,
-          "DI": 1.62
+          "DI": 1.62,
+          "Potential": [1,3]
         },
         "Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Basic Stats": {
           "Value": 16000,
-          "DI": 1.36
+          "DI": 1.36,
+          "Potential": [1200,2400]
         },
         "Attack/Intensity": {
           "Value": 170,
-          "DI": 1.29
+          "DI": 1.29,
+          "Potential": [12,25]
         },
         "Minimum Damage": {
           "Value": 100,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [7,15]
         },
         "Static %": {
           "Value": 10,
-          "DI": 0.48
+          "DI": 0.48,
+          "Potential": [1,2]
         },
         "Only Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Other (Non-damaging)": {
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         }
       },
       "Optimal": ["Maximum Damage", "Attack/Intensity %", "Basic Stats %", "Strength/Magic", "Basic Stats"],
@@ -582,43 +704,53 @@ const gearNormal = {
       "Stats":{
         "Critical Damage":{
           "Value": 100,
-          "DI": 2.91
+          "DI": 2.91,
+          "Potential": [7,15]
         },
         "Attack/Intensity %":{
           "Value": 15,
-          "DI": 2.27
+          "DI": 2.27,
+          "Potential": [1,2]
         },
         "Boss Amp":{
           "Value": 4,
-          "DI": 1.21
+          "DI": 1.21,
+          "Potential": [0.3,0.6]
         },
         "Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Basic Stats": {
           "Value": 16000,
-          "DI": 1.36
+          "DI": 1.36,
+          "Potential": [1200,2400]
         },
         "Attack/Intensity": {
           "Value": 170,
-          "DI": 1.29
+          "DI": 1.29,
+          "Potential": [12,25]
         },
         "Minimum Damage": {
           "Value": 100,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [7,15]
         },
         "Static %": {
           "Value": 10,
-          "DI": 0.48
+          "DI": 0.48,
+          "Potential": [1,2]
         },
         "Only Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Other (Non-damaging)": {
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         }
       },
       "Optimal": ["Critical Damage", "Attack/Intensity %", "Boss Amp", "Strength/Magic", "Basic Stats"],
@@ -629,43 +761,53 @@ const gearNormal = {
       "Stats":{
         "Critical Damage":{
           "Value": 150,
-          "DI": 4.36
+          "DI": 4.36,
+          "Potential": [11,23]
         },
         "Basic Stats %":{
           "Value": 18,
-          "DI": 1.62
+          "DI": 1.62,
+          "Potential": [1,3]
         },
         "Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         },
         "Basic Stats": {
           "Value": 16000,
-          "DI": 1.36
+          "DI": 1.36,
+          "Potential": [1200,2400]
         },
         "Movement Speed": {
           "Value": 150,
-          "DI": 1.71
+          "DI": 1.71,
+          "Potential": [11,23]
         },
         "Other (Non-damaging)": {
           "Value": 1,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,1]
         },
         "Attack/Intensity": {
           "Value": 170,
-          "DI": 1.29
+          "DI": 1.29,
+          "Potential": [12,25]
         },
         "Minimum Damage": {
           "Value": 100,
-          "DI": 0.94
+          "DI": 0.94,
+          "Potential": [7,15]
         },
         "Static %": {
           "Value": 10,
-          "DI": 0.48
+          "DI": 0.48,
+          "Potential": [1,1]
         },
         "Only Strength/Magic": {
           "Value": 20000,
-          "DI": 1.70
+          "DI": 1.70,
+          "Potential": [1500,3000]
         }        
       },
       "Optimal": ["Critical Damage", "Basic Stats %", "Strength/Magic", "Basic Stats", "Movement Speed"],
@@ -680,23 +822,28 @@ const gearNormal = {
       "Stats":{
         "Critical Damage":{
           "Value": 50,
-          "DI": 1.57
+          "DI": 1.57,
+          "Potential": [1,8]
         },
         "Attack/Intensity":{
           "Value": 130,
-          "DI": 1.04
+          "DI": 1.04,
+          "Potential": [1,20]
         },
         "Strength/Magic":{
           "Value": 10000,
-          "DI": 0.9
+          "DI": 0.9,
+          "Potential": [1,1500]
         },
         "Basic Stats":{
           "Value": 6000,
-          "DI": 0.54
+          "DI": 0.54,
+          "Potential": [1,900]
         },
         "Minimum Damage":{
           "Value": 50,
-          "DI": 0.5
+          "DI": 0.5,
+          "Potential": [1,8]
         },
       },
       "Optimal": ["Critical Damage", "Attack/Intensity", "Strength/Magic", "Basic Stats", "Minimum Damage"],
@@ -707,23 +854,28 @@ const gearNormal = {
       "Stats":{
         "Attack/Intensity":{
           "Value": 130,
-          "DI": 1.04
+          "DI": 1.04,
+          "Potential": [1,20]
         },
         "Strength/Magic":{
           "Value": 10000,
-          "DI": 0.9
+          "DI": 0.9,
+          "Potential": [1,1500]
         },
         "Basic Stats":{
           "Value": 6000,
-          "DI": 0.54
+          "DI": 0.54,
+          "Potential": [1,900]
         },
         "Accuracy":{
           "Value": 75,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,12]
         },
         "Maximum HP":{
           "Value": 25000,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,3750]
         },
       },
       "Optimal": ["Attack/Intensity", "Strength/Magic", "Basic Stats", "Accuracy", "Maximum HP"],
@@ -734,23 +886,28 @@ const gearNormal = {
       "Stats":{
         "Attack/Intensity":{
           "Value": 130,
-          "DI": 1.04
+          "DI": 1.04,
+          "Potential": [1,20]
         },
         "Strength/Magic":{
           "Value": 10000,
-          "DI": 0.9
+          "DI": 0.9,
+          "Potential": [1,1500]
         },
         "Basic Stats":{
           "Value": 6000,
-          "DI": 0.54
+          "DI": 0.54,
+          "Potential": [1,900]
         },
         "Static Damage":{
           "Value": 15000,
-          "DI": 0.76
+          "DI": 0.76,
+          "Potential": [1,2250]
         },
         "Movement Speed":{
           "Value": 50,
-          "DI": 0
+          "DI": 0,
+          "Potential": [1,8]
         },
       },
       "Optimal": ["Attack/Intensity", "Strength/Magic", "Static Damage", "Basic Stats", "Movement Speed"],
@@ -765,23 +922,28 @@ const gearNormal = {
       "Stats":{
         "Maximum Damage":{
           "Value": 220,
-          "DI": 6.5
+          "DI": 6.5,
+          "Potential": [1,33]
         },
         "Critical Damage":{
           "Value": 130,
-          "DI": 4.7
+          "DI": 4.7,
+          "Potential": [1,20]
         },
         "Attack/Intensity %":{
           "Value": 13,
-          "DI": 2
+          "DI": 2,
+          "Potential": [1,2]
         },
         "Strength/Magic %":{
           "Value": 13,
-          "DI": 1.31
+          "DI": 1.31,
+          "Potential": [1,2]
         },
         "Defense Penetration":{
           "Value": 35,
-          "DI": 1
+          "DI": 1,
+          "Potential": [1,6]
         },
       },
       "Optimal": ["Maximum Damage", "Critical Damage", "Attack/Intensity %", "Strength/Magic %", "Defense Penetration"],
@@ -796,23 +958,28 @@ const gearNormal = {
       "Stats":{
         "Boss Amplification":{
           "Value": 4,
-          "DI": 1.38
+          "DI": 1.38,
+          "Potential": [0,0]
         },
         "Maximum Damage":{
           "Value": 50,
-          "DI": 1.02
+          "DI": 1.02,
+          "Potential": [0,0]
         },
         "Static Damage":{
           "Value": 30000,
-          "DI": 0.72
+          "DI": 0.72,
+          "Potential": [0,0]
         },
         "Strength/Magic":{
           "Value": 10000,
-          "DI": 0.57
+          "DI": 0.57,
+          "Potential": [0,0]
         },
         "Attack/Intensity":{
           "Value": 100,
-          "DI": 0.57
+          "DI": 0.57,
+          "Potential": [0,0]
         },
       },
       "Optimal": ["Boss Amplification", "Maximum Damage", "Static Damage", "Strength/Magic", "Attack/Intensity"],

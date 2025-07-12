@@ -122,10 +122,9 @@ function refreshScore() {
   totalDI = 0;
   // hasUtility = false;
   
-  let potential = gear[gearType]["Potential"];
   let potentialGainMin = 0;
   let potentialGainMax = 0;
-  let decimalStats = ['Normal Amp', 'Boss Amp', 'Cooldown Reduction'];
+  // let decimalStats = ['Normal Amp', 'Boss Amp', 'Cooldown Reduction'];
 
   // utilityStats = ['Accuracy', 'Movement Speed']
 
@@ -136,25 +135,32 @@ function refreshScore() {
     let maxDI = gear[gearType][pieceType]["Stats"][statType]["DI"];
     let result = statValue / maxValue * maxDI;
     totalDI += result;
-    console.log(statValue === '')
+    // console.log(statValue === '')
+    let potential = gear[gearType][pieceType]["Stats"][statType]["Potential"];
+    
+    if (statValue !== '') {
+      potentialGainMin += potential[0] / maxValue * maxDI;
+      potentialGainMax += potential[1] / maxValue * maxDI;
+    }
+    console.log(potential[0], maxValue, maxDI, potential[0] / maxValue, potential[0] / maxValue * maxDI)
 
-    if (gearType === '[7000] Accessories' & statType === 'Static' & statValue !== '') {
-      potentialGainMin += maxDI * 0.04;
-      potentialGainMax += maxDI * 0.04;
-    }
-    else if (potential[0] === 1 & statValue !== ''){
-      if(decimalStats.includes(statType)) {
-        potentialGainMin += 0.1 / maxValue * maxDI;
-      }
-      else {
-        potentialGainMin += 1 / maxValue * maxDI;
-      }
-      potentialGainMax += maxDI * potential[1];
-    }
-    else if (potential[0] !== 0 & statValue !== '') {
-      potentialGainMin += maxDI * potential[0];
-      potentialGainMax += maxDI * potential[1];
-    };
+    // if (gearType === '[7000] Accessories' & statType === 'Static' & statValue !== '') {
+    //   potentialGainMin += maxDI * 0.04;
+    //   potentialGainMax += maxDI * 0.04;
+    // }
+    // else if (potential[0] === 1 & statValue !== ''){
+    //   if(decimalStats.includes(statType)) {
+    //     potentialGainMin += 0.1 / maxValue * maxDI;
+    //   }
+    //   else {
+    //     potentialGainMin += 1 / maxValue * maxDI;
+    //   }
+    //   potentialGainMax += maxDI * potential[1];
+    // }
+    // else if (potential[0] !== 0 & statValue !== '') {
+    //   potentialGainMin += maxDI * potential[0];
+    //   potentialGainMax += maxDI * potential[1];
+    // };
   };
 
   let itemDI = parseInt(totalDI / gear[gearType][pieceType]["DI"] * 100);
@@ -198,6 +204,10 @@ function refreshScore() {
 
   if (finalTierMin !== finalTierMax) {
     potentialText += " ~ " + finalTierMax
+  }
+
+  if (potentialGainMax === 0) {
+    potentialText = ''
   }
 
   potentialElement.innerHTML = potentialText
