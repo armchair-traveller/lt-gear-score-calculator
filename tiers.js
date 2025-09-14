@@ -806,24 +806,24 @@ const tiers  = {
         "Duo": "--",
         "Trio": "--",
         "Quad": "90%",
-        "Penta": "75%",
-        "Score": "75% - 84%"
+        "Penta": "74%",
+        "Score": "74% - 82%"
       },
       "SS":{
         "Single": "--",
         "Duo": "--",
         "Trio": "--",
         "Quad": "100%",
-        "Penta": "85%",
-        "Score": "85% - 94%"
+        "Penta": "83%",
+        "Score": "83% - 92%"
       },
       "SSS":{
         "Single": "--",
         "Duo": "--",
         "Trio": "--",
         "Quad": "--",
-        "Penta": "95%",
-        "Score": "95%+"
+        "Penta": "93%",
+        "Score": "93%+"
       }
     },
   }
