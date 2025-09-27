@@ -826,5 +826,81 @@ const tiers  = {
         "Score": "93%+"
       }
     },
+  },
+  "[9999] Badge 6": {
+    "Type A":{
+      "F":{
+        "Single": "Any",
+        "Duo": "Any",
+        "Trio": "Any",
+        "Quad": "Any",
+        "Penta": "Any",
+        "Score": "00% - 15%"
+      },
+      "E":{
+        "Single": "65%",
+        "Duo": "33%",
+        "Trio": "24%",
+        "Quad": "19%",
+        "Penta": "16%",
+        "Score": "16% - 25%"
+      },
+      "D":{
+        "Single": "--",
+        "Duo": "54%",
+        "Trio": "38%",
+        "Quad": "30%",
+        "Penta": "26%",
+        "Score": "26% - 35%"
+      },
+      "C":{
+        "Single": "--",
+        "Duo": "74%",
+        "Trio": "53%",
+        "Quad": "42%",
+        "Penta": "36%",
+        "Score": "36% - 49%"
+      },
+      "B":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "74%",
+        "Quad": "58%",
+        "Penta": "50%",
+        "Score": "50% - 59%"
+      },
+      "A":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "89%",
+        "Quad": "70%",
+        "Penta": "60%",
+        "Score": "60% - 69%"
+      },
+      "S":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "--",
+        "Quad": "82%",
+        "Penta": "70%",
+        "Score": "70% - 79%"
+      },
+      "SS":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "--",
+        "Quad": "93%",
+        "Penta": "80%",
+        "Score": "80% - 89%"
+      },
+      "SSS":{
+        "Single": "--",
+        "Duo": "--",
+        "Trio": "--",
+        "Quad": "--",
+        "Penta": "90%",
+        "Score": "90%+"
+      }
+    },
   }
 }

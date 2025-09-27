@@ -1,4 +1,40 @@
 const gearNormal = {
+    "[9999] Badge 6":{
+    "Badge":{
+      "DI": 5.308,
+      "Stats":{
+        "Boss Amplification":{
+          "Value": 4,
+          "DI": 1.263,
+          "Potential": [0,0]
+        },
+        "Maximum Damage":{
+          "Value": 80,
+          "DI": 0.763,
+          "Potential": [0,0]
+        },
+        "Minimum Damage":{
+          "Value": 100,
+          "DI": 1.015,
+          "Potential": [0,0]
+        },
+        "Strength/Magic":{
+          "Value": 25000,
+          "DI": 1.308,
+          "Potential": [0,0]
+        },
+        "Attack/Intensity":{
+          "Value": 180,
+          "DI": 0.959,
+          "Potential": [0,0]
+        },
+      },
+      "Optimal": ["Boss Amplification", "Strength/Magic", "Minimum Damage",  "Attack/Intensity", "Maximum Damage"],
+      "Type": "Type A"
+    },
+    "Sheet Link": "https://docs.google.com/spreadsheets/d/13G6ct9OnSOMgInuzfXMjoHq6BKKzgI9zEYF8CvrMxrE/edit?usp=sharing",
+    "Potential": [0, 0]
+  },
   "[9000] Accessories":{
     "Crystal":{
       "DI": 5.699,
