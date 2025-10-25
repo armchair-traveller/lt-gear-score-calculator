@@ -1,11 +1,17 @@
 <script>
 import { onMount } from 'svelte'
 import { CalculatorState } from './index.svelte.js'
+import { generateAIPrompt } from '$lib/utils/aiPrompt.js'
 
 const calculatorState = new CalculatorState()
 let hasData = $state(false)
+let showPrompt = $state(false)
+let currentUrl = $state('')
+
+let AI_PROMPT = $derived(generateAIPrompt(currentUrl))
 
 onMount(() => {
+  currentUrl = window.location.origin + window.location.pathname
   calculatorState.init()
 
   // Check for URL parameter on load
@@ -42,6 +48,10 @@ function applyGearSelections(data) {
     }
   })
 }
+
+function copyPrompt() {
+  navigator.clipboard.writeText(AI_PROMPT)
+}
 </script>
 
 {#if !hasData}
@@ -51,10 +61,33 @@ function applyGearSelections(data) {
 
     <div class="bg-gray-100 rounded-lg p-8 my-8 text-left">
       <h2>How to Use</h2>
-      <ol class="leading-relaxed">
-        <li>This calculator displays gear scores from URL-encoded data</li>
-        <li>To calculate a gear score, you need a URL with encoded gear data</li>
-        <li>The URL format is: <code>?data=[base64-encoded-json]</code></li>
+      <ol class="leading-relaxed" style="line-height: 2;">
+        <li>
+          <button
+            type="button"
+            onclick={() => (showPrompt = !showPrompt)}
+            class="text-blue-600 hover:text-blue-800 underline bg-transparent border-0 cursor-pointer font-normal p-0"
+          >
+            {showPrompt ? 'Hide' : 'Show'} AI Prompt
+          </button>
+          {#if showPrompt}
+            <div class="mt-2 bg-white rounded p-4 border border-gray-300">
+              <button
+                type="button"
+                onclick={copyPrompt}
+                class="mb-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 border-0 cursor-pointer"
+              >
+                📋 Copy Prompt
+              </button>
+              <pre
+                class="text-xs overflow-auto bg-gray-50 p-3 rounded border border-gray-200 max-h-96">{AI_PROMPT}</pre>
+              <p class="mt-2 p-2 bg-green-50 rounded text-xs">This prompt generates both JSON and clickable URLs</p>
+            </div>
+          {/if}
+        </li>
+        <li>Use ChatGPT, Claude, or any AI chat with vision capabilities</li>
+        <li>Upload your equipment screenshot and paste the prompt above</li>
+        <li>Click the generated URL from the AI response to view your gear score</li>
       </ol>
 
       <h3 class="mt-8">Need the Full Calculator?</h3>
