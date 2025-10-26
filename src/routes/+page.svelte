@@ -85,8 +85,14 @@ function copyPrompt() {
             </div>
           {/if}
         </li>
-        <li>Use ChatGPT 5 Thinking <br /><small>(or follow-up with "It didn't work, try harder.")</small></li>
-        <li>Upload your equipment screenshot and paste the prompt above</li>
+        <li>
+          Use ChatGPT 5 Thinking <br /><small>(or follow-up with "It didn't work, try harder." if on Auto)</small>
+        </li>
+        <li>
+          Upload your equipment screenshot and paste the prompt above (or use the <a
+            href="https://chatgpt.com/share/68fd76b2-03f0-8012-901f-f8f85227430b">template</a
+          >)
+        </li>
         <li>Click the generated URL from the AI response to view your gear score</li>
       </ol>
 
