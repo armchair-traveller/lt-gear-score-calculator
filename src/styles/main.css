@@ -323,6 +323,28 @@ input[type=number] {
   width: 80%;
 }
 
+.upgraded-container {
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.upgraded-container .results-header,
+.upgraded-container .results-stats,
+.upgraded-container .results-footer,
+.upgraded-container .stat-block {
+  height: auto;
+}
+
+.upgraded-container .results-header,
+.upgraded-container .results-footer {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.upgraded-container .stat-block {
+  min-height: 44px;
+}
+
 .input-container {
   min-height: 500px;
   min-width: 400px;
@@ -341,6 +363,102 @@ input[type=number] {
   justify-content: flex-end;
   width: 100%;
   margin-top: 2%;
+}
+
+.sss-odds {
+  width: 100%;
+  margin-top: 3%;
+  padding-top: 3%;
+  border-top: 1px solid rgb(210,227,234);
+  font-size: 0.76em;
+}
+
+.sss-odds-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.sss-odds-heading {
+  font-size: 1.08em;
+}
+
+.sss-odds-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.sss-odds-total > span:first-child,
+.sss-meta-label,
+.sss-roll-header {
+  color: #4d5b60;
+  font-size: 0.82em;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sss-odds-meta {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgb(210,227,234);
+}
+
+.sss-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sss-meta-item > span:last-child {
+  overflow-wrap: anywhere;
+}
+
+.sss-roll-ranges {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
+
+.sss-roll-header,
+.sss-roll-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(100px, 0.85fr) minmax(94px, 0.7fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.sss-roll-header {
+  padding: 2px 0 4px;
+}
+
+.sss-roll-row {
+  min-height: 22px;
+  border-top: 1px solid rgba(210,227,234,0.75);
+}
+
+.sss-roll-row > span:first-child {
+  overflow-wrap: anywhere;
+}
+
+.sss-roll-row > span:nth-child(2),
+.sss-roll-row > span:nth-child(3),
+.sss-roll-header > span:nth-child(2),
+.sss-roll-header > span:nth-child(3) {
+  text-align: right;
+}
+
+.sss-roll-row-ignored {
+  color: #5f6b70;
+}
+
+.sss-roll-row-new > span:nth-child(3) {
+  color: #7a4b00;
 }
 
 .results-header, .results-stats, .results-total {

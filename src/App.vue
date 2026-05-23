@@ -4,11 +4,16 @@
 // - clean up code
 // - CSS for mobile
 
-import { ref, onUpdated } from 'vue';
+import { ref, watch } from 'vue';
 import StatSelect from './component/StatSelect.vue';
 import StatOption from './component/StatOption.vue';
 import gears from './utils/gear.js'
 import tiers from './utils/tiers.js'
+
+const decimalStats = ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction']
+const sssOddsGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
+const enchantSuccessRate = 0.6
+const ratingScale = 1000
 
 const gearType = ref('[9999] Armor')
 const pieceType = ref('Helmet')
@@ -84,6 +89,22 @@ const results = ref({
   tier: '',
   potentialScore: '',
   potentialTier: '',
+  sssOdds: {
+    available: false,
+    totalChance: 0,
+    totalChanceText: '',
+    survivalChance: 0,
+    survivalChanceText: '',
+    rollValueChance: 0,
+    rollValueChanceText: '',
+    futureRolls: 0,
+    futureBaseLines: 0,
+    upgradeRolls: 0,
+    targetScore: '',
+    plannedScoreText: '',
+    plannedDIText: '',
+    lines: [],
+  }
 })
 
 // Changes a piece of gear on the selection window
@@ -123,6 +144,233 @@ function changePiece() {
   // <stat-option value="1"><div style="color:red">Red option</div><div>Potato - Tomato</div></stat-option>
 }
 
+function isDecimalStat(stat) {
+  return decimalStats.includes(stat)
+}
+
+function getStatStep(stat) {
+  return isDecimalStat(stat) ? 0.1 : 1
+}
+
+function getInputValue(index) {
+  const value = parseFloat(statInput.value[index])
+  return Number.isFinite(value) ? value : 0
+}
+
+function hasRolledValue(index) {
+  return statInput.value[index] !== '' && getInputValue(index) > 0
+}
+
+function getPotentialMultiplier(item = gearType.value) {
+  return parseInt(item.slice(1,5)) < 9999 ? 2 : 3
+}
+
+function getTierForPercent(percent, tierEquivalence, tierAvailable) {
+  let tier = 'F'
+  tierAvailable.forEach((e) => {
+    if (parseInt(percent) >= parseInt(tierEquivalence[e]['Penta'])) {
+      tier = e
+    }
+  })
+
+  return tier
+}
+
+function formatStatValue(value, stat) {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+
+  if (isDecimalStat(stat)) {
+    return value.toFixed(1)
+  }
+
+  return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1).replace(/\.0$/, '')
+}
+
+function formatRange(minValue, maxValue, stat) {
+  const minText = formatStatValue(minValue, stat)
+  const maxText = formatStatValue(maxValue, stat)
+
+  return minText === maxText ? minText : `${minText} ~ ${maxText}`
+}
+
+function formatProbability(probability) {
+  if (probability <= 0) {
+    return '0%'
+  }
+
+  const percent = probability * 100
+  if (percent >= 10) {
+    return percent.toFixed(1) + '%'
+  }
+  if (percent >= 1) {
+    return percent.toFixed(2) + '%'
+  }
+  if (percent >= 0.01) {
+    return percent.toFixed(3) + '%'
+  }
+
+  return percent.toFixed(4) + '%'
+}
+
+function formatBaseRollSummary(count) {
+  return count === 0 ? 'None' : `${count} @ 60%`
+}
+
+function getRollDistribution(minRoll, maxRoll, step, maxValue, maxDI) {
+  const buckets = new Map()
+  const rollCount = Math.max(1, Math.round((maxRoll - minRoll) / step) + 1)
+
+  for (let i = 0; i < rollCount; i++) {
+    const rollValue = Math.min(maxRoll, minRoll + (i * step))
+    const rating = rollValue / maxValue * maxDI
+    const score = Math.round(rating * ratingScale)
+    buckets.set(score, (buckets.get(score) || 0) + 1)
+  }
+
+  return Array.from(buckets, ([score, count]) => ({
+    score,
+    probability: count / rollCount,
+  }))
+}
+
+function addRollDistribution(dp, distribution) {
+  const next = new Map()
+
+  dp.forEach((currentProbability, currentScore) => {
+    distribution.forEach((roll) => {
+      const score = currentScore + roll.score
+      next.set(score, (next.get(score) || 0) + currentProbability * roll.probability)
+    })
+  })
+
+  return next
+}
+
+function getEmptySssOdds() {
+  return {
+    available: false,
+    totalChance: 0,
+    totalChanceText: '',
+    survivalChance: 0,
+    survivalChanceText: '',
+    rollValueChance: 0,
+    rollValueChanceText: '',
+    futureRolls: 0,
+    futureBaseLines: 0,
+    upgradeRolls: 0,
+    targetScore: '',
+    plannedScoreText: '',
+    plannedDIText: '',
+    lines: [],
+  }
+}
+
+function calculateSssOdds(tierEquivalence, potentialMultiplier) {
+  if (!sssOddsGearTypes.includes(gearType.value) || !tierEquivalence['SSS']) {
+    return getEmptySssOdds()
+  }
+
+  const item = gears[gearType.value][pieceType.value]
+  const targetPercent = parseInt(tierEquivalence['SSS']['Penta'])
+  const targetRating = item['DI'] * targetPercent / 100
+  const targetScore = Math.ceil(targetRating * ratingScale)
+
+  let dp = new Map([[0, 1]])
+  let fixedScore = 0
+  let futureBaseLines = 0
+  let plannedMinRating = 0
+  let plannedMaxRating = 0
+  let lines = []
+
+  for (let i = 0; i < 5; i++) {
+    const stat = statType.value[i]
+    const statInfo = item['Stats'][stat]
+    const maxValue = statInfo['Value']
+    const maxDI = statInfo['DI']
+    const potential = statInfo['Potential']
+    const shouldRollLine = maxDI > 0
+    const currentValue = getInputValue(i)
+    const step = getStatStep(stat)
+    const hasValue = hasRolledValue(i)
+    const upgradeMinValue = potential[0] * potentialMultiplier
+    const upgradeMaxValue = potential[1] * potentialMultiplier
+
+    let lineMinValue = hasValue ? currentValue : step
+    let lineMaxValue = hasValue ? currentValue : maxValue
+    lineMinValue += upgradeMinValue
+    lineMaxValue += upgradeMaxValue
+
+    if (shouldRollLine) {
+      fixedScore += Math.round(upgradeMinValue / maxValue * maxDI * ratingScale)
+    }
+
+    if (!shouldRollLine) {
+      // Non-damaging lines are not rolled for SSS attempts, so they add no survival risk.
+    }
+    else if (hasValue) {
+      fixedScore += Math.round(currentValue / maxValue * maxDI * ratingScale)
+    }
+    else {
+      futureBaseLines += 1
+      dp = addRollDistribution(dp, getRollDistribution(step, maxValue, step, maxValue, maxDI))
+    }
+
+    plannedMinRating += lineMinValue / maxValue * maxDI
+    plannedMaxRating += lineMaxValue / maxValue * maxDI
+    lines.push({
+      stat,
+      range: shouldRollLine ? formatRange(lineMinValue, lineMaxValue, stat) : 'Ignored',
+      rollText: !shouldRollLine ? 'not rolled' : hasValue ? 'already rolled' : '60% base roll',
+      status: !shouldRollLine ? 'ignored' : hasValue ? 'upgrade' : 'new',
+    })
+  }
+
+  const neededScore = targetScore - fixedScore
+  let rollValueChance = 0
+
+  if (neededScore <= 0) {
+    rollValueChance = 1
+  }
+  else {
+    dp.forEach((probability, score) => {
+      if (score >= neededScore) {
+        rollValueChance += probability
+      }
+    })
+  }
+
+  const survivalChance = Math.pow(enchantSuccessRate, futureBaseLines)
+  const totalChance = survivalChance * rollValueChance
+  const plannedMinPercent = parseInt(plannedMinRating / item['DI'] * 100)
+  const plannedMaxPercent = parseInt(plannedMaxRating / item['DI'] * 100)
+  const plannedScoreText = plannedMinPercent === plannedMaxPercent
+    ? plannedMinPercent + '%'
+    : plannedMinPercent + '% ~ ' + plannedMaxPercent + '%'
+  const plannedDIText = plannedMinRating.toFixed(2) === plannedMaxRating.toFixed(2)
+    ? plannedMinRating.toFixed(2) + '%'
+    : plannedMinRating.toFixed(2) + '% ~ ' + plannedMaxRating.toFixed(2) + '%'
+
+  return {
+    available: true,
+    totalChance,
+    totalChanceText: formatProbability(totalChance),
+    survivalChance,
+    survivalChanceText: formatProbability(survivalChance),
+    rollValueChance,
+    rollValueChanceText: formatProbability(rollValueChance),
+    futureRolls: futureBaseLines,
+    futureBaseLines,
+    baseRollText: formatBaseRollSummary(futureBaseLines),
+    upgradeRolls: 0,
+    targetScore: targetPercent + '%',
+    plannedScoreText,
+    plannedDIText,
+    lines,
+  }
+}
+
     // Calculates scores and tiers whenever inputs are updated
 function updateValues() {
   // Piece's total rating will be stored here
@@ -131,7 +379,7 @@ function updateValues() {
 
   let potentialGainMin = 0
   let potentialGainMax = 0
-  let potentialMultiplier = parseInt(gearType.value.slice(1,5)) < 9999 ? 2 : 3
+  let potentialMultiplier = getPotentialMultiplier()
 
   let tierType = gears[gearType.value][pieceType.value]["Type"];
   let tierEquivalence = tiers[gearType.value][tierType];
@@ -139,67 +387,52 @@ function updateValues() {
 
   // Individual results
   for (let i = 0; i < 5; i++) {
-    let maxDI = gears[gearType.value][pieceType.value]['Stats'][statType.value[i]]['DI']
-    let maxValue = gears[gearType.value][pieceType.value]['Stats'][statType.value[i]]['Value']
+    let stat = statType.value[i]
+    let maxDI = gears[gearType.value][pieceType.value]['Stats'][stat]['DI']
+    let maxValue = gears[gearType.value][pieceType.value]['Stats'][stat]['Value']
+    let currentValue = getInputValue(i)
+    let hasValue = hasRolledValue(i)
     // Score = Value / Max Value
     // Rating = Value / Max Value * Max Rating (DI)
-    let res = statInput.value[i] / maxValue * maxDI
+    let res = currentValue / maxValue * maxDI
     totalDI += res
 
-    let pot = gears[gearType.value][pieceType.value]['Stats'][statType.value[i]]['Potential']
+    let pot = gears[gearType.value][pieceType.value]['Stats'][stat]['Potential']
+    let potentialValueMin = currentValue + pot[0] * potentialMultiplier
+    let potentialValueMax = currentValue + pot[1] * potentialMultiplier
 
     // Potential only needed if input is not empty
-    if (statInput.value[i] !== '' && statInput.value[i] > 0) {
+    if (hasValue) {
       potentialGainMin += pot[0] / maxValue * maxDI;
       potentialGainMax += pot[1] / maxValue * maxDI;
     }
 
     // Compare the individual tier vs the score, using that gear's specific tiers
-    let singleTier = 'F'
-    tierAvailable.forEach((e) => {
-      if (statInput.value[i] / maxValue * 100 >= parseInt(tierEquivalence[e]['Penta'])) {
-        singleTier = e;
-      }
-    })
+    let singleTier = getTierForPercent(currentValue / maxValue * 100, tierEquivalence, tierAvailable)
 
     // Same but with potentials for Lucent/Ascended
-    let potentialTierMin = 'F'
-    tierAvailable.forEach((e) => {
-      if ((statInput.value[i] + pot[0] * potentialMultiplier) / maxValue * 100 >= parseInt(tierEquivalence[e]['Penta'])) {
-        potentialTierMin = e;
-      }
-    })
-    let potentialTierMax = 'F'
-    tierAvailable.forEach((e) => {
-      if ((statInput.value[i] + pot[1] * potentialMultiplier) / maxValue * 100 >= parseInt(tierEquivalence[e]['Penta'])) {
-        potentialTierMax = e;
-      }
-    })
+    let potentialTierMin = getTierForPercent(potentialValueMin / maxValue * 100, tierEquivalence, tierAvailable)
+    let potentialTierMax = getTierForPercent(potentialValueMax / maxValue * 100, tierEquivalence, tierAvailable)
 
     // Save individual results
     results.value['individual'][i]['DI'] = res.toFixed(2)
-    results.value['individual'][i]['percent'] = parseInt(statInput.value[i] / maxValue * 100)
+    results.value['individual'][i]['percent'] = parseInt(currentValue / maxValue * 100)
     results.value['individual'][i]['tier'] = singleTier
     // Amps and CDR increment by 0.1, format them differently
-    if(['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction'].includes(statType.value[i])) {
-      results.value['individual'][i]['potentialMin'] = parseFloat(statInput.value[i] + pot[0] * potentialMultiplier).toFixed(1)
-      results.value['individual'][i]['potentialMax'] = parseFloat(statInput.value[i] + pot[1] * potentialMultiplier).toFixed(1)
-    }
-    else {
-      results.value['individual'][i]['potentialMin'] = statInput.value[i] + pot[0] * potentialMultiplier
-      results.value['individual'][i]['potentialMax'] = statInput.value[i] + pot[1] * potentialMultiplier
-    }
-    if(statInput.value[i] <= 0) {
+    results.value['individual'][i]['potentialMin'] = formatStatValue(potentialValueMin, stat)
+    results.value['individual'][i]['potentialMax'] = formatStatValue(potentialValueMax, stat)
+
+    if(!hasValue) {
       results.value['individual'][i]['potentialMinPerc'] = 0
       results.value['individual'][i]['potentialMaxPerc'] = 0
       validStats.value[i] = ''
     } else {
-      results.value['individual'][i]['potentialMinPerc'] = parseInt((statInput.value[i] + pot[0] * potentialMultiplier) / maxValue * 100)
-      results.value['individual'][i]['potentialMaxPerc'] = parseInt((statInput.value[i] + pot[1] * potentialMultiplier) / maxValue * 100)
-      validStats.value[i] = statType.value[i]
+      results.value['individual'][i]['potentialMinPerc'] = parseInt(potentialValueMin / maxValue * 100)
+      results.value['individual'][i]['potentialMaxPerc'] = parseInt(potentialValueMax / maxValue * 100)
+      validStats.value[i] = stat
     }
-    results.value['individual'][i]['potentialDIMin'] = parseFloat((statInput.value[i] + pot[0] * potentialMultiplier) / maxValue *  maxDI).toFixed(2)
-    results.value['individual'][i]['potentialDIMax'] = parseFloat((statInput.value[i] + pot[1] * potentialMultiplier) / maxValue *  maxDI).toFixed(2)
+    results.value['individual'][i]['potentialDIMin'] = parseFloat(potentialValueMin / maxValue *  maxDI).toFixed(2)
+    results.value['individual'][i]['potentialDIMax'] = parseFloat(potentialValueMax / maxValue *  maxDI).toFixed(2)
     results.value['individual'][i]['potentialTierMin'] = potentialTierMin
     results.value['individual'][i]['potentialTierMax'] = potentialTierMax
   }
@@ -210,12 +443,7 @@ function updateValues() {
   results.value['percent'] = itemDI
 
   // Calculate final tier
-  let finalTier = 'F';
-  tierAvailable.forEach((e) => {
-    if (itemDI >= parseInt(tierEquivalence[e]['Penta'])) {
-      finalTier = e;
-    }
-  });
+  let finalTier = getTierForPercent(itemDI, tierEquivalence, tierAvailable)
   results.value['tier'] = finalTier
 
   // Final potential
@@ -260,6 +488,7 @@ function updateValues() {
   results.value['potentialScore'] = potentialText
   results.value['potentialDI'] = potentialDIText
   results.value['potentialTier'] = potentialTierText
+  results.value['sssOdds'] = calculateSssOdds(tierEquivalence, potentialMultiplier)
 }
 
 // Sets a number chosen stats to a set value
@@ -268,7 +497,7 @@ function setValues(enchants, value) {
     let maxValue = gears[gearType.value][pieceType.value]["Stats"][statType.value[i]]["Value"];
 
     if (enchants > i) {
-      statInput.value[i] = ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction'].includes(statType.value[i]) ? +(value * maxValue / 100).toFixed(1) : parseInt(value * maxValue / 100);
+      statInput.value[i] = isDecimalStat(statType.value[i]) ? +(value * maxValue / 100).toFixed(1) : parseInt(value * maxValue / 100);
     } else {
       statInput.value[i] = "";
     };
@@ -296,7 +525,7 @@ function toggleDisplayWindow(selection) {
       const statDist = [0.82, 0.65, 0.90, 0.78]
       for (let i = 0; i < 4; i++) {
         let maxValue = gears[gearType.value][pieceType.value]["Stats"][statType.value[i]]["Value"];
-        statInput.value[i] = ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction'].includes(statType.value[i]) ? +(statDist[i] * maxValue).toFixed(1) : parseInt(statDist[i] * maxValue);
+        statInput.value[i] = isDecimalStat(statType.value[i]) ? +(statDist[i] * maxValue).toFixed(1) : parseInt(statDist[i] * maxValue);
       }
 
       dimmed.value = true
@@ -576,8 +805,11 @@ body.style.backgroundRepeat = 'no-repeat'
 body.style.backgroundPosition = 'center center'
 body.style.backgroundAttachment = 'fixed'
 
-onUpdated(() => {
+watch([gearType, pieceType, statType, statInput], () => {
   updateValues()
+}, {
+  deep: true,
+  flush: 'post',
 })
 </script>
 
@@ -812,7 +1044,7 @@ onUpdated(() => {
       </div>
     </div>
     <!-- Upgraded results - if the item doesn't get additional enchants, hide the block -->
-    <div v-if="getFinalUpgrade(gearType) !== ''" class="calculator-values container main-container" :class="{ 'dim-above': displayWindow['help'] === 1 }">
+    <div v-if="getFinalUpgrade(gearType) !== ''" class="calculator-values container main-container upgraded-container" :class="{ 'dim-above': displayWindow['help'] === 1 }">
       <div v-if="displayWindow['help'] === 1" class="help-container dim-above" >
         <div class="help-info help-info-top">
           This section displays results when the piece is upgraded to Lucent or Ascended and further enchanted
@@ -890,6 +1122,50 @@ onUpdated(() => {
             <span><em> Gain</em></span>
           </span>
           
+        </div>
+        <div v-if="results['sssOdds']['available']" class="sss-odds">
+          <div class="sss-odds-title">
+            <span class="sss-odds-heading">SSS at max upgrade</span>
+            <span class="sss-odds-total">
+              <span>Total odds</span>
+              <span class="fugaz-one-regular">{{ results['sssOdds']['totalChanceText'] }}</span>
+            </span>
+          </div>
+          <div class="sss-odds-meta">
+            <div class="sss-meta-item">
+              <span class="sss-meta-label">Target</span>
+              <span>{{ results['sssOdds']['targetScore'] }}</span>
+            </div>
+            <div class="sss-meta-item">
+              <span class="sss-meta-label">Planned</span>
+              <span v-if="switchState">{{ results['sssOdds']['plannedDIText'] }}</span>
+              <span v-else>{{ results['sssOdds']['plannedScoreText'] }}</span>
+            </div>
+            <div class="sss-meta-item">
+              <span class="sss-meta-label">Base rolls</span>
+              <span>{{ results['sssOdds']['baseRollText'] }}</span>
+            </div>
+            <div class="sss-meta-item">
+              <span class="sss-meta-label">Survival</span>
+              <span>{{ results['sssOdds']['survivalChanceText'] }}</span>
+            </div>
+            <div class="sss-meta-item">
+              <span class="sss-meta-label">Value check</span>
+              <span>{{ results['sssOdds']['rollValueChanceText'] }}</span>
+            </div>
+          </div>
+          <div class="sss-roll-ranges">
+            <div class="sss-roll-header">
+              <span>Stat</span>
+              <span>Max upgrade value</span>
+              <span>Roll state</span>
+            </div>
+            <div v-for="line in results['sssOdds']['lines']" class="sss-roll-row" :class="`sss-roll-row-${line.status}`">
+              <span>{{ line.stat }}</span>
+              <span :class="{ 'fugaz-one-regular': line.status !== 'ignored' }">{{ line.range }}</span>
+              <span>{{ line.rollText }}</span>
+            </div>
+          </div>
         </div>
         <div v-if="displayWindow['help'] === 1" class="help-container dim-above" >
           <div class="help-info help-info-bottom">
