@@ -1,12 +1,76 @@
 <script setup>
-// todo: 
-// - improve preset buttons
-// - clean up code
-// - CSS for mobile
+import { computed, ref, watch } from 'vue'
+import {
+  CalculatorIcon,
+  ClipboardIcon,
+  ExternalLinkIcon,
+  InfoIcon,
+  LinkIcon,
+  RefreshCcwIcon,
+  SearchIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  SwordsIcon,
+  TablePropertiesIcon,
+} from '@lucide/vue'
 
-import { ref, watch } from 'vue';
-import StatSelect from './component/StatSelect.vue';
-import StatOption from './component/StatOption.vue';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import ModeToggle from '@/components/ModeToggle.vue'
 import gears from './utils/gear.js'
 import tiers from './utils/tiers.js'
 
@@ -18,130 +82,213 @@ const ratingScale = 1000
 const gearType = ref('[9999] Armor')
 const pieceType = ref('Helmet')
 const highlightedPiece = ref(['[9999] Armor', 'Helmet'])
-const valueButton = ref(90)
-
-const pieceOptions = ref('')
-const statOptions = ref([])
+const valueButton = ref('90')
+const resultMode = ref('score')
 
 const statType = ref([])
 const statInput = ref(['', '', '', '', ''])
 const validStats = ref([])
-const selected = ref()
 
 const imgUrls = import.meta.glob('./assets/*.png', {
   import: 'default',
   eager: true,
 })
 
-// Check if disclaimer has been accepted before
 const hasSeenDisclaimer = localStorage.getItem('ltGearCalculatorDisclaimerAccepted') === 'true'
-
-const displayWindow = ref({
-  'disclaimer': !hasSeenDisclaimer, // Only open on disclaimer if not seen before
-  'gear': false,
-  'help': 0,
-})
-const dimmed = ref(!hasSeenDisclaimer)
-const switchState = ref(false)
-
-const helpStoredInfo = ref({
-  'item': [],
-  'statType': [],
-  'statInput': []
-})
-
-const displayOthers = ref(false)
-
-// tooltip: false,
-// tooltipPosition: [0,0],
-// tooltipText: '',
+const disclaimerOpen = ref(!hasSeenDisclaimer)
+const gearSheetOpen = ref(false)
+const clipboardTooltip = ref(false)
+const clipboardToolTipTimeout = ref(null)
 
 const results = ref({
   individual: [
-    { DI: '', percent: '', tier: '', 
-      potentialMin: '', potentialMax: '', 
-      potentialMinPerc: '', potentialMaxPerc: '',
-      potentialDIMin: '', potentialDIMax: '',
-      potentialTierMin: '', potentialTierMax: '' },
-    { DI: '', percent: '', tier: '', 
-      potentialMin: '', potentialMax: '', 
-      potentialMinPerc: '', potentialMaxPerc: '',
-      potentialDIMin: '', potentialDIMax: '',
-      potentialTierMin: '', potentialTierMax: '' },
-    { DI: '', percent: '', tier: '', 
-      potentialMin: '', potentialMax: '', 
-      potentialMinPerc: '', potentialMaxPerc: '',
-      potentialDIMin: '', potentialDIMax: '',
-      potentialTierMin: '', potentialTierMax: '' },
-    { DI: '', percent: '', tier: '', 
-      potentialMin: '', potentialMax: '', 
-      potentialMinPerc: '', potentialMaxPerc: '',
-      potentialDIMin: '', potentialDIMax: '',
-      potentialTierMin: '', potentialTierMax: '' },
-    { DI: '', percent: '', tier: '', 
-      potentialMin: '', potentialMax: '', 
-      potentialMinPerc: '', potentialMaxPerc: '',
-      potentialDIMin: '', potentialDIMax: '',
-      potentialTierMin: '', potentialTierMax: '' },
+    createEmptyIndividualResult(),
+    createEmptyIndividualResult(),
+    createEmptyIndividualResult(),
+    createEmptyIndividualResult(),
+    createEmptyIndividualResult(),
   ],
   DI: '',
   percent: '',
   tier: '',
   potentialScore: '',
+  potentialDI: '',
   potentialTier: '',
-  sssOdds: {
-    available: false,
-    totalChance: 0,
-    totalChanceText: '',
-    survivalChance: 0,
-    survivalChanceText: '',
-    rollValueChance: 0,
-    rollValueChanceText: '',
-    futureRolls: 0,
-    futureBaseLines: 0,
-    upgradeRolls: 0,
-    targetScore: '',
-    plannedScoreText: '',
-    plannedDIText: '',
-    lines: [],
-  }
+  sssOdds: getEmptySssOdds(),
 })
 
-// Changes a piece of gear on the selection window
-function setGear(category,piece) {
-  if (displayWindow.value.help <= 0) {
-    gearType.value = category
-    pieceType.value = piece
+const tierGuideRows = [
+  {
+    tier: 'F - E',
+    comment: 'Replaces unfinished previous tier',
+    upgrade: 'No',
+    enchants: 'Any',
+    cost: '0b - 5b',
+  },
+  {
+    tier: 'D - C',
+    comment: 'Minimum to replace previous tier',
+    upgrade: 'No',
+    enchants: 'Duo',
+    cost: '5b - 30b',
+  },
+  {
+    tier: 'B',
+    comment: 'Good growth over previous tier',
+    upgrade: 'Yes',
+    enchants: 'Trio',
+    cost: '60b - 120b',
+  },
+  {
+    tier: 'A',
+    comment: 'Late endgame upgrade target',
+    upgrade: 'Yes',
+    enchants: 'Quad',
+    cost: '200b+',
+  },
+  {
+    tier: 'S - SSS',
+    comment: 'Perfection range, usually upgraded enchants',
+    upgrade: 'Yes',
+    enchants: 'Penta',
+    cost: '1000b+',
+  },
+]
 
-    changeGear()
-    toggleDisplayWindow('gear')
+const traitCatalog = [
+  {
+    id: 'back',
+    image: 'Note_Back.png',
+    label: 'Back attack',
+    text: 'Back Attack Damage only works with direct damage and asks for reliable positioning.',
+    test: (stats) => stats.includes('Back Attack Damage'),
+  },
+  {
+    id: 'penetration',
+    image: 'Note_Penetration.png',
+    label: 'Penetration',
+    text: 'Defense Penetration does not function with summons and depends on your status-window penetration.',
+    test: (stats) => stats.includes('Defense Penetration'),
+  },
+  {
+    id: 'attack',
+    image: 'Note_Attack.png',
+    label: 'Attack',
+    text: 'Multiple Attack/Intensity lines usually favor direct-hit classes.',
+    test: (stats) => stats.includes('Attack/Intensity') + stats.includes('Attack/Intensity %') > 1,
+  },
+  {
+    id: 'strength',
+    image: 'Note_Strength.png',
+    label: 'Strength',
+    text: 'Multiple Strength/Magic lines usually favor summon-heavy classes.',
+    test: (stats) =>
+      stats.includes('Basic Stats %') + stats.includes('Strength/Magic') + stats.includes('Basic Stats') > 1,
+  },
+  {
+    id: 'minimum',
+    image: 'Note_Minimum.png',
+    label: 'Minimum',
+    text: 'Minimum Damage only helps while your minimum damage is below your maximum damage.',
+    test: (stats) => stats.includes('Minimum Damage'),
+  },
+  {
+    id: 'hp',
+    image: 'Note_HP.png',
+    label: 'HP',
+    text: 'HP and stamina lines add survivability but no offensive score.',
+    test: (stats) =>
+      stats.includes('Maximum HP %') ||
+      stats.includes('Basic Stats') ||
+      stats.includes('Basic Stats %') ||
+      stats.includes('Stamina'),
+  },
+]
+
+const statIndex = [
+  'Critical Damage', 'Normal Amplification', 'Basic Stats', 'Attack/Intensity', 'Accuracy', 'Strength/Magic',
+  'Minimum Damage', 'Back Attack Damage', 'Static Damage %', 'Boss Added Damage', 'Normal Added Damage',
+  'Stamina', 'Maximum HP %', 'Other (Non-damaging)', 'Maximum Damage', 'Basic Stats %', 'Attack/Intensity %',
+  'Boss Amplification', 'Movement Speed', 'Static Damage', 'Normal Added %', 'Dual Damage', 'Defense Penetration',
+  'Boss Added %', 'Strength/Magic %', 'Boss Added', 'Normal Added', 'Cooldown Reduction', 'Only Strength/Magic', 'Maximum HP',
+]
+
+const gearCategories = computed(() => Object.keys(gears))
+const pieceOptions = computed(() => getPieceNames(gearType.value))
+const currentItem = computed(() => gears[gearType.value]?.[pieceType.value])
+const statOptions = computed(() => Object.keys(currentItem.value?.Stats ?? {}))
+const selectedImage = computed(() => getItemImage(pieceType.value, gearType.value))
+const selectedTierRows = computed(() => getTierRows(gearType.value, pieceType.value))
+const highlightedStats = computed(() => Object.keys(highlightedItem.value?.Stats ?? {}))
+const highlightedItem = computed(() => gears[highlightedPiece.value[0]]?.[highlightedPiece.value[1]])
+const highlightedTierRows = computed(() => getTierRows(highlightedPiece.value[0], highlightedPiece.value[1]))
+const selectedTraitRows = computed(() => getTraitMatches(validStats.value))
+const highlightedTraitRows = computed(() => getTraitMatches(highlightedStats.value))
+const totalProgress = computed(() => clamp(Number(results.value.percent), 0, 100))
+const potentialProgress = computed(() => clamp(getFirstPercent(results.value.potentialScore), 0, 100))
+const potentialGainText = computed(() => {
+  if (resultMode.value === 'rating') {
+    return formatGainRange(results.value.potentialDI, Number(results.value.DI))
+  }
+
+  return formatGainRange(results.value.potentialScore, Number(results.value.percent))
+})
+
+function createEmptyIndividualResult() {
+  return {
+    DI: '',
+    percent: '',
+    tier: '',
+    potentialMin: '',
+    potentialMax: '',
+    potentialMinPerc: '',
+    potentialMaxPerc: '',
+    potentialDIMin: '',
+    potentialDIMax: '',
+    potentialTierMin: '',
+    potentialTierMax: '',
   }
 }
 
-    // Adjusts the possible stats when changing an item type
-function changeGear() {
-  let innerHTML = ''
-  let item = Object.keys(gears[gearType.value])
-  item.splice(-2)
-  item.forEach((e) => innerHTML += '<option value="' + e +'">' + e + '</option>')
-  pieceOptions.value = innerHTML
-  // pieceType.value = item[0]
-  changePiece()
+function getPieceNames(category) {
+  return Object.keys(gears[category] ?? {}).filter((key) => !['Sheet Link', 'Potential'].includes(key))
+}
+
+function getItemImage(piece, category) {
+  return imgUrls[`./assets/${piece}_${category.slice(1, 5)}.png`] ?? ''
+}
+
+function getAsset(name) {
+  return imgUrls[`./assets/${name}`] ?? ''
+}
+
+function getTierRows(category, piece) {
+  const item = gears[category]?.[piece]
+  if (!item) {
+    return []
+  }
+
+  return Object.entries(tiers[category][item.Type]).map(([tier, values]) => ({
+    tier,
+    ...values,
+  }))
+}
+
+function getTraitMatches(stats) {
+  return traitCatalog.filter((trait) => trait.test(stats))
+}
+
+function setGear(category, piece) {
+  gearType.value = category
+  pieceType.value = piece
+  highlightedPiece.value = [category, piece]
+  gearSheetOpen.value = false
 }
 
 function changePiece() {
-  let innerHTML = ''
-  let item = Object.keys(gears[gearType.value][pieceType.value]['Stats'])
-  // item.forEach((e) => innerHTML += '<stat-option value="' + e +'"><div class="stat-option-text">' + e + '</div><div class="stat-option-subtext">Max. Value: ' + gears[gearType.value][pieceType.value]['Stats']['Value'] + ' | Max. Rating: ' + gears[gearType.value][pieceType.value]['Stats']['DI'] + '</div></stat-option>')
-  statOptions.value = item.slice()
-  statType.value = item.slice(0,5)
-  setValues(0,0);
-
-  // $emit('updateSelect')
-
-  // console.log(statOptions)
-  // console.log(statType)
-  // <stat-option value="1"><div style="color:red">Red option</div><div>Potato - Tomato</div></stat-option>
+  const options = statOptions.value
+  statType.value = options.slice(0, 5)
+  setValues(0, 0)
 }
 
 function isDecimalStat(stat) {
@@ -162,14 +309,14 @@ function hasRolledValue(index) {
 }
 
 function getPotentialMultiplier(item = gearType.value) {
-  return parseInt(item.slice(1,5)) < 9999 ? 2 : 3
+  return parseInt(item.slice(1, 5)) < 9999 ? 2 : 3
 }
 
 function getTierForPercent(percent, tierEquivalence, tierAvailable) {
   let tier = 'F'
-  tierAvailable.forEach((e) => {
-    if (parseInt(percent) >= parseInt(tierEquivalence[e]['Penta'])) {
-      tier = e
+  tierAvailable.forEach((entry) => {
+    if (parseInt(percent) >= parseInt(tierEquivalence[entry].Penta)) {
+      tier = entry
     }
   })
 
@@ -263,18 +410,19 @@ function getEmptySssOdds() {
     targetScore: '',
     plannedScoreText: '',
     plannedDIText: '',
+    baseRollText: '',
     lines: [],
   }
 }
 
 function calculateSssOdds(tierEquivalence, potentialMultiplier) {
-  if (!sssOddsGearTypes.includes(gearType.value) || !tierEquivalence['SSS']) {
+  if (!sssOddsGearTypes.includes(gearType.value) || !tierEquivalence.SSS) {
     return getEmptySssOdds()
   }
 
-  const item = gears[gearType.value][pieceType.value]
-  const targetPercent = parseInt(tierEquivalence['SSS']['Penta'])
-  const targetRating = item['DI'] * targetPercent / 100
+  const item = currentItem.value
+  const targetPercent = parseInt(tierEquivalence.SSS.Penta)
+  const targetRating = item.DI * targetPercent / 100
   const targetScore = Math.ceil(targetRating * ratingScale)
 
   let dp = new Map([[0, 1]])
@@ -282,14 +430,18 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
   let futureBaseLines = 0
   let plannedMinRating = 0
   let plannedMaxRating = 0
-  let lines = []
+  const lines = []
 
   for (let i = 0; i < 5; i++) {
     const stat = statType.value[i]
-    const statInfo = item['Stats'][stat]
-    const maxValue = statInfo['Value']
-    const maxDI = statInfo['DI']
-    const potential = statInfo['Potential']
+    const statInfo = item.Stats[stat]
+    if (!statInfo) {
+      continue
+    }
+
+    const maxValue = statInfo.Value
+    const maxDI = statInfo.DI
+    const potential = statInfo.Potential
     const shouldRollLine = maxDI > 0
     const currentValue = getInputValue(i)
     const step = getStatStep(stat)
@@ -307,7 +459,7 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
     }
 
     if (!shouldRollLine) {
-      // Non-damaging lines are not rolled for SSS attempts, so they add no survival risk.
+      // Non-damaging lines are ignored for SSS attempts, so they add no survival risk.
     }
     else if (hasValue) {
       fixedScore += Math.round(currentValue / maxValue * maxDI * ratingScale)
@@ -343,8 +495,8 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
 
   const survivalChance = Math.pow(enchantSuccessRate, futureBaseLines)
   const totalChance = survivalChance * rollValueChance
-  const plannedMinPercent = parseInt(plannedMinRating / item['DI'] * 100)
-  const plannedMaxPercent = parseInt(plannedMaxRating / item['DI'] * 100)
+  const plannedMinPercent = parseInt(plannedMinRating / item.DI * 100)
+  const plannedMaxPercent = parseInt(plannedMaxRating / item.DI * 100)
   const plannedScoreText = plannedMinPercent === plannedMaxPercent
     ? plannedMinPercent + '%'
     : plannedMinPercent + '% ~ ' + plannedMaxPercent + '%'
@@ -371,409 +523,223 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
   }
 }
 
-    // Calculates scores and tiers whenever inputs are updated
 function updateValues() {
-  // Piece's total rating will be stored here
-
-  let totalDI = 0
-
-  let potentialGainMin = 0
-  let potentialGainMax = 0
-  let potentialMultiplier = getPotentialMultiplier()
-
-  let tierType = gears[gearType.value][pieceType.value]["Type"];
-  let tierEquivalence = tiers[gearType.value][tierType];
-  let tierAvailable = Object.keys(tierEquivalence);
-
-  // Individual results
-  for (let i = 0; i < 5; i++) {
-    let stat = statType.value[i]
-    let maxDI = gears[gearType.value][pieceType.value]['Stats'][stat]['DI']
-    let maxValue = gears[gearType.value][pieceType.value]['Stats'][stat]['Value']
-    let currentValue = getInputValue(i)
-    let hasValue = hasRolledValue(i)
-    // Score = Value / Max Value
-    // Rating = Value / Max Value * Max Rating (DI)
-    let res = currentValue / maxValue * maxDI
-    totalDI += res
-
-    let pot = gears[gearType.value][pieceType.value]['Stats'][stat]['Potential']
-    let potentialValueMin = currentValue + pot[0] * potentialMultiplier
-    let potentialValueMax = currentValue + pot[1] * potentialMultiplier
-
-    // Potential only needed if input is not empty
-    if (hasValue) {
-      potentialGainMin += pot[0] / maxValue * maxDI;
-      potentialGainMax += pot[1] / maxValue * maxDI;
-    }
-
-    // Compare the individual tier vs the score, using that gear's specific tiers
-    let singleTier = getTierForPercent(currentValue / maxValue * 100, tierEquivalence, tierAvailable)
-
-    // Same but with potentials for Lucent/Ascended
-    let potentialTierMin = getTierForPercent(potentialValueMin / maxValue * 100, tierEquivalence, tierAvailable)
-    let potentialTierMax = getTierForPercent(potentialValueMax / maxValue * 100, tierEquivalence, tierAvailable)
-
-    // Save individual results
-    results.value['individual'][i]['DI'] = res.toFixed(2)
-    results.value['individual'][i]['percent'] = parseInt(currentValue / maxValue * 100)
-    results.value['individual'][i]['tier'] = singleTier
-    // Amps and CDR increment by 0.1, format them differently
-    results.value['individual'][i]['potentialMin'] = formatStatValue(potentialValueMin, stat)
-    results.value['individual'][i]['potentialMax'] = formatStatValue(potentialValueMax, stat)
-
-    if(!hasValue) {
-      results.value['individual'][i]['potentialMinPerc'] = 0
-      results.value['individual'][i]['potentialMaxPerc'] = 0
-      validStats.value[i] = ''
-    } else {
-      results.value['individual'][i]['potentialMinPerc'] = parseInt(potentialValueMin / maxValue * 100)
-      results.value['individual'][i]['potentialMaxPerc'] = parseInt(potentialValueMax / maxValue * 100)
-      validStats.value[i] = stat
-    }
-    results.value['individual'][i]['potentialDIMin'] = parseFloat(potentialValueMin / maxValue *  maxDI).toFixed(2)
-    results.value['individual'][i]['potentialDIMax'] = parseFloat(potentialValueMax / maxValue *  maxDI).toFixed(2)
-    results.value['individual'][i]['potentialTierMin'] = potentialTierMin
-    results.value['individual'][i]['potentialTierMax'] = potentialTierMax
+  const item = currentItem.value
+  if (!item) {
+    return
   }
 
-  // Save total results
-  results.value['DI'] = totalDI.toFixed(2)
-  let itemDI = parseInt(totalDI / gears[gearType.value][pieceType.value]["DI"] * 100)
-  results.value['percent'] = itemDI
+  let totalDI = 0
+  let potentialGainMin = 0
+  let potentialGainMax = 0
+  const potentialMultiplier = getPotentialMultiplier()
+  const tierEquivalence = tiers[gearType.value][item.Type]
+  const tierAvailable = Object.keys(tierEquivalence)
 
-  // Calculate final tier
-  let finalTier = getTierForPercent(itemDI, tierEquivalence, tierAvailable)
-  results.value['tier'] = finalTier
+  for (let i = 0; i < 5; i++) {
+    const stat = statType.value[i]
+    const statInfo = item.Stats[stat]
+    if (!statInfo) {
+      results.value.individual[i] = createEmptyIndividualResult()
+      validStats.value[i] = ''
+      continue
+    }
 
-  // Final potential
-  let potentialMin = parseInt((potentialGainMin * potentialMultiplier + totalDI) / gears[gearType.value][pieceType.value]["DI"] * 100);
-  let potentialMax = parseInt((potentialGainMax * potentialMultiplier + totalDI) / gears[gearType.value][pieceType.value]["DI"] * 100);
-  let potentialDIMin = (potentialGainMin * potentialMultiplier + totalDI)
-  let potentialDIMax = (potentialGainMax * potentialMultiplier + totalDI)
-  
-  // Store it as formatted text
+    const maxDI = statInfo.DI
+    const maxValue = statInfo.Value
+    const currentValue = getInputValue(i)
+    const hasValue = hasRolledValue(i)
+    const res = currentValue / maxValue * maxDI
+    totalDI += res
+
+    const pot = statInfo.Potential
+    const potentialValueMin = currentValue + pot[0] * potentialMultiplier
+    const potentialValueMax = currentValue + pot[1] * potentialMultiplier
+
+    if (hasValue) {
+      potentialGainMin += pot[0] / maxValue * maxDI
+      potentialGainMax += pot[1] / maxValue * maxDI
+    }
+
+    const singleTier = getTierForPercent(currentValue / maxValue * 100, tierEquivalence, tierAvailable)
+    const potentialTierMin = getTierForPercent(potentialValueMin / maxValue * 100, tierEquivalence, tierAvailable)
+    const potentialTierMax = getTierForPercent(potentialValueMax / maxValue * 100, tierEquivalence, tierAvailable)
+
+    results.value.individual[i].DI = res.toFixed(2)
+    results.value.individual[i].percent = parseInt(currentValue / maxValue * 100)
+    results.value.individual[i].tier = singleTier
+    results.value.individual[i].potentialMin = formatStatValue(potentialValueMin, stat)
+    results.value.individual[i].potentialMax = formatStatValue(potentialValueMax, stat)
+
+    if (!hasValue) {
+      results.value.individual[i].potentialMinPerc = 0
+      results.value.individual[i].potentialMaxPerc = 0
+      validStats.value[i] = ''
+    }
+    else {
+      results.value.individual[i].potentialMinPerc = parseInt(potentialValueMin / maxValue * 100)
+      results.value.individual[i].potentialMaxPerc = parseInt(potentialValueMax / maxValue * 100)
+      validStats.value[i] = stat
+    }
+
+    results.value.individual[i].potentialDIMin = parseFloat(potentialValueMin / maxValue * maxDI).toFixed(2)
+    results.value.individual[i].potentialDIMax = parseFloat(potentialValueMax / maxValue * maxDI).toFixed(2)
+    results.value.individual[i].potentialTierMin = potentialTierMin
+    results.value.individual[i].potentialTierMax = potentialTierMax
+  }
+
+  results.value.DI = totalDI.toFixed(2)
+  const itemDI = parseInt(totalDI / item.DI * 100)
+  results.value.percent = itemDI
+  results.value.tier = getTierForPercent(itemDI, tierEquivalence, tierAvailable)
+
+  const potentialMin = parseInt((potentialGainMin * potentialMultiplier + totalDI) / item.DI * 100)
+  const potentialMax = parseInt((potentialGainMax * potentialMultiplier + totalDI) / item.DI * 100)
+  const potentialDIMin = potentialGainMin * potentialMultiplier + totalDI
+  const potentialDIMax = potentialGainMax * potentialMultiplier + totalDI
+
   let potentialText = potentialMin + '%'
   let potentialDIText = potentialDIMin.toFixed(2) + '%'
-  // In the case of 4k ~ 7k gear with varying potential, add a min and max
   if (potentialMin !== potentialMax) {
     potentialText += ' ~ ' + potentialMax + '%'
     potentialDIText += ' ~ ' + potentialDIMax.toFixed(2) + '%'
   }
 
-  // Potential final tier
-  let finalTierMin = 'F';
-  let finalTierMax = 'F';
-  tierAvailable.forEach((e) => {
-    if (potentialMin >= parseInt(tierEquivalence[e]['Penta'])) {
-      finalTierMin = e;
+  let finalTierMin = 'F'
+  let finalTierMax = 'F'
+  tierAvailable.forEach((entry) => {
+    if (potentialMin >= parseInt(tierEquivalence[entry].Penta)) {
+      finalTierMin = entry
     }
-    if (potentialMax >= parseInt(tierEquivalence[e]['Penta'])) {
-      finalTierMax = e;
+    if (potentialMax >= parseInt(tierEquivalence[entry].Penta)) {
+      finalTierMax = entry
     }
-  });
-  
-  let potentialTierText = finalTierMin
+  })
 
+  let potentialTierText = finalTierMin
   if (finalTierMin !== finalTierMax) {
-    potentialTierText += " ~ " + finalTierMax
+    potentialTierText += ' ~ ' + finalTierMax
   }
 
   if (potentialGainMax === 0) {
-    potentialText = results.value['percent'] + '%'
-    potentialDIText = results.value['DI'] + '%'
-    potentialTierText = results.value['tier']
+    potentialText = results.value.percent + '%'
+    potentialDIText = results.value.DI + '%'
+    potentialTierText = results.value.tier
   }
 
-  results.value['potentialScore'] = potentialText
-  results.value['potentialDI'] = potentialDIText
-  results.value['potentialTier'] = potentialTierText
-  results.value['sssOdds'] = calculateSssOdds(tierEquivalence, potentialMultiplier)
+  results.value.potentialScore = potentialText
+  results.value.potentialDI = potentialDIText
+  results.value.potentialTier = potentialTierText
+  results.value.sssOdds = calculateSssOdds(tierEquivalence, potentialMultiplier)
 }
 
-// Sets a number chosen stats to a set value
 function setValues(enchants, value) {
+  const percent = Number(value)
   for (let i = 0; i < 5; i++) {
-    let maxValue = gears[gearType.value][pieceType.value]["Stats"][statType.value[i]]["Value"];
+    const stat = statType.value[i]
+    const maxValue = currentItem.value?.Stats?.[stat]?.Value ?? 0
 
     if (enchants > i) {
-      statInput.value[i] = isDecimalStat(statType.value[i]) ? +(value * maxValue / 100).toFixed(1) : parseInt(value * maxValue / 100);
-    } else {
-      statInput.value[i] = "";
-    };
-  }
-}
-
-// Toggles between different windows, dimming the other possible ones
-function toggleDisplayWindow(selection) {
-  // Help window logic: starts/ends the help cycle when clicking the help/close buttons
-  if (selection === 'help') {
-    // Initiate help cycle
-    if (displayWindow.value['help'] <= 0) {
-      // Amount of steps in the help cycle
-      displayWindow.value['help'] = 7
-      // Stores currently inputs to reintroduce them later
-      helpStoredInfo.value['item'] = [gearType.value, pieceType.value]
-      helpStoredInfo.value['statType'] = statType.value.slice()
-      helpStoredInfo.value['statInput'] = statInput.value.slice()
-
-      // Example inputs for demonstration
-      gearType.value = '[8000] Weapons'
-      pieceType.value = 'Weapon'
-      changeGear()
-      statType.value[2] = 'Minimum Damage'
-      const statDist = [0.82, 0.65, 0.90, 0.78]
-      for (let i = 0; i < 4; i++) {
-        let maxValue = gears[gearType.value][pieceType.value]["Stats"][statType.value[i]]["Value"];
-        statInput.value[i] = isDecimalStat(statType.value[i]) ? +(statDist[i] * maxValue).toFixed(1) : parseInt(statDist[i] * maxValue);
-      }
-
-      dimmed.value = true
+      statInput.value[i] = isDecimalStat(stat) ? +(percent * maxValue / 100).toFixed(1) : parseInt(percent * maxValue / 100)
     }
-    // Turn off help window and change inputs back to what they were before
     else {
-      displayWindow.value['help'] = 0
-      displayWindow.value['gear'] = false
-      dimmed.value = false
-      gearType.value = helpStoredInfo.value['item'][0]
-      pieceType.value = helpStoredInfo.value['item'][1]
-      changeGear()
-      statType.value = helpStoredInfo.value['statType'].slice()
-      statInput.value = helpStoredInfo.value['statInput'].slice()
+      statInput.value[i] = ''
     }
   }
-  // Specific step to activate/deactivate gear selection window during help cycle
-  else if (displayWindow.value['help'] === 7 || displayWindow.value['help'] === 4) {
-    displayWindow.value['help'] -= 1
-    displayWindow.value['gear'] = !displayWindow.value['gear']
-  }
-  // Progress help cycle
-  else if (displayWindow.value['help'] > 1) {
-    displayWindow.value['help'] -= 1
-  }
-  // End help cycle, turn off help window and change inputs back to what they were before
-  else if (displayWindow.value['help'] === 1){
-    displayWindow.value['help'] = 0
-    displayWindow.value['gear'] = false
-    dimmed.value = false
-    gearType.value = helpStoredInfo.value['item'][0]
-    pieceType.value = helpStoredInfo.value['item'][1]
-    changeGear()
-    statType.value = helpStoredInfo.value['statType'].slice()
-    statInput.value = helpStoredInfo.value['statInput'].slice()
-  }
-  // If not in help cycle
-  else {
-    // Save disclaimer acceptance when closing it
-    if (displayWindow.value['disclaimer'] && (selection === 'none' || selection !== 'disclaimer')) 
-      localStorage.setItem('ltGearCalculatorDisclaimerAccepted', 'true')
-
-    // Check which window is to be activated, turn it on and turn off every other window
-    for (let w in displayWindow.value) {
-      if (w === selection && !displayWindow.value[w]) { displayWindow.value[w] = true }
-      else { displayWindow.value[w] = false }
-    }
-    
-    // Dim the background if turning on a window, light it otherwise
-    if (displayWindow.value[selection]) { dimmed.value = true }
-    else { dimmed.value = false }
-  }
 }
 
-// Switch between rating/score
-function toggleMode(){
-  switchState.value = !switchState.value
-}
-
-    // Get style to fill percentage bars when evaluating stats
-function getPercentageBarStyle(value, chosenColor = 'default') {
-  const colorValues = {
-    'empty': 'white', 
-    'default': '#ffaaff',
-    'potential': 'orange', // Used for 6k/7k Lucent potential stats
-    'extraDefault': 'rgb(235, 117, 235)', // Used if the stat surpasses 100%
-    'extraPotential': '#ff8800',
-    'limit': 'red' // Used if a stat is higher than possible, even with potential
-  };
-
-  const indexValues = {
-    'empty': 100, 
-    'default': 120,
-    'potential': 110,
-    'extraDefault': 140,
-    'extraPotential': 130,
-    'limit': 150
-  }
-
-  let color = colorValues[chosenColor]
-  let zIndex = indexValues[chosenColor]
-  if (value > 150) { 
-    color = colorValues['limit']
-    zIndex = indexValues['limit']
-  }
-
-  return {
-    width: Math.max(Math.min(value, 100), 0) + '%',
-    'background-color': color,
-    'z-index': zIndex
-  }
-}
-
-// Check if the final upgrade of an item is Lucent or Ascended
 function getFinalUpgrade(item) {
   switch (item) {
-    case "[3500] Badge 6":
-    case "[9999] Badge 6":
+    case '[3500] Badge 6':
+    case '[9999] Badge 6':
       return ''
-    case "[9999] Armor":
+    case '[9999] Armor':
       return 'Ascended'
     default:
       return 'Lucent'
   }
 }
 
-// Get the max rating of an item with the currently selected stats
 function getSelectedRating() {
   let rating = 0
-  for (let i = 0; i < 4; i++) {
-    rating += gears[gearType.value][pieceType.value]['Stats'][statType.value[i]]['DI']
+  const item = currentItem.value
+  if (!item) {
+    return rating
   }
-  // 6k and 7k have penalties on the last enchant, thus reduced here
-  if (['6000', '7000'].includes(gearType.value.slice(1,5))) {
-    rating += gears[gearType.value][pieceType.value]['Stats'][statType.value[4]]['DI'] * 0.8
-  } else {
-    rating += gears[gearType.value][pieceType.value]['Stats'][statType.value[4]]['DI']
+
+  for (let i = 0; i < 4; i++) {
+    rating += item.Stats[statType.value[i]]?.DI ?? 0
+  }
+
+  if (['6000', '7000'].includes(gearType.value.slice(1, 5))) {
+    rating += (item.Stats[statType.value[4]]?.DI ?? 0) * 0.8
+  }
+  else {
+    rating += item.Stats[statType.value[4]]?.DI ?? 0
   }
 
   return rating
 }
 
-// Score setting instead of rating - currently unused
-function getSelectedScore() {
-  let score = getSelectedRating()
-
-  score = score / gears[gearType.value][pieceType.value]['DI'] * 100
-  return score
-}
-
-// Custom text styling based on tiers - currently unused
-function getTierStyle(tier) {
-  const colors = {
-    'F': 'gray',
-    'E': 'lightgray',
-    'D': 'white',
-    'C': 'green',
-    'B': 'blue',
-    'A': 'yellow',
-    'S': 'purple',
-    'SS': 'pink',
-    'SSS': 'red',
-  }
-
-  let results = {
-    color: 'white',
-    'text-shadow': '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000',
-    'margin-left': '5px'
-  }
-
-  // if (['S', 'SS', 'SSS'].includes(tier)) {
-  //   results['animation'] = 'tierGradient 2s infinite alternate linear'
-  // }
-
-  return results
-}
-
-    // Change the information windows based on hovered item on gear selection window
-function setHighlightedPiece(gear, piece) {
-  highlightedPiece.value = [gear, piece]
-}
-
-    // Logic for tooltip - currently unused, using CSS methods instead
-    // onMouseMove(e) {
-    //   this.tooltipPosition[0] = e.pageX + 15
-    //   this.tooltipPosition[1] = e.pageY
-    // },
-
-let statIndex = [ 
-  "Critical Damage", "Normal Amplification", "Basic Stats", "Attack/Intensity", "Accuracy", "Strength/Magic",
-  "Minimum Damage", "Back Attack Damage", "Static Damage %", "Boss Added Damage", "Normal Added Damage",
-  "Stamina", "Maximum HP %", "Other (Non-damaging)", "Maximum Damage", "Basic Stats %", "Attack/Intensity %",
-  "Boss Amplification", "Movement Speed", "Static Damage", "Normal Added %", "Dual Damage", "Defense Penetration",
-  "Boss Added %", "Strength/Magic %", "Boss Added", "Normal Added", "Cooldown Reduction", "Only Strength/Magic", "Maximum HP"
-]
-
 function generateURL() {
-  // 0-1
-  let gearNum = Object.keys(gears).reverse().indexOf(gearType.value).toString().padStart(2,'0')
-  // 2
-  let pieceNum = Object.keys(gears[gearType.value]).indexOf(pieceType.value)
-  // 3-4 to 5-10, 11-12 to 13-18, 19-20 to 21-26, 27-28 to 29-34, 35-36 to 37-42
-  let statNums = []
-  statType.value.forEach((s) => {
-    statNums.push(statIndex.indexOf(s).toString().padStart(2, '0'))
+  const gearNum = Object.keys(gears).reverse().indexOf(gearType.value).toString().padStart(2, '0')
+  const pieceNum = Object.keys(gears[gearType.value]).indexOf(pieceType.value)
+  const statNums = []
+
+  statType.value.forEach((stat) => {
+    statNums.push(statIndex.indexOf(stat).toString().padStart(2, '0'))
   })
+
   for (let i = 0; i < 5; i++) {
-    statNums[i] = statNums[i] + (Math.min(statInput.value[i]*10, 999999)).toString().padStart(6, '0')
+    statNums[i] = statNums[i] + Math.min(statInput.value[i] * 10, 999999).toString().padStart(6, '0')
   }
 
-  // 
-  let resString = gearNum + pieceNum + statNums.join('')
-  // console.log(resString)
-
-  // let enchants = []
-  // Object.keys(gears).forEach((g) => {
-  //   Object.keys(gears[g]).forEach((p) => {
-  //     if(!['Sheet Link', 'Potential'].includes(p)) {
-  //       console.log(p)
-  //       Object.keys(gears[g][p]['Stats']).forEach((s) => enchants.push(s))
-  //     }
-  //   })
-  // })
-  // let uniqueEnchants = new Set(enchants)
-  // console.log(uniqueEnchants)
-
-  navigator.clipboard.writeText('https://kedanao.github.io/lt-gear-score-calculator/?it=' + resString)
-
+  const resString = gearNum + pieceNum + statNums.join('')
+  navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?it=${resString}`)
   toggleClipboardTooltip()
   return resString
 }
 
 function readURL(pars) {
   try {
-    let gearName = Object.keys(gears).reverse()[parseInt(pars.slice(0,2))]
-    let pieceName = Object.keys(gears[gearName])[parseInt(pars.slice(2,3))]
-    let statNames = []
+    const gearName = Object.keys(gears).reverse()[parseInt(pars.slice(0, 2))]
+    const pieceName = Object.keys(gears[gearName])[parseInt(pars.slice(2, 3))]
+    const statNames = []
+    const statValues = []
+
     for (let i = 3; i < 36; i += 8) {
-      statNames.push(statIndex[parseInt(pars.slice(i,i+2))])
+      statNames.push(statIndex[parseInt(pars.slice(i, i + 2))])
     }
-    let statValues = []
     for (let i = 5; i < 42; i += 8) {
-      statValues.push(parseInt(pars.slice(i,i+6)) / 10)
+      statValues.push(parseInt(pars.slice(i, i + 6)) / 10)
     }
 
-    // In case of an invalid string being passed, validate each step
-    if (!Object.keys(gears).includes(gearName) ||
-        !Object.keys(gears[gearName]).includes(pieceName) ||
-        statNames.map((i) => {return statIndex.includes(i)}).includes(false) ||
-        statValues.map((i) => {return i < 100000 && i >= 0}).includes(false)) {
-      throw new Error("Invalid item string")
+    if (
+      !Object.keys(gears).includes(gearName) ||
+      !Object.keys(gears[gearName]).includes(pieceName) ||
+      statNames.map((item) => statIndex.includes(item)).includes(false) ||
+      statValues.map((item) => item < 100000 && item >= 0).includes(false)
+    ) {
+      throw new Error('Invalid item string')
     }
 
     gearType.value = gearName
     pieceType.value = pieceName
-    changeGear()
+    highlightedPiece.value = [gearName, pieceName]
     statType.value = statNames.slice()
     statInput.value = statValues.slice()
   }
-  catch (e) {
-    console.error(e)
+  catch (error) {
+    console.error(error)
   }
 }
 
-const clipboardTooltip = ref(false)
-const clipboardToolTipTimeout = ref(null)
+function acceptDisclaimer() {
+  localStorage.setItem('ltGearCalculatorDisclaimerAccepted', 'true')
+  disclaimerOpen.value = false
+}
 
-function toggleClipboardTooltip () {
+function toggleClipboardTooltip() {
   clearTimeout(clipboardToolTipTimeout.value)
   clipboardTooltip.value = true
 
@@ -782,30 +748,109 @@ function toggleClipboardTooltip () {
   }, 2000)
 }
 
-// On load, set gear and initial results
-// console.log("Load")
-changeGear()
+function clamp(value, min, max) {
+  if (!Number.isFinite(value)) {
+    return min
+  }
 
-// Read URL params
+  return Math.min(Math.max(value, min), max)
+}
 
-let urlParams = new URLSearchParams(window.location.search);
-if(urlParams.has('it')) {
+function getFirstPercent(text) {
+  const value = parseFloat(String(text).split(' ~ ')[0])
+  return Number.isFinite(value) ? value : 0
+}
+
+function formatGainRange(text, baseValue) {
+  const values = String(text)
+    .replaceAll('%', '')
+    .split(' ~ ')
+    .map((value) => parseFloat(value))
+    .filter((value) => Number.isFinite(value))
+
+  if (!values.length || !Number.isFinite(baseValue)) {
+    return '+0%'
+  }
+
+  const gains = values.map((value) => value - baseValue)
+  const formatted = gains.map((value) => `${value >= 0 ? '+' : ''}${value.toFixed(resultMode.value === 'rating' ? 2 : 0)}%`)
+  return formatted.length === 1 ? formatted[0] : formatted.join(' ~ ')
+}
+
+function getLineScoreText(index) {
+  const row = results.value.individual[index]
+  return resultMode.value === 'rating' ? `${row.DI}%` : `${row.percent}%`
+}
+
+function getPotentialLineText(index) {
+  const row = results.value.individual[index]
+  if (resultMode.value === 'rating') {
+    return row.potentialDIMin === row.potentialDIMax
+      ? `${row.potentialDIMin}%`
+      : `${row.potentialDIMin}% ~ ${row.potentialDIMax}%`
+  }
+
+  return row.potentialMinPerc === row.potentialMaxPerc
+    ? `${row.potentialMinPerc}%`
+    : `${row.potentialMinPerc}% ~ ${row.potentialMaxPerc}%`
+}
+
+function getPotentialLineTier(index) {
+  const row = results.value.individual[index]
+  return row.potentialTierMin === row.potentialTierMax
+    ? row.potentialTierMin
+    : `${row.potentialTierMin} ~ ${row.potentialTierMax}`
+}
+
+function getTierClass(tier) {
+  const firstTier = String(tier).split(' ')[0]
+  const classes = {
+    F: 'border-neutral-300 bg-neutral-100 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
+    E: 'border-neutral-300 bg-neutral-100 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
+    D: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300',
+    C: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300',
+    B: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300',
+    A: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300',
+    S: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-900 dark:bg-fuchsia-950 dark:text-fuchsia-300',
+    SS: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300',
+    SSS: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300',
+  }
+
+  return classes[firstTier] ?? classes.F
+}
+
+function getRollStatusClass(status) {
+  const classes = {
+    ignored: 'text-muted-foreground',
+    upgrade: 'text-emerald-700 dark:text-emerald-300',
+    new: 'text-amber-700 dark:text-amber-300',
+  }
+
+  return classes[status] ?? ''
+}
+
+changePiece()
+
+const urlParams = new URLSearchParams(window.location.search)
+if (urlParams.has('it')) {
   readURL(urlParams.get('it'))
-  displayWindow.value['disclaimer'] = false
-  dimmed.value = false
+  disclaimerOpen.value = false
 }
 
 updateValues()
 
-// Set the background image
-const body = document.querySelector('body')
-body.style.backgroundImage = 'url(' + imgUrls[`./assets/background.png`] + ')' 
-body.style.backgroundSize = 'cover' 
-body.style.backgroundRepeat = 'no-repeat'
-body.style.backgroundPosition = 'center center'
-body.style.backgroundAttachment = 'fixed'
+watch([gearType, pieceType], ([nextGear, nextPiece]) => {
+  const pieces = getPieceNames(nextGear)
+  if (!pieces.includes(nextPiece)) {
+    pieceType.value = pieces[0]
+    return
+  }
 
-watch([gearType, pieceType, statType, statInput], () => {
+  highlightedPiece.value = [nextGear, nextPiece]
+  changePiece()
+}, { flush: 'sync' })
+
+watch([statType, statInput], () => {
   updateValues()
 }, {
   deep: true,
@@ -814,620 +859,695 @@ watch([gearType, pieceType, statType, statInput], () => {
 </script>
 
 <template>
-  <!-- Page header -->
-  <div class="container header">
-    <span class="header-title results-center"><img class="gear-image" :src="imgUrls[`./assets/hammer.png`]" alt=""><strong>LaTale Gear Score Calculator</strong><span class="header-separator"></span></span>
-    <span>
-      <span class="header-button" @click="toggleDisplayWindow('disclaimer')"><img class="icon-image" :src="imgUrls[`./assets/Icon_Info.png`]" alt="Information"></span>
-      <span class="header-button mobile-hide" @click="toggleDisplayWindow('help')"><img class="icon-image" :src="imgUrls[`./assets/Icon_Help.png`]" alt="Help"></span>
-      <span class="other-tools" @click="displayOthers = !displayOthers" @mouseenter="displayOthers = true" @mouseleave="displayOthers = false">
-        <span class="header-button"><img class="icon-image" :src="imgUrls[`./assets/Icon_Link.png`]" alt="Links"></span>
-        <div v-if="displayOthers" class="other-tools-links container">
-          <a href="https://kedanao.github.io/lt-damage-calculator/" target="_blank">Damage Calculator  <img class="icon-image-small" :src="imgUrls[`./assets/Icon_External.png`]" alt=""></a>
-          <a href="https://kedanao.github.io/lt-runestone-calculator/" target="_blank">Runestone Calculator  <img class="icon-image-small" :src="imgUrls[`./assets/Icon_External.png`]" alt=""></a>
-        </div>
-      </span>
-    </span>
-  </div>
-  <!-- Stat Input -->
-  <div id="calculator-container">
-    <!-- dim-above class is used to have elements display above the dimmed layer during the help cycle -->
-    <div class="calculator-input container input-container" :class="{ 'dim-above': displayWindow['help'] === 7 }">
-      <div v-if="displayWindow['help'] === 7" class="help-container dim-above">
-        <div class="help-info help-info-top">
-          Select the item, stats and insert your values
-        </div>
-      </div>
-      <div class="results-header">
-        <!-- Clickable section to open the gear selection menu -->
-        <img class="gear-image gear-clickable" :src="imgUrls[`./assets/${pieceType}_${gearType.slice(1,5)}.png`]" alt="" @click="toggleDisplayWindow('gear')">
-        <div class="selection-text header-left gear-clickable" @click="toggleDisplayWindow('gear')">
-          <span class="results-header-text">{{ pieceType }} ({{ gearType.slice(1,5) }})</span>
-          <span>Click to change item</span>
-        </div>
-        <!-- Max Rating info -->
-        <div class="header-right">
-          <div v-if="displayWindow['help'] === 7" class="help-container dim-above">
-            <div class="help-info help-info-right">
-              Each selected stat has a weighted value, the max. rating utilized for scoring considers the top recommended stats
+  <TooltipProvider>
+    <div class="min-h-screen bg-background text-foreground">
+      <header class="border-b bg-background/95 backdrop-blur">
+        <div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-card">
+              <img class="size-6" :src="getAsset('hammer.png')" alt="">
+            </div>
+            <div class="min-w-0">
+              <h1 class="truncate text-lg font-semibold tracking-normal md:text-xl">
+                LaTale Gear Score Calculator
+              </h1>
+              <p class="truncate text-xs text-muted-foreground">
+                {{ pieceType }} {{ gearType }} / {{ resultMode === 'rating' ? 'rating' : 'score' }}
+              </p>
             </div>
           </div>
-          <div>Max. Rating: <span class="fugaz-one-regular">{{ gears[gearType][pieceType]['DI'].toFixed(2) }}%</span></div>
-          <div>These Stats: 
-            <span class="fugaz-one-regular">{{ getSelectedRating().toFixed(2) + '%' }}</span>
-            <!-- <span v-if="switchState">{{ getSelectedRating().toFixed(2) + '%' }}</span> -->
-            <!-- <span v-else>{{ getSelectedScore().toFixed(0) + '%' }}</span> -->
+
+          <div class="flex items-center gap-2">
+            <ModeToggle />
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="outline" size="icon" @click="disclaimerOpen = true">
+                  <InfoIcon />
+                  <span class="sr-only">Open calculator notes</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Calculator notes</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="outline" size="icon" as-child>
+                  <a :href="gears[gearType]['Sheet Link']" target="_blank" rel="noreferrer">
+                    <TablePropertiesIcon />
+                    <span class="sr-only">Open detailed spreadsheet</span>
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Detailed spreadsheet</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="outline" size="icon" @click="generateURL">
+                  <ClipboardIcon />
+                  <span class="sr-only">Copy share link</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ clipboardTooltip ? 'Copied' : 'Copy link' }}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="outline" size="icon" as-child>
+                  <a href="https://kedanao.github.io/lt-damage-calculator/" target="_blank" rel="noreferrer">
+                    <ExternalLinkIcon />
+                    <span class="sr-only">Open damage calculator</span>
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Damage calculator</TooltipContent>
+            </Tooltip>
           </div>
         </div>
-      </div>
-      <!-- Stat Input -->
-      <div class="results-stats">
-        <div v-for="n in 5" class="stat-block">
-          <!-- Using custom select/options components -->
-          <div class="stat-block-individual">
-            <stat-select v-model="statType[n-1]" class="stat-selector">
-              <stat-option :value="s" v-for="s in statOptions">
-                <div class="stat-option-text"><strong>{{ s }}</strong></div>
-                <div class="stat-option-subtext"><em>Max. Value: {{ gears[gearType][pieceType]['Stats'][s]["Value"] }} | Max. Rating: {{ gears[gearType][pieceType]['Stats'][s]["DI"].toFixed(2) }}% </em></div>
-              </stat-option>
-            </stat-select>
-            <input class="stat-input" placeholder="Value..."
-              type="number" v-model="statInput[n-1]">
-          </div>
-        </div>
-      </div>
-      <!-- Quick setting buttons -->
-      <div class="results-footer">
-        <div v-if="displayWindow['help'] === 7" class="help-container dim-above">
-          <div class="help-info help-info-right">
-            These buttons can help you preset enchant values, check the detailed spreadsheet for that piece or copy a direct link to your piece within the calculator
-            <div class="help-button-container">
-              <button class="help-button" @click="toggleDisplayWindow('none')">Next →</button>
-              <button class="help-button" @click="toggleDisplayWindow('help')">Close</button>
-            </div>
-          </div>
-        </div>
-        <div id="calculator-buttons">
-          <div class="preset-buttons">
-            <button @click="setValues(0,0)">Clear</button>
-            <button @click="setValues(2,valueButton)">Duo</button>
-            <button @click="setValues(3,valueButton)">Trio</button>
-            <button @click="setValues(4,valueButton)">Quad</button>
-            <button @click="setValues(5,valueButton)">Penta</button>
-            <select v-model="valueButton" class="preset-input">
-              <option v-for="n in 10" :value="n*10">{{ n*10 }}%</option>
-            </select>
-          </div>
-        </div>
-        <div class="additional-buttons">
-          <div class="calculator-link">
-            <a :href="gears[gearType]['Sheet Link']" target="_blank">Detailed Spreadsheet</a>
-            <img class="icon-image-small float-corner" :src="imgUrls[`./assets/Icon_External.png`]" alt="">
-          </div>
-          <div class="clipboard-button" @click="generateURL()">
-            Copy link to clipboard
-            <img class="icon-image-small float-corner" :src="imgUrls[`./assets/Icon_Link.png`]" alt="">
-            <transition name="window-fade">
-              <div v-if="clipboardTooltip" class="clipboard-tooltip">
-                Copied!
+      </header>
+
+      <main class="mx-auto grid w-full max-w-[1600px] gap-4 px-4 py-4 md:px-6 xl:grid-cols-[minmax(420px,560px)_minmax(0,1fr)]">
+        <section class="grid gap-4">
+          <Card class="rounded-lg">
+            <CardHeader class="border-b">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex min-w-0 items-center gap-3">
+                  <img class="size-12 shrink-0 rounded-lg border bg-muted p-1" :src="selectedImage" alt="">
+                  <div class="min-w-0">
+                    <CardTitle class="truncate text-base">
+                      {{ pieceType }} {{ gearType }}
+                    </CardTitle>
+                    <CardDescription>
+                      Max rating {{ currentItem?.DI.toFixed(2) }}% / selected stats {{ getSelectedRating().toFixed(2) }}%
+                    </CardDescription>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" @click="gearSheetOpen = true">
+                  <SearchIcon />
+                  Gear
+                </Button>
               </div>
-            </transition>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Basic Results -->
-    <div class="calculator-values container main-container" :class="{ 'dim-above': displayWindow['help'] === 3 || displayWindow['help'] === 2 }">
-      <div v-if="displayWindow['help'] === 3" class="help-container dim-above" >
-        <div class="help-info help-info-top">
-          Individual and total results are displayed here
-        </div>
-      </div>
-      <div class="results-header">
-        <img class="gear-image"
-            :src="imgUrls[`./assets/${pieceType}_${gearType.slice(1,5)}.png`]" alt="">
-        <span class="results-header-text header-left">{{ pieceType }} ({{ gearType.slice(1,5) }})</span>
-        <div>
-          <div v-if="displayWindow['help'] === 3" class="help-container dim-above" >
-            <div class="help-info help-info-right">
-              Switch between score (out of 100%) and rating (raw value)
-            </div>
-          </div>
-          <!-- Button to switch between score/rating -->
-          <div class="header-right toggle-switch"
-            :class="{ 'mode-switch': switchState }"
-            @click="toggleMode">
-          </div>
-          <div v-if="switchState" class="switch-text">Rating</div>
-          <div v-else="switchState" class="switch-text">Score</div>
-        </div>
-      </div>
-      <!-- Individual results block -->
-      <div class="results-stats">
-        <div v-for="n in 5" class="stat-block">
-          <div>
-            <!-- If input value is empty, don't display results -->
-            <div v-if="statInput[n-1] === '' || statInput[n-1] <= 0" class="results-tiers">
-              <span>---</span>
-              <span>---</span>
-            </div>
-            <!-- Result texts -->
-            <div v-else class="results-tiers">
-              <span> {{ statType[n-1] }}: {{ statInput[n-1] }} </span>
-              <span class="fugaz-one-regular"> 
-                <span v-if="switchState">{{ results['individual'][n-1]['DI'] }}%</span>
-                <span v-else>{{ results['individual'][n-1]['percent'] }}%</span>
-                <span class="tier-text">{{ results['individual'][n-1]['tier'] }}</span>
-              </span>
-            </div>
-            <!-- Result bar -->
-            <div>
-              <span class="full-bar">
-                <span class="filled-bar" :style="getPercentageBarStyle(results['individual'][n-1]['percent'] - 100, 'extraDefault')"></span>
-                <span class="filled-bar" :style="getPercentageBarStyle(results['individual'][n-1]['percent'])"></span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Total result -->
-      <div class="results-total results-footer">
-        <!-- Total result text -->
-        <div class="results-tiers">
-          <span>TOTAL</span>
-          <span class="fugaz-one-regular">
-            <span v-if="switchState">{{ results['DI'] }}%</span>
-            <span v-else>{{ results['percent'] }}%</span>
-            <span class="tier-text">{{ results['tier'] }}</span>
-          </span>
-        </div>
-        <div v-if="displayWindow['help'] === 2" class="help-container dim-above" >
-          <div class="help-info help-info-top">
-            Hover over icons that appear in this region to see bonus information on this piece's enchants
-            <div class="help-button-container">
-              <button class="help-button" @click="toggleDisplayWindow('none')">Next →</button>
-              <button class="help-button" @click="toggleDisplayWindow('help')">Close</button>
-            </div>
-          </div>
-        </div>
-        <!-- Total result bar -->
-        <span class="full-bar">
-          <span class="filled-bar" :style="getPercentageBarStyle(results['percent'] - 100, 'extraDefault')"></span>
-          <span class="filled-bar" :style="getPercentageBarStyle(results['percent'])"></span>
-        </span>
-        <div v-if="displayWindow['help'] === 3" class="help-container dim-above" >
-          <div class="help-info help-info-bottom">
-            The total % is weighed depending on the values of the enchanted stats, and the score needed for tiers may change depending on item
-            <div class="help-button-container">
-              <button class="help-button" @click="toggleDisplayWindow('none')">Next →</button>
-              <button class="help-button" @click="toggleDisplayWindow('help')">Close</button>
-            </div>
-          </div>
-        </div>
-        <!-- Notes about the selected & enchanted stats -->
-        <!-- note-text used with CSS for tooltip text effect when hovering -->
-        <div class="results-notes">
-          <div class="results-individual-notes">
-            <span v-if="validStats.includes('Back Attack Damage')"
-              note-text="This item has Back Attack Damage. Back Attack Damage only works with direct damage and requires good mobility for positioning. May not be useful for every class.">
-              <img class="note-image"
-                    :src="imgUrls[`./assets/Note_Back.png`]" alt="">
-            </span>
-            <span v-if="validStats.includes('Defense Penetration')"
-              note-text="This item has Defense Penetration. Defense Penetration does not function with summons and is only effective if your Penetration is increased in the status window.">
-              <img class="note-image"
-                    :src="imgUrls[`./assets/Note_Penetration.png`]" alt="">
-            </span>
-            <span v-if="validStats.includes('Attack/Intensity') + validStats.includes('Attack/Intensity %') > 1"
-              note-text="This item has a great amount of Attack/Intensity, which mainly benefits classes that are heavy on direct hits.">
-              <img class="note-image"
-                    :src="imgUrls[`./assets/Note_Attack.png`]" alt="">
-            </span>
-            <span v-else-if="validStats.includes('Basic Stats %') + validStats.includes('Strength/Magic') + validStats.includes('Basic Stats') > 1"
-              note-text="This item has a great amount of Strength/Magic, which mainly benefits classes that are heavy on summons.">
-              <img class="note-image"
-                    :src="imgUrls[`./assets/Note_Strength.png`]" alt="">
-            </span>
-            <span v-if="validStats.includes('Minimum Damage')"
-              note-text="This item has Minimum Damage. Minimum Damage is only effective as long as it is under your Maximum Damage.">
-              <img class="note-image"
-                    :src="imgUrls[`./assets/Note_Minimum.png`]" alt="">
-            </span>
-            <span v-if="validStats.includes('Maximum HP %') || validStats.includes('Basic Stats') || validStats.includes('Basic Stats %') || validStats.includes('Stamina')"
-              note-text="This item has stats that increases your HP, granting greater survivability but no additional offensive value.">
-              <img class="note-image"
-                    :src="imgUrls[`./assets/Note_HP.png`]" alt="">
-            </span>
-          </div>
-        </div>
-        
-      </div>
-    </div>
-    <!-- Upgraded results - if the item doesn't get additional enchants, hide the block -->
-    <div v-if="getFinalUpgrade(gearType) !== ''" class="calculator-values container main-container upgraded-container" :class="{ 'dim-above': displayWindow['help'] === 1 }">
-      <div v-if="displayWindow['help'] === 1" class="help-container dim-above" >
-        <div class="help-info help-info-top">
-          This section displays results when the piece is upgraded to Lucent or Ascended and further enchanted
-        </div>
-      </div>
-      <div class="results-header">
-        <img class="gear-image"
-            :src="imgUrls[`./assets/${pieceType}_${gearType.slice(1,5)}.png`]" alt="">
-        <!-- Check if final upgrade is Lucent or Ascended -->
-        <span class="results-header-text header-left">{{ getFinalUpgrade(gearType) }} {{ pieceType }} ({{ gearType.slice(1,5) }})</span>
-      </div>
-      <!-- Individual results block -->
-      <div class="results-stats">
-        <div v-for="n in 5" class="stat-block">
-          <div>
-            <div v-if="statInput[n-1] === '' || statInput[n-1] <= 0" class="results-tiers">
-              <span>---</span>
-              <span>---</span>
-            </div>
-            <!-- If the minimum and maximum potentials are different, display both as a range -->
-            <div v-else-if="results['individual'][n-1]['potentialMin'] === results['individual'][n-1]['potentialMax']" class="results-tiers">
-              <span> Lv.{{parseInt(gearType.slice(1,5)) < 9999 ? 4 : 5}} {{ statType[n-1] }}: {{ results['individual'][n-1]['potentialMin'] }} </span>
-              <span class="fugaz-one-regular">
-                <span v-if="switchState">{{ results['individual'][n-1]['potentialDIMin'] }}%</span>
-                <span v-else>{{ results['individual'][n-1]['potentialMinPerc'] }}%</span>
-                <span class="tier-text">{{ results['individual'][n-1]['potentialTierMin'] }}</span>
-              </span>
-            </div>
-            <div v-else class="results-tiers">
-              <span> {{ statType[n-1] }}: {{ results['individual'][n-1]['potentialMin'] }} ~ {{ results['individual'][n-1]['potentialMax'] }} </span>
-              <span class="fugaz-one-regular">
-                <span v-if="switchState">{{ results['individual'][n-1]['potentialDIMin'] }}% ~ {{ results['individual'][n-1]['potentialDIMax'] }}%</span>
-                <span v-else>{{ results['individual'][n-1]['potentialMinPerc'] }}% ~ {{ results['individual'][n-1]['potentialMaxPerc'] }}%</span>
-                <span class="tier-text">{{ results['individual'][n-1]['potentialTierMin'] }} ~ {{ results['individual'][n-1]['potentialTierMax'] }}</span>
-              </span>
-            </div>
-            <div>
-              <span class="full-bar">
-                <span class="filled-bar" :style="getPercentageBarStyle(results['individual'][n-1]['potentialMaxPerc'] - 100, 'extraPotential')"></span>
-                <span class="filled-bar" :style="getPercentageBarStyle(results['individual'][n-1]['potentialMinPerc'] - 100, 'extraDefault')"></span>
-                <span class="filled-bar" :style="getPercentageBarStyle(results['individual'][n-1]['potentialMaxPerc'], 'potential')"></span>
-                <span class="filled-bar" :style="getPercentageBarStyle(results['individual'][n-1]['potentialMinPerc'])"></span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Total results -->
-      <div class="results-total results-footer">
-        <div class="results-tiers">
-          <!-- Display Lv4/Lv5 depending on the item's maximum level (Currently only 9999 has Lv5) -->
-          <span>Lv.{{parseInt(gearType.slice(1,5)) < 9999 ? 4 : 5}} TOTAL</span>
-          <span class="fugaz-one-regular">
-            <span v-if="switchState">{{ results['potentialDI'] }}</span>
-            <span v-else>{{ results['potentialScore'] }}</span>
-            <span class="tier-text"> {{ results['potentialTier'] }}</span>
-          </span>
-        </div>
-        
-        <span class="full-bar">
-          <span v-if="results['potentialScore'].split(' ~ ').length > 1" class="filled-bar" :style="getPercentageBarStyle(results['potentialScore'].split(' ~ ')[1].slice(0,-1) - 100, 'extraPotential')"></span>
-          <span class="filled-bar" :style="getPercentageBarStyle(results['potentialScore'].split(' ~ ')[0].slice(0,-1) - 100, 'extraDefault')"></span>
-          <span v-if="results['potentialScore'].split(' ~ ').length > 1" class="filled-bar" :style="getPercentageBarStyle(results['potentialScore'].split(' ~ ')[1].slice(0,-1), 'potential')"></span>
-          <span class="filled-bar" :style="getPercentageBarStyle(results['potentialScore'].split(' ~ ')[0].slice(0,-1))"></span>
-        </span>
-        <div class="results-notes">
-          <span v-if="results['potentialScore'].split(' ~ ').length > 1">
-            <span v-if="switchState" class="fugaz-one-regular">{{ (parseFloat(results['potentialDI'].split(' ~ ')[0]) - results['DI']).toFixed(2) }}% ~ {{ (parseFloat(results['potentialDI'].split(' ~ ')[1]) - results['DI']).toFixed(2) }}%</span>
-            <span v-else class="fugaz-one-regular">{{ parseInt(parseInt(results['potentialScore'].split(' ~ ')[0]) - results['percent']) }}% ~ {{ parseInt(parseInt(results['potentialScore'].split(' ~ ')[1]) - results['percent']) }}%</span>
-            <span><em> Gain</em></span>
-          </span>
-          <span v-else>
-            <span v-if="switchState" class="fugaz-one-regular">{{ (parseFloat(results['potentialDI']) - results['DI']).toFixed(2) }}%</span>
-            <span v-else class="fugaz-one-regular">{{ parseInt(parseInt(results['potentialScore']) - results['percent']) }}%</span>
-            <span><em> Gain</em></span>
-          </span>
-          
-        </div>
-        <div v-if="results['sssOdds']['available']" class="sss-odds">
-          <div class="sss-odds-title">
-            <span class="sss-odds-heading">SSS at max upgrade</span>
-            <span class="sss-odds-total">
-              <span>Total odds</span>
-              <span class="fugaz-one-regular">{{ results['sssOdds']['totalChanceText'] }}</span>
-            </span>
-          </div>
-          <div class="sss-odds-meta">
-            <div class="sss-meta-item">
-              <span class="sss-meta-label">Target</span>
-              <span>{{ results['sssOdds']['targetScore'] }}</span>
-            </div>
-            <div class="sss-meta-item">
-              <span class="sss-meta-label">Planned</span>
-              <span v-if="switchState">{{ results['sssOdds']['plannedDIText'] }}</span>
-              <span v-else>{{ results['sssOdds']['plannedScoreText'] }}</span>
-            </div>
-            <div class="sss-meta-item">
-              <span class="sss-meta-label">Base rolls</span>
-              <span>{{ results['sssOdds']['baseRollText'] }}</span>
-            </div>
-            <div class="sss-meta-item">
-              <span class="sss-meta-label">Survival</span>
-              <span>{{ results['sssOdds']['survivalChanceText'] }}</span>
-            </div>
-            <div class="sss-meta-item">
-              <span class="sss-meta-label">Value check</span>
-              <span>{{ results['sssOdds']['rollValueChanceText'] }}</span>
-            </div>
-          </div>
-          <div class="sss-roll-ranges">
-            <div class="sss-roll-header">
-              <span>Stat</span>
-              <span>Max upgrade value</span>
-              <span>Roll state</span>
-            </div>
-            <div v-for="line in results['sssOdds']['lines']" class="sss-roll-row" :class="`sss-roll-row-${line.status}`">
-              <span>{{ line.stat }}</span>
-              <span :class="{ 'fugaz-one-regular': line.status !== 'ignored' }">{{ line.range }}</span>
-              <span>{{ line.rollText }}</span>
-            </div>
-          </div>
-        </div>
-        <div v-if="displayWindow['help'] === 1" class="help-container dim-above" >
-          <div class="help-info help-info-bottom">
-            Gain represents the growth over the non-upgraded piece<br></br>
-            Values may surpass 100% in this context, however tiers will still only consider up to 100%
-            <div class="help-button-container help-button-right">
-              <button class="help-button" @click="toggleDisplayWindow('help')">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+            </CardHeader>
 
-  <!-- Tier Evaluation -->
-  <div class="container" id="tier-container">
-    <div id="tiers">
-      <h2>Tier Evaluation</h2>
-      <table>
-        <tr>
-          <th>Tier</th>
-          <th>Comment</th>
-          <th>Upgrade?</th>
-          <th>Enchants</th>
-          <th>Cost (per piece)</th>
-        </tr>
-        <tr>
-          <td>F - E</td>
-          <td>Bad, replaces unfinished previous tier</td>
-          <td>N</td>
-          <td>Any</td>
-          <td>0b - 5b</td>
-        </tr>
-        <tr>
-          <td>D - C</td>
-          <td>Minimum to replace previous tier</td>
-          <td>N</td>
-          <td>Duo</td>
-          <td>5b - 30b</td>
-        </tr>
-        <tr>
-          <td>B</td>
-          <td>Good growth over previous tier, worth upgrading</td>
-          <td>Y</td>
-          <td>Trio</td>
-          <td>60b - 120b</td>
-        </tr>
-        <tr>
-          <td>A</td>
-          <td>Great growth, only recommended for late endgame</td>
-          <td>Y</td>
-          <td>Quad</td>
-          <td>200b+</td>
-        </tr>
-        <tr>
-          <td>S - SSS</td>
-          <td>Perfectionism, typically will only come with upgraded enchants<br>Pentas will cost several hundreds of billions of ely to make a single piece</td>
-          <td>Y</td>
-          <td>Penta</td>
-          <td>1000b+</td>
-        </tr>
-      </table>
-    </div>
-  </div>
+            <CardContent class="grid gap-4">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <div class="grid gap-1.5">
+                  <Label for="gear-type">Tier</Label>
+                  <Select v-model="gearType">
+                    <SelectTrigger id="gear-type" class="w-full">
+                      <SelectValue placeholder="Tier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="category in gearCategories" :key="category" :value="category">
+                        {{ category }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-  <!-- Disclaimer -->
-  <transition name="window-fade">
-    <div v-if="displayWindow['disclaimer']" class="disclaimer dim-above container">
-      <h1 style="text-align: center;">LaTale Gear Score Calculator</h1>
-      <h2 style="color: red;"><strong>⚠️ Note that this is hypothetical damage, and it may not represent actual damage versus actual content ⚠️<br>
-        Please also note this calculator only calculates for a single item, your other stats and items may change how well it performs</strong></h2>
-      <div>
-        <h3>Important notes</h3>
-        <ul>
-          <li><span>If you want more detailed tests with more stats and items, please use the <a href="https://kedanao.github.io/lt-damage-calculator/" target="_blank">Damage Calculator</a></span> and detailed sheets linked below</li>
-          <li><span>Ratings are based on <strong style="color: blue;">+0 unupgraded enchant values</strong>, note that <strong style="color: blue;">extra stats from level 3~5 enchants will increase the score and cannot be considered the same as +0 enchants</strong></span></li>
-          <li><strong>Minimum Damage</strong>: Value only applies as long as your Minimum is lower than your Maximum. Any amount above is wasted</li>
-          <li><strong>Attack/Intensity vs Strength/Magic in new items</strong>: Strength/Magic and Attack/Intensity will have the same value unless there's a major difference between them.
-          <br>It is encouraged to check which stat your class benefits from more and focus on that
-          <br>This will begin with 9999 armor</li>
-          <li><strong>Attack/Intensity vs Strength/Magic in older items</strong>: Older items use a ratio of 1 attack : 100 ~ 110 strength
-          <br>Note that the calculator also considers higher strength/magic % than attack/intensity %, and a value of 12% strength/magic ratio
-          <br>Generally this means flat strength/magic is superior to flat attack/intensity, however attack/intensity % is superior to strength/magic %
-          <br>If you want to consider different numbers, please use the <a href="https://kedanao.github.io/lt-damage-calculator/" target="_blank">Damage Calculator</a> with your own stats and settings</li>
-          <li><strong>Defense Penetration</strong>: Does not apply to summons, avoid in summon-heavy classes</li>
-          <li><strong>Back Attack Damage</strong>: Only applies to direct damage, avoid in summon-heavy classes</li>
-          <li>The chosen stats aren't the ones that result in the most possible damage, but optimized for general use on every class with essential utility stats
-          <br>Because of this stats like Minimum Damage, Back Attack Damage or flat Strength/Magic may be disregarded for other stats as they are not universally applicable</li>
-        </ul>
-        Please also pay attention to the additional notes under the total result in case of special stats being enchanted.
-        <br>Click the "Help" button if you want an explanation on how each aspect of the calculator functions.
-      </div>
-      <button class="disclaimer-button" @click="toggleDisplayWindow('none')">Accept</button>
-    </div>
-  </transition>
-  <!-- Info -->
-  
-  
-  
-  <!-- Gear Selector -->
-  <transition name="window-fade">
-    <!-- Display items and separate by section -->
-    <div v-if="displayWindow['gear']" class="gear-container dim-above">
-      <div class="gear-selection container">
-        <div v-if="displayWindow['help'] === 6" class="help-container dim-above">
-          <div class="help-info help-info-right">
-            Hover over an item to see their information, click to select it
-            <div class="help-button-container">
-              <button class="help-button" @click="toggleDisplayWindow('none')">Next →</button>
-              <button class="help-button" @click="toggleDisplayWindow('help')">Close</button>
-            </div>
-          </div>
-        </div>
-        <div v-for="t in Object.keys(gears)">
-          <div class="item-separator">{{ t }}</div>
-          <img class="gear-image gear-clickable"
-            v-for="p in Object.keys(gears[t]).slice(0,-2)" 
-            :src="imgUrls[`./assets/${p}_${t.slice(1,5)}.png`]" alt=""
-            @click="setGear(t,p)"
-            @mouseenter="setHighlightedPiece(t,p)">
-        </div>
-      </div>
-      <!-- Section to display all possible enchants for the hovered piece -->
-      <div class="gear-info container mobile-hide">
-        <div class="results-header">
-          <img class="gear-image"
-            :src="imgUrls[`./assets/${highlightedPiece[1]}_${highlightedPiece[0].slice(1,5)}.png`]" alt="">
-          <span class="results-header-text"> {{ highlightedPiece[1] }} ({{ highlightedPiece[0].slice(1,5) }})</span>
-        </div>
-        <div>
-          <div>
-            <div v-if="displayWindow['help'] === 5" class="help-container dim-above">
-              <div class="help-info help-info-right">
-                You can see information on all possible enchants for the hovered piece here
-                <div class="help-button-container">
-                  <button class="help-button" @click="toggleDisplayWindow('none')">Next →</button>
-                  <button class="help-button" @click="toggleDisplayWindow('help')">Close</button>
+                <div class="grid gap-1.5">
+                  <Label for="piece-type">Piece</Label>
+                  <Select v-model="pieceType">
+                    <SelectTrigger id="piece-type" class="w-full">
+                      <SelectValue placeholder="Piece" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="piece in pieceOptions" :key="piece" :value="piece">
+                        {{ piece }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            </div>
-            <table>
-              <tr>
-                <th :colspan="getFinalUpgrade(highlightedPiece[0]) !== '' ? 4 : 3">
-                  Possible Enchants
-                </th>
-              </tr>
-              <tr>
-                <th>Stat</th>
-                <th>Max. Value</th>
-                <th>Rating</th>
-                <th v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">Potential</th>
-              </tr>
-              <tr v-for="e in Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats'])">
-                <td>{{ e }}</td>
-                <td>{{ gears[highlightedPiece[0]][highlightedPiece[1]]['Stats'][e]['Value'] }}</td>
-                <td>{{ gears[highlightedPiece[0]][highlightedPiece[1]]['Stats'][e]['DI'] }}%</td>
-                <td v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">
-                  {{ gears[highlightedPiece[0]][highlightedPiece[1]]['Stats'][e]['Potential'][0] }}
-                  <span v-if="gears[highlightedPiece[0]][highlightedPiece[1]]['Stats'][e]['Potential'][0] !== gears[highlightedPiece[0]][highlightedPiece[1]]['Stats'][e]['Potential'][1]">
-                   ~ {{ gears[highlightedPiece[0]][highlightedPiece[1]]['Stats'][e]['Potential'][1] }}</span>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </div>
-      </div>
-      <!-- View tier information for the hovered piece -->
-      <div class="gear-info-extra container mobile-hide">
-        <div class="results-header">
-          <img class="gear-image"
-            :src="imgUrls[`./assets/${highlightedPiece[1]}_${highlightedPiece[0].slice(1,5)}.png`]" alt="">
-          <span class="results-header-text">Tier Info</span>
-        </div>
-        <div>
-          <div>
-            <div v-if="displayWindow['help'] === 4" class="help-container dim-above">
-              <div class="help-info help-info-right">
-                This table displays the score necessary for each tier for that specific item and expected enchant quality to reach it
-                <div class="help-button-container">
-                  <button class="help-button" @click="toggleDisplayWindow('none')">Next →</button>
-                  <button class="help-button" @click="toggleDisplayWindow('help')">Close</button>
+
+              <Separator />
+
+              <div class="grid gap-3">
+                <div
+                  v-for="(_, index) in statType"
+                  :key="index"
+                  class="grid gap-2 rounded-lg border bg-muted/20 p-3"
+                >
+                  <div class="flex items-center justify-between gap-3">
+                    <Label :for="`stat-${index}`" class="text-xs font-medium text-muted-foreground">
+                      Line {{ index + 1 }}
+                    </Label>
+                    <span class="text-xs text-muted-foreground">
+                      Max {{ currentItem?.Stats?.[statType[index]]?.Value ?? '-' }} / {{ currentItem?.Stats?.[statType[index]]?.DI?.toFixed(2) ?? '0.00' }}%
+                    </span>
+                  </div>
+                  <div class="grid gap-2 sm:grid-cols-[1fr_120px]">
+                    <Select v-model="statType[index]">
+                      <SelectTrigger :id="`stat-${index}`" class="w-full">
+                        <SelectValue placeholder="Stat" />
+                      </SelectTrigger>
+                      <SelectContent class="max-h-80">
+                        <SelectItem v-for="stat in statOptions" :key="stat" :value="stat">
+                          {{ stat }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Input
+                      v-model="statInput[index]"
+                      type="number"
+                      :step="getStatStep(statType[index])"
+                      min="0"
+                      inputmode="decimal"
+                      placeholder="Value"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <table>
-              <tr>
-                <th colspan="7">
+
+              <div class="grid gap-3 rounded-lg border p-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" size="sm" @click="setValues(0, 0)">
+                    <RefreshCcwIcon />
+                    Clear
+                  </Button>
+                  <Button variant="secondary" size="sm" @click="setValues(2, valueButton)">Duo</Button>
+                  <Button variant="secondary" size="sm" @click="setValues(3, valueButton)">Trio</Button>
+                  <Button variant="secondary" size="sm" @click="setValues(4, valueButton)">Quad</Button>
+                  <Button variant="secondary" size="sm" @click="setValues(5, valueButton)">Penta</Button>
+
+                  <Select v-model="valueButton">
+                    <SelectTrigger class="ml-auto w-[110px]">
+                      <SelectValue placeholder="Value" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="n in 10" :key="n" :value="String(n * 10)">
+                        {{ n * 10 }}%
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card class="rounded-lg">
+            <CardHeader class="border-b">
+              <CardTitle class="flex items-center gap-2 text-base">
+                <ShieldCheckIcon class="size-4" />
+                Stat Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div v-if="selectedTraitRows.length" class="grid gap-2">
+                <div
+                  v-for="trait in selectedTraitRows"
+                  :key="trait.id"
+                  class="flex gap-3 rounded-lg border bg-muted/20 p-3"
+                >
+                  <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
+                  <div>
+                    <div class="text-sm font-medium">{{ trait.label }}</div>
+                    <div class="text-sm text-muted-foreground">{{ trait.text }}</div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                No special stat notes for the current rolled lines.
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section class="grid content-start gap-4">
+          <Card class="rounded-lg">
+            <CardHeader class="border-b">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <CardTitle class="flex items-center gap-2 text-base">
+                    <CalculatorIcon class="size-4" />
+                    Results
+                  </CardTitle>
+                  <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
+                </div>
+
+                <Tabs v-model="resultMode" class="w-auto">
+                  <TabsList>
+                    <TabsTrigger value="score">Score</TabsTrigger>
+                    <TabsTrigger value="rating">Rating</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardHeader>
+
+            <CardContent class="grid gap-4">
+              <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
+                <div class="rounded-lg border bg-muted/20 p-4">
+                  <div class="text-sm text-muted-foreground">Total</div>
+                  <div class="mt-1 flex items-end gap-2">
+                    <div class="text-4xl font-semibold tracking-normal">
+                      {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
+                    </div>
+                    <Badge variant="outline" :class="getTierClass(results.tier)">
+                      {{ results.tier }}
+                    </Badge>
+                  </div>
+                  <Progress :model-value="totalProgress" class="mt-4 h-2" />
+                </div>
+
+                <div class="grid gap-2">
+                  <div
+                    v-for="(_, index) in statType"
+                    :key="`result-${index}`"
+                    class="grid gap-2 rounded-lg border p-3"
+                  >
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <div class="min-w-0">
+                        <div class="truncate text-sm font-medium">
+                          <span v-if="hasRolledValue(index)">{{ statType[index] }}</span>
+                          <span v-else class="text-muted-foreground">Empty line</span>
+                        </div>
+                        <div class="text-xs text-muted-foreground">
+                          {{ hasRolledValue(index) ? statInput[index] : 'No value entered' }}
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-semibold">{{ hasRolledValue(index) ? getLineScoreText(index) : '---' }}</span>
+                        <Badge v-if="hasRolledValue(index)" variant="outline" :class="getTierClass(results.individual[index].tier)">
+                          {{ results.individual[index].tier }}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Progress :model-value="clamp(Number(results.individual[index].percent), 0, 100)" class="h-1.5" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card v-if="getFinalUpgrade(gearType) !== ''" class="rounded-lg">
+            <CardHeader class="border-b">
+              <CardTitle class="flex items-center gap-2 text-base">
+                <SparklesIcon class="size-4" />
+                {{ getFinalUpgrade(gearType) }} Projection
+              </CardTitle>
+              <CardDescription>
+                Lv.{{ parseInt(gearType.slice(1, 5)) < 9999 ? 4 : 5 }} {{ pieceType }} {{ gearType }}
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <Tabs default-value="summary" class="grid gap-4">
+                <TabsList class="w-fit">
+                  <TabsTrigger value="summary">Summary</TabsTrigger>
+                  <TabsTrigger value="lines">Lines</TabsTrigger>
+                  <TabsTrigger v-if="results.sssOdds.available" value="sss">SSS odds</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="summary" class="m-0">
+                  <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
+                    <div class="rounded-lg border bg-muted/20 p-4">
+                      <div class="text-sm text-muted-foreground">Projected</div>
+                      <div class="mt-1 flex items-end gap-2">
+                        <div class="text-3xl font-semibold tracking-normal">
+                          {{ resultMode === 'rating' ? results.potentialDI : results.potentialScore }}
+                        </div>
+                        <Badge variant="outline" :class="getTierClass(results.potentialTier)">
+                          {{ results.potentialTier }}
+                        </Badge>
+                      </div>
+                      <div class="mt-2 text-sm text-emerald-700 dark:text-emerald-300">{{ potentialGainText }} gain</div>
+                      <Progress :model-value="potentialProgress" class="mt-4 h-2" />
+                    </div>
+
+                    <div class="grid gap-2">
+                      <div
+                        v-for="(_, index) in statType"
+                        :key="`potential-${index}`"
+                        class="grid gap-2 rounded-lg border p-3"
+                      >
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <div class="min-w-0">
+                            <div class="truncate text-sm font-medium">
+                              <span v-if="hasRolledValue(index)">
+                                {{ statType[index] }}:
+                                <span v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
+                                  {{ results.individual[index].potentialMin }}
+                                </span>
+                                <span v-else>
+                                  {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
+                                </span>
+                              </span>
+                              <span v-else class="text-muted-foreground">Empty line</span>
+                            </div>
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold">{{ hasRolledValue(index) ? getPotentialLineText(index) : '---' }}</span>
+                            <Badge v-if="hasRolledValue(index)" variant="outline" :class="getTierClass(getPotentialLineTier(index))">
+                              {{ getPotentialLineTier(index) }}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Progress :model-value="clamp(Number(results.individual[index].potentialMinPerc), 0, 100)" class="h-1.5" />
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="lines" class="m-0">
+                  <ScrollArea class="max-h-[360px] rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Stat</TableHead>
+                          <TableHead>Current</TableHead>
+                          <TableHead>Max upgrade</TableHead>
+                          <TableHead>Tier</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow v-for="(_, index) in statType" :key="`line-table-${index}`">
+                          <TableCell class="font-medium">{{ statType[index] }}</TableCell>
+                          <TableCell>{{ statInput[index] || '-' }}</TableCell>
+                          <TableCell>
+                            <span v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
+                              {{ results.individual[index].potentialMin || '-' }}
+                            </span>
+                            <span v-else>
+                              {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
+                              {{ getPotentialLineTier(index) }}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent v-if="results.sssOdds.available" value="sss" class="m-0 grid gap-3">
+                  <div class="grid gap-3 md:grid-cols-5">
+                    <div class="rounded-lg border p-3">
+                      <div class="text-xs text-muted-foreground">Total odds</div>
+                      <div class="text-lg font-semibold">{{ results.sssOdds.totalChanceText }}</div>
+                    </div>
+                    <div class="rounded-lg border p-3">
+                      <div class="text-xs text-muted-foreground">Target</div>
+                      <div class="text-lg font-semibold">{{ results.sssOdds.targetScore }}</div>
+                    </div>
+                    <div class="rounded-lg border p-3">
+                      <div class="text-xs text-muted-foreground">Planned</div>
+                      <div class="text-lg font-semibold">
+                        {{ resultMode === 'rating' ? results.sssOdds.plannedDIText : results.sssOdds.plannedScoreText }}
+                      </div>
+                    </div>
+                    <div class="rounded-lg border p-3">
+                      <div class="text-xs text-muted-foreground">Base rolls</div>
+                      <div class="text-lg font-semibold">{{ results.sssOdds.baseRollText }}</div>
+                    </div>
+                    <div class="rounded-lg border p-3">
+                      <div class="text-xs text-muted-foreground">Survival</div>
+                      <div class="text-lg font-semibold">{{ results.sssOdds.survivalChanceText }}</div>
+                    </div>
+                  </div>
+
+                  <ScrollArea class="max-h-[320px] rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Stat</TableHead>
+                          <TableHead>Max upgrade value</TableHead>
+                          <TableHead>Roll state</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow v-for="line in results.sssOdds.lines" :key="line.stat">
+                          <TableCell class="font-medium">{{ line.stat }}</TableCell>
+                          <TableCell>{{ line.range }}</TableCell>
+                          <TableCell :class="getRollStatusClass(line.status)">{{ line.rollText }}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          <div class="grid gap-4 2xl:grid-cols-2">
+            <Card class="rounded-lg">
+              <CardHeader class="border-b">
+                <CardTitle class="flex items-center gap-2 text-base">
+                  <SwordsIcon class="size-4" />
+                  Tier Evaluation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea class="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tier</TableHead>
+                        <TableHead>Comment</TableHead>
+                        <TableHead>Upgrade</TableHead>
+                        <TableHead>Enchants</TableHead>
+                        <TableHead>Cost</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow v-for="row in tierGuideRows" :key="row.tier">
+                        <TableCell>
+                          <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
+                        </TableCell>
+                        <TableCell>{{ row.comment }}</TableCell>
+                        <TableCell>{{ row.upgrade }}</TableCell>
+                        <TableCell>{{ row.enchants }}</TableCell>
+                        <TableCell>{{ row.cost }}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            <Card class="rounded-lg">
+              <CardHeader class="border-b">
+                <CardTitle class="flex items-center gap-2 text-base">
+                  <TablePropertiesIcon class="size-4" />
                   Tier Equivalence
-                </th>
-              </tr>
-              <tr>
-                <th>Score</th>
-                <th>Tier</th>
-                <th>Single</th>
-                <th>Duo</th>
-                <th>Trio</th>
-                <th>Quad</th>
-                <th>Penta</th>
-              </tr>
-              <tr v-for="e in Object.keys(tiers[highlightedPiece[0]][gears[highlightedPiece[0]][highlightedPiece[1]]['Type']])">
-                <td>{{ tiers[highlightedPiece[0]][gears[highlightedPiece[0]][highlightedPiece[1]]['Type']][e]['Score'] }}</td>
-                <td>{{ e }}</td>
-                <td>{{ tiers[highlightedPiece[0]][gears[highlightedPiece[0]][highlightedPiece[1]]['Type']][e]['Single'] }}</td>
-                <td>{{ tiers[highlightedPiece[0]][gears[highlightedPiece[0]][highlightedPiece[1]]['Type']][e]['Duo'] }}</td>
-                <td>{{ tiers[highlightedPiece[0]][gears[highlightedPiece[0]][highlightedPiece[1]]['Type']][e]['Trio'] }}</td>
-                <td>{{ tiers[highlightedPiece[0]][gears[highlightedPiece[0]][highlightedPiece[1]]['Type']][e]['Quad'] }}</td>
-                <td>{{ tiers[highlightedPiece[0]][gears[highlightedPiece[0]][highlightedPiece[1]]['Type']][e]['Penta'] }}</td>
-              </tr>
-            </table>
+                </CardTitle>
+                <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea class="max-h-[420px] rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Score</TableHead>
+                        <TableHead>Tier</TableHead>
+                        <TableHead>Single</TableHead>
+                        <TableHead>Duo</TableHead>
+                        <TableHead>Trio</TableHead>
+                        <TableHead>Quad</TableHead>
+                        <TableHead>Penta</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow v-for="row in selectedTierRows" :key="row.tier">
+                        <TableCell>{{ row.Score }}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
+                        </TableCell>
+                        <TableCell>{{ row.Single }}</TableCell>
+                        <TableCell>{{ row.Duo }}</TableCell>
+                        <TableCell>{{ row.Trio }}</TableCell>
+                        <TableCell>{{ row.Quad }}</TableCell>
+                        <TableCell>{{ row.Penta }}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-        <!-- View possible special traits for the hovered piece -->
-        <div class="results-header-text" style="margin-top: 5%;">Possible Special Traits</div>
-        <div>
-          <span v-if="Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Back Attack Damage')"
-              note-text="Can enchant Back Attack Damage: Only works with direct damage and requires good mobility for positioning. May not be useful for every class.">
-              <img class="note-image"
-                    :src="imgUrls[`./assets/Note_Back.png`]" alt="">
-          </span>
-          <span v-if="Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Defense Penetration')"
-            note-text="Can enchant Defense Penetration: Does not function with summons and is only effective if your Penetration is increased in the status window.">
-            <img class="note-image"
-                  :src="imgUrls[`./assets/Note_Penetration.png`]" alt="">
-          </span>
-          <span v-if="Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Attack/Intensity') + Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Attack/Intensity %') > 1"
-            note-text="Can enchant multiple stats that give Attack/Intensity: Mainly benefits classes that are heavy on direct hits.">
-            <img class="note-image"
-                  :src="imgUrls[`./assets/Note_Attack.png`]" alt="">
-          </span>
-          <span v-if="Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Basic Stats %') + Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Strength/Magic') + Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Basic Stats') > 1"
-            note-text="Can enchant multiple stats that give Strength/Magic: Mainly benefits classes that are heavy on summons.">
-            <img class="note-image"
-                  :src="imgUrls[`./assets/Note_Strength.png`]" alt="">
-          </span>
-          <span v-if="Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Minimum Damage')"
-            note-text="Can enchant Minimum Damage: Only effective as long as it is under your Maximum Damage.">
-            <img class="note-image"
-                  :src="imgUrls[`./assets/Note_Minimum.png`]" alt="">
-          </span>
-          <span v-if="Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Maximum HP %') || Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Basic Stats') || Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Basic Stats %') || Object.keys(gears[highlightedPiece[0]][highlightedPiece[1]]['Stats']).includes('Stamina')"
-            note-text="Can enchant stats that increase your HP: No additional offensive value, but grants greater survivability.">
-            <img class="note-image"
-                  :src="imgUrls[`./assets/Note_HP.png`]" alt="">
-          </span>
-        </div>
-      </div>
-    </div>
-  </transition>
+        </section>
+      </main>
 
-  <!-- Dim page when additional window is open, disable if clicked -->
-  <transition name="dim-fade">
-    <div v-if="dimmed" id="dim"
-      @click="toggleDisplayWindow('none')">
-    </div>
-  </transition>
-  <!-- Tooltip -->
-  <!-- <div v-if="tooltip" id="tooltip" :style="{left: tooltipPosition[0] + 'px', top: tooltipPosition[1] + 'px'}">
-    {{ tooltipText }}
-  </div> -->
+      <Sheet v-model:open="gearSheetOpen">
+        <SheetContent
+          side="right"
+          class="gap-0 p-0 data-[side=right]:!w-full sm:data-[side=right]:!max-w-none md:data-[side=right]:!w-[92vw] lg:data-[side=right]:!w-[86vw] xl:data-[side=right]:!w-[1120px]"
+        >
+          <SheetHeader class="border-b px-5 py-4 pr-12">
+            <SheetTitle>Select Gear</SheetTitle>
+            <SheetDescription>{{ highlightedPiece[1] }} {{ highlightedPiece[0] }}</SheetDescription>
+          </SheetHeader>
 
-  <!-- Preloading images -->
-  <div v-for="i in Object.keys(imgUrls)" id="preload">
-    <img :src="imgUrls[i]" alt="">
-  </div>
+          <div class="min-h-0 flex-1 overflow-y-auto p-4">
+            <div class="grid min-h-full gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+              <section class="min-h-0 rounded-lg border bg-card">
+                <div class="border-b px-3 py-2">
+                  <div class="text-sm font-medium">Gear catalog</div>
+                  <div class="text-xs text-muted-foreground">Hover to inspect, click to select</div>
+                </div>
+                <ScrollArea class="h-[42vh] p-3 xl:h-[calc(100vh-10rem)]">
+                  <div class="grid gap-4">
+                    <div v-for="category in gearCategories" :key="category" class="grid gap-2">
+                      <div class="text-xs font-medium uppercase text-muted-foreground">{{ category }}</div>
+                      <div class="grid grid-cols-4 gap-2 sm:grid-cols-5 xl:grid-cols-5">
+                        <Button
+                          v-for="piece in getPieceNames(category)"
+                          :key="`${category}-${piece}`"
+                          :variant="gearType === category && pieceType === piece ? 'default' : 'outline'"
+                          class="h-14 w-full rounded-lg"
+                          size="icon"
+                          @click="setGear(category, piece)"
+                          @mouseenter="highlightedPiece = [category, piece]"
+                        >
+                          <img class="size-8" :src="getItemImage(piece, category)" :alt="piece">
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </section>
+
+              <section class="grid min-h-0 content-start gap-4">
+                <div class="flex items-center gap-3 rounded-lg border bg-card p-3">
+                  <img class="size-12 rounded-lg border bg-muted p-1" :src="getItemImage(highlightedPiece[1], highlightedPiece[0])" alt="">
+                  <div class="min-w-0">
+                    <div class="truncate font-semibold">{{ highlightedPiece[1] }} {{ highlightedPiece[0] }}</div>
+                    <div class="truncate text-sm text-muted-foreground">
+                      Max rating {{ highlightedItem?.DI.toFixed(2) }}% / {{ getFinalUpgrade(highlightedPiece[0]) || 'No final upgrade' }}
+                    </div>
+                  </div>
+                </div>
+
+                <Tabs default-value="enchants" class="grid min-h-0 gap-3">
+                  <TabsList class="w-full justify-start overflow-x-auto sm:w-fit">
+                    <TabsTrigger value="enchants">Enchants</TabsTrigger>
+                    <TabsTrigger value="tiers">Tiers</TabsTrigger>
+                    <TabsTrigger value="traits">Traits</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="enchants" class="m-0 min-h-0">
+                    <ScrollArea class="max-h-[52vh] rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
+                      <Table class="min-w-[560px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Stat</TableHead>
+                            <TableHead>Max value</TableHead>
+                            <TableHead>Rating</TableHead>
+                            <TableHead v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">Potential</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow v-for="stat in highlightedStats" :key="stat">
+                            <TableCell class="font-medium">{{ stat }}</TableCell>
+                            <TableCell>{{ highlightedItem.Stats[stat].Value }}</TableCell>
+                            <TableCell>{{ highlightedItem.Stats[stat].DI }}%</TableCell>
+                            <TableCell v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">
+                              {{ highlightedItem.Stats[stat].Potential[0] }}
+                              <span v-if="highlightedItem.Stats[stat].Potential[0] !== highlightedItem.Stats[stat].Potential[1]">
+                                ~ {{ highlightedItem.Stats[stat].Potential[1] }}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="tiers" class="m-0 min-h-0">
+                    <ScrollArea class="max-h-[52vh] rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
+                      <Table class="min-w-[720px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Score</TableHead>
+                            <TableHead>Tier</TableHead>
+                            <TableHead>Single</TableHead>
+                            <TableHead>Duo</TableHead>
+                            <TableHead>Trio</TableHead>
+                            <TableHead>Quad</TableHead>
+                            <TableHead>Penta</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow v-for="row in highlightedTierRows" :key="row.tier">
+                            <TableCell>{{ row.Score }}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
+                            </TableCell>
+                            <TableCell>{{ row.Single }}</TableCell>
+                            <TableCell>{{ row.Duo }}</TableCell>
+                            <TableCell>{{ row.Trio }}</TableCell>
+                            <TableCell>{{ row.Quad }}</TableCell>
+                            <TableCell>{{ row.Penta }}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="traits" class="m-0">
+                    <div v-if="highlightedTraitRows.length" class="grid gap-2">
+                      <div
+                        v-for="trait in highlightedTraitRows"
+                        :key="trait.id"
+                        class="flex gap-3 rounded-lg border bg-card p-3"
+                      >
+                        <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
+                        <div>
+                          <div class="text-sm font-medium">{{ trait.label }}</div>
+                          <div class="text-sm text-muted-foreground">{{ trait.text }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                      No special traits listed for this piece.
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </section>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Dialog v-model:open="disclaimerOpen">
+        <DialogContent class="max-h-[90vh] max-w-3xl overflow-y-auto rounded-lg">
+          <DialogHeader>
+            <DialogTitle>LaTale Gear Score Calculator</DialogTitle>
+            <DialogDescription>
+              Hypothetical single-item damage scoring.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div class="grid gap-3 text-sm leading-6 text-muted-foreground">
+            <p>
+              This calculator only scores one item. Your other stats, class behavior, summons, and content can change the real value of a piece.
+            </p>
+            <p>
+              Ratings are based on +0 unupgraded enchant values. Extra stats from level 3-5 enchants increase score and should not be read as the same thing as +0 enchants.
+            </p>
+            <ul class="list-disc space-y-2 pl-5">
+              <li>Minimum Damage only applies while your minimum is lower than your maximum.</li>
+              <li>Defense Penetration and Back Attack Damage are weaker for summon-heavy classes.</li>
+              <li>Attack/Intensity and Strength/Magic priorities depend heavily on class and current stats.</li>
+              <li>For broader stat and item testing, use the linked Damage Calculator and detailed sheets.</li>
+            </ul>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" as-child>
+              <a href="https://kedanao.github.io/lt-damage-calculator/" target="_blank" rel="noreferrer">
+                <LinkIcon />
+                Damage Calculator
+              </a>
+            </Button>
+            <Button @click="acceptDisclaimer">Accept</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  </TooltipProvider>
 </template>
