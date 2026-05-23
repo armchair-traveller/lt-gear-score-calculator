@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import {
+  ArrowDownIcon,
+  ArrowUpIcon,
   CalculatorIcon,
   CheckIcon,
   ChevronRightIcon,
@@ -100,6 +102,7 @@ const resultMode = ref('score')
 
 const statType = ref([])
 const statInput = ref(['', '', '', '', ''])
+const sssOddsOrder = ref([0, 1, 2, 3, 4])
 const validStats = ref([])
 
 const imgUrls = import.meta.glob('./assets/*.png', {
@@ -301,6 +304,7 @@ function setGear(category, piece) {
 function changePiece() {
   const options = statOptions.value
   statType.value = options.slice(0, 5)
+  resetSssOddsOrder()
   setValues(0, 0)
 }
 
@@ -374,8 +378,12 @@ function formatProbability(probability) {
   return percent.toFixed(4) + '%'
 }
 
-function formatBaseRollSummary(count) {
-  return count === 0 ? 'None' : `${count} @ 60%`
+function formatBaseRollSummary(count, alreadyComplete = false) {
+  if (alreadyComplete) {
+    return 'None needed'
+  }
+
+  return count === 0 ? 'None' : `Up to ${count} @ 60%`
 }
 
 function getRollDistribution(minRoll, maxRoll, step, maxValue, maxDI) {
@@ -395,17 +403,35 @@ function getRollDistribution(minRoll, maxRoll, step, maxValue, maxDI) {
   }))
 }
 
-function addRollDistribution(dp, distribution) {
-  const next = new Map()
+function getSssOddsOrder() {
+  const maxLines = statType.value.length
+  const ordered = sssOddsOrder.value.filter((index) => Number.isInteger(index) && index >= 0 && index < maxLines)
 
-  dp.forEach((currentProbability, currentScore) => {
-    distribution.forEach((roll) => {
-      const score = currentScore + roll.score
-      next.set(score, (next.get(score) || 0) + currentProbability * roll.probability)
-    })
-  })
+  for (let i = 0; i < maxLines; i++) {
+    if (!ordered.includes(i)) {
+      ordered.push(i)
+    }
+  }
 
-  return next
+  return ordered
+}
+
+function resetSssOddsOrder() {
+  sssOddsOrder.value = statType.value.map((_, index) => index)
+}
+
+function moveSssOddsLine(position, direction) {
+  const order = getSssOddsOrder()
+  const nextPosition = position + direction
+
+  if (nextPosition < 0 || nextPosition >= order.length) {
+    return
+  }
+
+  const nextOrder = order.slice()
+  ;[nextOrder[position], nextOrder[nextPosition]] = [nextOrder[nextPosition], nextOrder[position]]
+  sssOddsOrder.value = nextOrder
+  updateValues()
 }
 
 function getEmptySssOdds() {
@@ -438,15 +464,15 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
   const targetRating = item.DI * targetPercent / 100
   const targetScore = Math.ceil(targetRating * ratingScale)
 
-  let dp = new Map([[0, 1]])
   let fixedScore = 0
   let futureBaseLines = 0
   let plannedMinRating = 0
   let plannedMaxRating = 0
   const lines = []
+  const rollableFutureLines = []
 
-  for (let i = 0; i < 5; i++) {
-    const stat = statType.value[i]
+  for (const lineIndex of getSssOddsOrder()) {
+    const stat = statType.value[lineIndex]
     const statInfo = item.Stats[stat]
     if (!statInfo) {
       continue
@@ -456,35 +482,37 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
     const maxDI = statInfo.DI
     const potential = statInfo.Potential
     const shouldRollLine = maxDI > 0
-    const currentValue = getInputValue(i)
+    const currentValue = getInputValue(lineIndex)
     const step = getStatStep(stat)
-    const hasValue = hasRolledValue(i)
+    const hasValue = hasRolledValue(lineIndex)
     const upgradeMinValue = potential[0] * potentialMultiplier
     const upgradeMaxValue = potential[1] * potentialMultiplier
+    const upgradeScore = Math.round(upgradeMinValue / maxValue * maxDI * ratingScale)
 
     let lineMinValue = hasValue ? currentValue : step
     let lineMaxValue = hasValue ? currentValue : maxValue
     lineMinValue += upgradeMinValue
     lineMaxValue += upgradeMaxValue
 
-    if (shouldRollLine) {
-      fixedScore += Math.round(upgradeMinValue / maxValue * maxDI * ratingScale)
-    }
-
     if (!shouldRollLine) {
       // Non-damaging lines are ignored for SSS attempts, so they add no survival risk.
     }
     else if (hasValue) {
+      fixedScore += upgradeScore
       fixedScore += Math.round(currentValue / maxValue * maxDI * ratingScale)
     }
     else {
       futureBaseLines += 1
-      dp = addRollDistribution(dp, getRollDistribution(step, maxValue, step, maxValue, maxDI))
+      rollableFutureLines.push({
+        upgradeScore,
+        distribution: getRollDistribution(step, maxValue, step, maxValue, maxDI),
+      })
     }
 
     plannedMinRating += lineMinValue / maxValue * maxDI
     plannedMaxRating += lineMaxValue / maxValue * maxDI
     lines.push({
+      index: lineIndex,
       stat,
       range: shouldRollLine ? formatRange(lineMinValue, lineMaxValue, stat) : 'Ignored',
       rollText: !shouldRollLine ? 'not rolled' : hasValue ? 'already rolled' : '60% base roll',
@@ -492,22 +520,38 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
     })
   }
 
-  const neededScore = targetScore - fixedScore
-  let rollValueChance = 0
+  let activeOutcomes = fixedScore >= targetScore ? new Map() : new Map([[fixedScore, 1]])
+  let totalChance = fixedScore >= targetScore ? 1 : 0
 
-  if (neededScore <= 0) {
-    rollValueChance = 1
-  }
-  else {
-    dp.forEach((probability, score) => {
-      if (score >= neededScore) {
-        rollValueChance += probability
-      }
+  for (const line of rollableFutureLines) {
+    if (activeOutcomes.size === 0) {
+      break
+    }
+
+    const nextOutcomes = new Map()
+
+    activeOutcomes.forEach((currentProbability, currentScore) => {
+      const survivedProbability = currentProbability * enchantSuccessRate
+
+      line.distribution.forEach((roll) => {
+        const nextScore = currentScore + line.upgradeScore + roll.score
+        const nextProbability = survivedProbability * roll.probability
+
+        if (nextScore >= targetScore) {
+          totalChance += nextProbability
+        }
+        else {
+          nextOutcomes.set(nextScore, (nextOutcomes.get(nextScore) || 0) + nextProbability)
+        }
+      })
     })
+
+    activeOutcomes = nextOutcomes
   }
 
-  const survivalChance = Math.pow(enchantSuccessRate, futureBaseLines)
-  const totalChance = survivalChance * rollValueChance
+  const isAlreadyComplete = fixedScore >= targetScore
+  const survivalChance = isAlreadyComplete ? 1 : Math.pow(enchantSuccessRate, futureBaseLines)
+  const rollValueChance = totalChance
   const plannedMinPercent = parseInt(plannedMinRating / item.DI * 100)
   const plannedMaxPercent = parseInt(plannedMaxRating / item.DI * 100)
   const plannedScoreText = plannedMinPercent === plannedMaxPercent
@@ -527,7 +571,7 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
     rollValueChanceText: formatProbability(rollValueChance),
     futureRolls: futureBaseLines,
     futureBaseLines,
-    baseRollText: formatBaseRollSummary(futureBaseLines),
+    baseRollText: formatBaseRollSummary(futureBaseLines, isAlreadyComplete),
     upgradeRolls: 0,
     targetScore: targetPercent + '%',
     plannedScoreText,
@@ -741,6 +785,7 @@ function readURL(pars) {
     highlightedPiece.value = [gearName, pieceName]
     statType.value = statNames.slice()
     statInput.value = statValues.slice()
+    resetSssOddsOrder()
   }
   catch (error) {
     console.error(error)
@@ -1306,7 +1351,7 @@ watch([statType, statInput], () => {
                       <div class="text-lg font-semibold">{{ results.sssOdds.baseRollText }}</div>
                     </div>
                     <div class="rounded-lg border p-3">
-                      <div class="text-xs text-muted-foreground">Survival</div>
+                      <div class="text-xs text-muted-foreground">Full survival</div>
                       <div class="text-lg font-semibold">{{ results.sssOdds.survivalChanceText }}</div>
                     </div>
                   </div>
@@ -1315,13 +1360,40 @@ watch([statType, statInput], () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead class="w-[88px]">Order</TableHead>
                           <TableHead>Stat</TableHead>
                           <TableHead>Max upgrade value</TableHead>
                           <TableHead>Roll state</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        <TableRow v-for="line in results.sssOdds.lines" :key="line.stat">
+                        <TableRow v-for="(line, position) in results.sssOdds.lines" :key="`${line.index}-${line.stat}`">
+                          <TableCell>
+                            <div class="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                class="size-7"
+                                :disabled="position === 0"
+                                title="Move earlier"
+                                aria-label="Move earlier"
+                                @click="moveSssOddsLine(position, -1)"
+                              >
+                                <ArrowUpIcon class="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                class="size-7"
+                                :disabled="position === results.sssOdds.lines.length - 1"
+                                title="Move later"
+                                aria-label="Move later"
+                                @click="moveSssOddsLine(position, 1)"
+                              >
+                                <ArrowDownIcon class="size-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                           <TableCell class="font-medium">{{ line.stat }}</TableCell>
                           <TableCell>{{ line.range }}</TableCell>
                           <TableCell :class="getRollStatusClass(line.status)">{{ line.rollText }}</TableCell>
