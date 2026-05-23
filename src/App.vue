@@ -90,6 +90,7 @@ import gears from './utils/gear.js'
 import tiers from './utils/tiers.js'
 
 const decimalStats = ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction']
+const repeatableStats = ['Other (Non-damaging)']
 const sssOddsGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 const enchantSuccessRate = 0.6
 const ratingScale = 1000
@@ -294,7 +295,15 @@ function getTraitMatches(stats) {
   return traitCatalog.filter((trait) => trait.test(stats))
 }
 
+function canRepeatStat(stat) {
+  return repeatableStats.includes(stat)
+}
+
 function isStatSelectedOnOtherLine(stat, index) {
+  if (canRepeatStat(stat)) {
+    return false
+  }
+
   return statType.value.some((selectedStat, selectedIndex) => selectedIndex !== index && selectedStat === stat)
 }
 
@@ -302,6 +311,10 @@ function getUniqueStatTypes(stats) {
   const usedStats = new Set()
 
   return stats.map((stat) => {
+    if (canRepeatStat(stat)) {
+      return stat
+    }
+
     if (!usedStats.has(stat)) {
       usedStats.add(stat)
       return stat
