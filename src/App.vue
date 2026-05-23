@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import {
   CalculatorIcon,
+  CheckIcon,
   ChevronRightIcon,
   ClipboardIcon,
   ExternalLinkIcon,
@@ -24,6 +25,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Combobox,
+  ComboboxAnchor,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
+  ComboboxList,
+  ComboboxViewport,
+} from '@/components/ui/combobox'
 import {
   Dialog,
   DialogContent,
@@ -1005,16 +1017,38 @@ watch([statType, statInput], () => {
                     </span>
                   </div>
                   <div class="grid gap-2 sm:grid-cols-[1fr_120px]">
-                    <Select v-model="statType[index]">
-                      <SelectTrigger :id="`stat-${index}`" class="w-full">
-                        <SelectValue placeholder="Stat" />
-                      </SelectTrigger>
-                      <SelectContent class="max-h-80">
-                        <SelectItem v-for="stat in statOptions" :key="stat" :value="stat">
-                          {{ stat }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      v-model="statType[index]"
+                      open-on-click
+                      open-on-focus
+                      reset-search-term-on-select
+                    >
+                      <ComboboxAnchor>
+                        <ComboboxInput
+                          :id="`stat-${index}`"
+                          class="min-w-0"
+                          placeholder="Search stat..."
+                        />
+                      </ComboboxAnchor>
+                      <ComboboxList>
+                        <ComboboxViewport>
+                          <ComboboxEmpty>No stat found.</ComboboxEmpty>
+                          <ComboboxGroup>
+                            <ComboboxItem
+                              v-for="stat in statOptions"
+                              :key="stat"
+                              :value="stat"
+                              :text-value="stat"
+                            >
+                              {{ stat }}
+                              <ComboboxItemIndicator>
+                                <CheckIcon class="size-4" />
+                              </ComboboxItemIndicator>
+                            </ComboboxItem>
+                          </ComboboxGroup>
+                        </ComboboxViewport>
+                      </ComboboxList>
+                    </Combobox>
 
                     <Input
                       v-model="statInput[index]"
