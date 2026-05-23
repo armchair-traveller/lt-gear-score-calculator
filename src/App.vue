@@ -294,6 +294,37 @@ function getTraitMatches(stats) {
   return traitCatalog.filter((trait) => trait.test(stats))
 }
 
+function isStatSelectedOnOtherLine(stat, index) {
+  return statType.value.some((selectedStat, selectedIndex) => selectedIndex !== index && selectedStat === stat)
+}
+
+function getUniqueStatTypes(stats) {
+  const usedStats = new Set()
+
+  return stats.map((stat) => {
+    if (!usedStats.has(stat)) {
+      usedStats.add(stat)
+      return stat
+    }
+
+    const fallback = statOptions.value.find((option) => !usedStats.has(option))
+    if (fallback) {
+      usedStats.add(fallback)
+      return fallback
+    }
+
+    return stat
+  })
+}
+
+function setStatType(index, stat) {
+  if (isStatSelectedOnOtherLine(stat, index)) {
+    return
+  }
+
+  statType.value[index] = stat
+}
+
 function setGear(category, piece) {
   gearType.value = category
   pieceType.value = piece
@@ -783,7 +814,7 @@ function readURL(pars) {
     gearType.value = gearName
     pieceType.value = pieceName
     highlightedPiece.value = [gearName, pieceName]
-    statType.value = statNames.slice()
+    statType.value = getUniqueStatTypes(statNames.slice())
     statInput.value = statValues.slice()
     resetSssOddsOrder()
   }
@@ -1063,10 +1094,11 @@ watch([statType, statInput], () => {
                   </div>
                   <div class="grid gap-2 sm:grid-cols-[1fr_120px]">
                     <Combobox
-                      v-model="statType[index]"
+                      :model-value="statType[index]"
                       open-on-click
                       open-on-focus
                       reset-search-term-on-select
+                      @update:model-value="setStatType(index, $event)"
                     >
                       <ComboboxAnchor>
                         <ComboboxInput
@@ -1084,6 +1116,7 @@ watch([statType, statInput], () => {
                               :key="stat"
                               :value="stat"
                               :text-value="stat"
+                              :disabled="isStatSelectedOnOtherLine(stat, index)"
                             >
                               {{ stat }}
                               <ComboboxItemIndicator>
