@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import {
   CalculatorIcon,
+  ChevronRightIcon,
   ClipboardIcon,
   ExternalLinkIcon,
   InfoIcon,
@@ -929,9 +930,14 @@ watch([statType, statInput], () => {
 
       <main class="mx-auto grid w-full max-w-[1600px] gap-4 px-4 py-4 md:px-6 xl:grid-cols-[minmax(420px,560px)_minmax(0,1fr)]">
         <section class="grid gap-4">
-          <Card class="rounded-lg">
-            <CardHeader class="border-b">
-              <div class="flex items-start justify-between gap-3">
+          <Card class="gap-0 rounded-lg py-0">
+            <CardHeader class="p-0">
+              <button
+                type="button"
+                class="group flex w-full items-center justify-between gap-3 rounded-t-lg border-b px-4 py-4 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                aria-label="Open gear selector"
+                @click="gearSheetOpen = true"
+              >
                 <div class="flex min-w-0 items-center gap-3">
                   <img class="size-12 shrink-0 rounded-lg border bg-muted p-1" :src="selectedImage" alt="">
                   <div class="min-w-0">
@@ -943,14 +949,15 @@ watch([statType, statInput], () => {
                     </CardDescription>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" @click="gearSheetOpen = true">
-                  <SearchIcon />
-                  Gear
-                </Button>
-              </div>
+                <div class="flex shrink-0 items-center gap-1.5 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:border-ring/50 group-hover:text-foreground">
+                  <SearchIcon class="size-3.5" />
+                  <span class="hidden sm:inline">Change gear</span>
+                  <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                </div>
+              </button>
             </CardHeader>
 
-            <CardContent class="grid gap-4">
+            <CardContent class="grid gap-4 p-4">
               <div class="grid gap-3 sm:grid-cols-2">
                 <div class="grid gap-1.5">
                   <Label for="gear-type">Tier</Label>
