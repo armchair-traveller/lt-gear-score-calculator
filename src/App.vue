@@ -1798,7 +1798,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 </div>
 
                 <Tabs default-value="enchants" class="grid min-h-0 min-w-0 gap-3">
-                  <TabsList class="w-full justify-start overflow-x-auto sm:w-fit">
+                  <TabsList class="w-full justify-start overflow-x-auto overflow-y-hidden sm:w-fit">
                     <TabsTrigger value="enchants">Enchants</TabsTrigger>
                     <TabsTrigger value="tiers">Tiers</TabsTrigger>
                     <TabsTrigger value="traits">Traits</TabsTrigger>
