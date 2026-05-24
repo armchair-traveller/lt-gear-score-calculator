@@ -97,14 +97,9 @@ import tiers from './utils/tiers.js'
 const decimalStats = ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction']
 const repeatableStats = ['Other (Non-damaging)']
 const sssOddsGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
+const inputEnchantGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 const enchantSuccessRate = 0.6
 const ratingScale = 1000
-const inputEnchantLevelOptions = [
-  { value: '2', label: 'Lv.2 Base' },
-  { value: '3', label: 'Lv.3' },
-  { value: '4', label: 'Lv.4' },
-  { value: '5', label: 'Lv.5 Full' },
-]
 
 const gearType = ref('[9999] Armor')
 const pieceType = ref('Helmet')
@@ -303,6 +298,7 @@ const highlightedTierRows = computed(() => getTierRows(highlightedPiece.value[0]
 const selectedTraitRows = computed(() => getTraitMatches(validStats.value))
 const highlightedTraitRows = computed(() => getTraitMatches(highlightedStats.value))
 const currentRecommendations = computed(() => recommendedOptionGuide[gearType.value]?.[pieceType.value] ?? null)
+const currentInputEnchantLevelOptions = computed(() => getInputEnchantLevelOptions())
 const totalProgress = computed(() => clamp(Number(results.value.percent), 0, 100))
 const potentialProgress = computed(() => clamp(getFirstPercent(results.value.potentialScore), 0, 100))
 const potentialGainText = computed(() => {
@@ -436,7 +432,35 @@ function getPotentialMultiplier(item = gearType.value) {
 }
 
 function supportsInputEnchantLevel(item = gearType.value) {
-  return item === '[9999] Armor'
+  return inputEnchantGearTypes.includes(item) && hasUpgradePotential(item)
+}
+
+function hasUpgradePotential(item = gearType.value) {
+  const category = gears[item]
+  if (!category) {
+    return false
+  }
+
+  return getPieceNames(item).some((piece) =>
+    Object.values(category[piece]?.Stats ?? {}).some((stat) =>
+      Array.isArray(stat.Potential) && Number(stat.Potential[0]) > 0,
+    ),
+  )
+}
+
+function getMaxInputEnchantLevel(item = gearType.value) {
+  return supportsInputEnchantLevel(item) ? getProjectionEnchantLevel(item) : 2
+}
+
+function getInputEnchantLevelOptions(item = gearType.value) {
+  const maxLevel = getMaxInputEnchantLevel(item)
+
+  return [2, 3, 4, 5]
+    .filter((level) => level <= maxLevel)
+    .map((level) => ({
+      value: String(level),
+      label: level === 2 ? 'Lv.2 Base' : `Lv.${level}${level === maxLevel ? ' Full' : ''}`,
+    }))
 }
 
 function getInputEnchantLevelNumber(item = gearType.value) {
@@ -445,7 +469,7 @@ function getInputEnchantLevelNumber(item = gearType.value) {
   }
 
   const level = parseInt(inputEnchantLevel.value)
-  return Number.isFinite(level) ? clamp(level, 2, 5) : 2
+  return Number.isFinite(level) ? clamp(level, 2, getMaxInputEnchantLevel(item)) : 2
 }
 
 function getInputEnchantUpgradeCount(item = gearType.value) {
@@ -475,9 +499,9 @@ function getProjectionEnchantLevel(item = gearType.value) {
 }
 
 function setInputEnchantLevel(value) {
-  const nextValue = String(value)
-  if (inputEnchantLevelOptions.some((option) => option.value === nextValue)) {
-    inputEnchantLevel.value = nextValue
+  const level = parseInt(value)
+  if (Number.isFinite(level)) {
+    inputEnchantLevel.value = String(clamp(level, 2, getMaxInputEnchantLevel()))
   }
 }
 
@@ -1068,6 +1092,7 @@ watch([gearType, pieceType], ([nextGear, nextPiece]) => {
 
   highlightedPiece.value = [nextGear, nextPiece]
   changePiece()
+  setInputEnchantLevel(inputEnchantLevel.value)
 }, { flush: 'sync' })
 
 watch([statType, statInput, inputEnchantLevel], () => {
@@ -1209,12 +1234,13 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
               <div v-if="supportsInputEnchantLevel()">
                 <div
-                  class="grid grid-cols-2 gap-1 rounded-md border bg-muted p-1 sm:grid-cols-4"
+                  class="grid gap-1 rounded-md border bg-muted p-1"
+                  :class="currentInputEnchantLevelOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'"
                   role="group"
                   aria-label="Input enchant level"
                 >
                   <button
-                    v-for="option in inputEnchantLevelOptions"
+                    v-for="option in currentInputEnchantLevelOptions"
                     :key="option.value"
                     type="button"
                     :aria-pressed="inputEnchantLevel === option.value"
