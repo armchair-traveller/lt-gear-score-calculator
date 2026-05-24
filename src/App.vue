@@ -99,12 +99,19 @@ const repeatableStats = ['Other (Non-damaging)']
 const sssOddsGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 const enchantSuccessRate = 0.6
 const ratingScale = 1000
+const inputEnchantLevelOptions = [
+  { value: '2', label: 'Lv.2 Base' },
+  { value: '3', label: 'Lv.3' },
+  { value: '4', label: 'Lv.4' },
+  { value: '5', label: 'Lv.5 Full' },
+]
 
 const gearType = ref('[9999] Armor')
 const pieceType = ref('Helmet')
 const highlightedPiece = ref(['[9999] Armor', 'Helmet'])
 const valueButton = ref('90')
 const resultMode = ref('score')
+const inputEnchantLevel = ref('2')
 
 const statType = ref([])
 const statInput = ref(['', '', '', '', ''])
@@ -428,6 +435,52 @@ function getPotentialMultiplier(item = gearType.value) {
   return parseInt(item.slice(1, 5)) < 9999 ? 2 : 3
 }
 
+function supportsInputEnchantLevel(item = gearType.value) {
+  return item === '[9999] Armor'
+}
+
+function getInputEnchantLevelNumber(item = gearType.value) {
+  if (!supportsInputEnchantLevel(item)) {
+    return 2
+  }
+
+  const level = parseInt(inputEnchantLevel.value)
+  return Number.isFinite(level) ? clamp(level, 2, 5) : 2
+}
+
+function getInputEnchantUpgradeCount(item = gearType.value) {
+  return Math.max(0, getInputEnchantLevelNumber(item) - 2)
+}
+
+function getRemainingPotentialMultiplier(item = gearType.value) {
+  return Math.max(0, getPotentialMultiplier(item) - getInputEnchantUpgradeCount(item))
+}
+
+function getInputMaxValue(stat) {
+  const statInfo = currentItem.value?.Stats?.[stat]
+  if (!statInfo) {
+    return null
+  }
+
+  return statInfo.Value + (statInfo.Potential?.[1] ?? 0) * getInputEnchantUpgradeCount()
+}
+
+function getInputMaxValueText(stat) {
+  const value = getInputMaxValue(stat)
+  return value === null ? '-' : formatStatValue(value, stat)
+}
+
+function getProjectionEnchantLevel(item = gearType.value) {
+  return parseInt(item.slice(1, 5)) < 9999 ? 4 : 5
+}
+
+function setInputEnchantLevel(value) {
+  const nextValue = String(value)
+  if (inputEnchantLevelOptions.some((option) => option.value === nextValue)) {
+    inputEnchantLevel.value = nextValue
+  }
+}
+
 function getTierForPercent(percent, tierEquivalence, tierAvailable) {
   let tier = 'F'
   tierAvailable.forEach((entry) => {
@@ -553,7 +606,7 @@ function getEmptySssOdds() {
   }
 }
 
-function calculateSssOdds(tierEquivalence, potentialMultiplier) {
+function calculateSssOdds(tierEquivalence, remainingPotentialMultiplier, futurePotentialMultiplier = remainingPotentialMultiplier) {
   if (!sssOddsGearTypes.includes(gearType.value) || !tierEquivalence.SSS) {
     return getEmptySssOdds()
   }
@@ -584,8 +637,9 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
     const currentValue = getInputValue(lineIndex)
     const step = getStatStep(stat)
     const hasValue = hasRolledValue(lineIndex)
-    const upgradeMinValue = potential[0] * potentialMultiplier
-    const upgradeMaxValue = potential[1] * potentialMultiplier
+    const linePotentialMultiplier = hasValue ? remainingPotentialMultiplier : futurePotentialMultiplier
+    const upgradeMinValue = potential[0] * linePotentialMultiplier
+    const upgradeMaxValue = potential[1] * linePotentialMultiplier
     const upgradeScore = Math.round(upgradeMinValue / maxValue * maxDI * ratingScale)
 
     let lineMinValue = hasValue ? currentValue : step
@@ -614,7 +668,7 @@ function calculateSssOdds(tierEquivalence, potentialMultiplier) {
       index: lineIndex,
       stat,
       range: shouldRollLine ? formatRange(lineMinValue, lineMaxValue, stat) : 'Ignored',
-      rollText: !shouldRollLine ? 'not rolled' : hasValue ? 'already rolled' : '60% base roll',
+      rollText: !shouldRollLine ? 'not rolled' : hasValue ? linePotentialMultiplier > 0 ? 'already rolled' : 'complete' : '60% base roll',
       status: !shouldRollLine ? 'ignored' : hasValue ? 'upgrade' : 'new',
     })
   }
@@ -688,7 +742,8 @@ function updateValues() {
   let totalDI = 0
   let potentialGainMin = 0
   let potentialGainMax = 0
-  const potentialMultiplier = getPotentialMultiplier()
+  const remainingPotentialMultiplier = getRemainingPotentialMultiplier()
+  const futurePotentialMultiplier = getPotentialMultiplier()
   const tierEquivalence = tiers[gearType.value][item.Type]
   const tierAvailable = Object.keys(tierEquivalence)
 
@@ -709,8 +764,8 @@ function updateValues() {
     totalDI += res
 
     const pot = statInfo.Potential
-    const potentialValueMin = currentValue + pot[0] * potentialMultiplier
-    const potentialValueMax = currentValue + pot[1] * potentialMultiplier
+    const potentialValueMin = currentValue + pot[0] * remainingPotentialMultiplier
+    const potentialValueMax = currentValue + pot[1] * remainingPotentialMultiplier
 
     if (hasValue) {
       potentialGainMin += pot[0] / maxValue * maxDI
@@ -749,10 +804,10 @@ function updateValues() {
   results.value.percent = itemDI
   results.value.tier = getTierForPercent(itemDI, tierEquivalence, tierAvailable)
 
-  const potentialMin = parseInt((potentialGainMin * potentialMultiplier + totalDI) / item.DI * 100)
-  const potentialMax = parseInt((potentialGainMax * potentialMultiplier + totalDI) / item.DI * 100)
-  const potentialDIMin = potentialGainMin * potentialMultiplier + totalDI
-  const potentialDIMax = potentialGainMax * potentialMultiplier + totalDI
+  const potentialMin = parseInt((potentialGainMin * remainingPotentialMultiplier + totalDI) / item.DI * 100)
+  const potentialMax = parseInt((potentialGainMax * remainingPotentialMultiplier + totalDI) / item.DI * 100)
+  const potentialDIMin = potentialGainMin * remainingPotentialMultiplier + totalDI
+  const potentialDIMax = potentialGainMax * remainingPotentialMultiplier + totalDI
 
   let potentialText = potentialMin + '%'
   let potentialDIText = potentialDIMin.toFixed(2) + '%'
@@ -786,14 +841,14 @@ function updateValues() {
   results.value.potentialScore = potentialText
   results.value.potentialDI = potentialDIText
   results.value.potentialTier = potentialTierText
-  results.value.sssOdds = calculateSssOdds(tierEquivalence, potentialMultiplier)
+  results.value.sssOdds = calculateSssOdds(tierEquivalence, remainingPotentialMultiplier, futurePotentialMultiplier)
 }
 
 function setValues(enchants, value) {
   const percent = Number(value)
   for (let i = 0; i < 5; i++) {
     const stat = statType.value[i]
-    const maxValue = currentItem.value?.Stats?.[stat]?.Value ?? 0
+    const maxValue = getInputMaxValue(stat) ?? 0
 
     if (enchants > i) {
       statInput.value[i] = isDecimalStat(stat) ? +(percent * maxValue / 100).toFixed(1) : parseInt(percent * maxValue / 100)
@@ -851,7 +906,12 @@ function generateURL() {
   }
 
   const resString = gearNum + pieceNum + statNums.join('')
-  navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?it=${resString}`)
+  const params = new URLSearchParams({ it: resString })
+  if (supportsInputEnchantLevel()) {
+    params.set('el', inputEnchantLevel.value)
+  }
+
+  navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?${params.toString()}`)
   toggleClipboardTooltip()
   return resString
 }
@@ -991,6 +1051,9 @@ changePiece()
 const urlParams = new URLSearchParams(window.location.search)
 if (urlParams.has('it')) {
   readURL(urlParams.get('it'))
+  if (urlParams.has('el') && supportsInputEnchantLevel()) {
+    setInputEnchantLevel(urlParams.get('el'))
+  }
   disclaimerOpen.value = false
 }
 
@@ -1007,7 +1070,7 @@ watch([gearType, pieceType], ([nextGear, nextPiece]) => {
   changePiece()
 }, { flush: 'sync' })
 
-watch([statType, statInput], () => {
+watch([statType, statInput, inputEnchantLevel], () => {
   updateValues()
 }, {
   deep: true,
@@ -1144,6 +1207,28 @@ watch([statType, statInput], () => {
                 </div>
               </div>
 
+              <div v-if="supportsInputEnchantLevel()">
+                <div
+                  class="grid grid-cols-2 gap-1 rounded-md border bg-muted p-1 sm:grid-cols-4"
+                  role="group"
+                  aria-label="Input enchant level"
+                >
+                  <button
+                    v-for="option in inputEnchantLevelOptions"
+                    :key="option.value"
+                    type="button"
+                    :aria-pressed="inputEnchantLevel === option.value"
+                    class="h-9 rounded-sm px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    :class="inputEnchantLevel === option.value
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'"
+                    @click="setInputEnchantLevel(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
+              </div>
+
               <Separator />
 
               <div class="grid gap-3">
@@ -1157,7 +1242,7 @@ watch([statType, statInput], () => {
                       Line {{ index + 1 }}
                     </Label>
                     <span class="text-xs text-muted-foreground">
-                      Max {{ currentItem?.Stats?.[statType[index]]?.Value ?? '-' }} / {{ currentItem?.Stats?.[statType[index]]?.DI?.toFixed(2) ?? '0.00' }}%
+                      Max {{ getInputMaxValueText(statType[index]) }} / {{ currentItem?.Stats?.[statType[index]]?.DI?.toFixed(2) ?? '0.00' }}%
                     </span>
                   </div>
                   <div class="grid gap-2 sm:grid-cols-[1fr_120px]">
@@ -1385,7 +1470,7 @@ watch([statType, statInput], () => {
                 {{ getFinalUpgrade(gearType) }} Projection
               </CardTitle>
               <CardDescription>
-                Lv.{{ parseInt(gearType.slice(1, 5)) < 9999 ? 4 : 5 }} {{ pieceType }} {{ gearType }}
+                Lv.{{ getProjectionEnchantLevel() }} {{ pieceType }} {{ gearType }}
               </CardDescription>
             </CardHeader>
 
