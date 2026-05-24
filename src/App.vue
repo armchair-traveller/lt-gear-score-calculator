@@ -39,6 +39,11 @@ import {
   ComboboxViewport,
 } from '@/components/ui/combobox'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -222,6 +227,55 @@ const traitCatalog = [
   },
 ]
 
+const recommendedOptionGuide = {
+  '[8000] Weapons': {
+    Weapon: {
+      main: ['Critical Damage', 'Maximum Damage', 'Minimum Damage', 'Attack/Intensity %', 'Basic Stats %'],
+      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+    Stone: {
+      main: ['Maximum Damage', 'Minimum Damage', 'Strength/Magic %'],
+      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+  },
+  '[9999] Armor': {
+    Helmet: {
+      main: ['Critical Damage', 'Accuracy'],
+      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Normal Amplification', 'Minimum Damage', 'Back Attack Damage'],
+    },
+    Chestplate: {
+      main: ['Attack/Intensity %', 'Basic Stats %'],
+      secondary: ['Maximum Damage', 'Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+    Fauld: {
+      main: ['Attack/Intensity %', 'Basic Stats %'],
+      secondary: ['Maximum Damage', 'Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+    Gloves: {
+      main: ['Attack/Intensity %', 'Critical Damage', 'Boss Amplification'],
+      secondary: ['Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+    Boots: {
+      main: ['Critical Damage', 'Basic Stats %'],
+      secondary: ['Movement Speed', 'Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+  },
+  '[9000] Accessories': {
+    Glasses: {
+      main: ['Accuracy', 'Maximum Damage', 'Attack/Intensity %'],
+      secondary: ['Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+    Crystal: {
+      main: ['Dual Damage', 'Normal Amplification', 'Minimum Damage'],
+      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Movement Speed', 'Back Attack Damage'],
+    },
+    Stockings: {
+      main: ['Critical Damage', 'Basic Stats %', 'Boss Amplification'],
+      secondary: ['Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+  },
+}
+
 const statIndex = [
   'Critical Damage', 'Normal Amplification', 'Basic Stats', 'Attack/Intensity', 'Accuracy', 'Strength/Magic',
   'Minimum Damage', 'Back Attack Damage', 'Static Damage %', 'Boss Added Damage', 'Normal Added Damage',
@@ -241,6 +295,7 @@ const highlightedItem = computed(() => gears[highlightedPiece.value[0]]?.[highli
 const highlightedTierRows = computed(() => getTierRows(highlightedPiece.value[0], highlightedPiece.value[1]))
 const selectedTraitRows = computed(() => getTraitMatches(validStats.value))
 const highlightedTraitRows = computed(() => getTraitMatches(highlightedStats.value))
+const currentRecommendations = computed(() => recommendedOptionGuide[gearType.value]?.[pieceType.value] ?? null)
 const totalProgress = computed(() => clamp(Number(results.value.percent), 0, 100))
 const potentialProgress = computed(() => clamp(getFirstPercent(results.value.potentialScore), 0, 100))
 const potentialGainText = computed(() => {
@@ -1176,6 +1231,56 @@ watch([statType, statInput], () => {
                   </Select>
                 </div>
               </div>
+
+              <Collapsible
+                v-if="currentRecommendations"
+                v-slot="{ open }"
+                :key="`${gearType}-${pieceType}`"
+                class="rounded-lg border bg-muted/20"
+              >
+                <CollapsibleTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    class="h-auto w-full justify-between rounded-lg px-3 py-2.5 text-left text-sm"
+                  >
+                    <span>View recommended options</span>
+                    <ChevronRightIcon
+                      class="size-4 text-muted-foreground transition-transform"
+                      :class="{ 'rotate-90': open }"
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent>
+                  <div class="grid gap-3 border-t px-3 py-3">
+                    <div class="grid gap-2">
+                      <div class="text-xs font-medium text-muted-foreground">Main</div>
+                      <div class="flex flex-wrap gap-1.5">
+                        <Badge
+                          v-for="stat in currentRecommendations.main"
+                          :key="`main-${stat}`"
+                          variant="secondary"
+                        >
+                          {{ stat }}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <div class="text-xs font-medium text-muted-foreground">Secondary</div>
+                      <div class="flex flex-wrap gap-1.5">
+                        <Badge
+                          v-for="stat in currentRecommendations.secondary"
+                          :key="`secondary-${stat}`"
+                          variant="outline"
+                        >
+                          {{ stat }}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
 
