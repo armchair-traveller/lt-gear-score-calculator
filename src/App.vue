@@ -1285,7 +1285,7 @@ watch([statType, statInput], () => {
             </CardHeader>
 
             <CardContent>
-              <Tabs default-value="summary" class="grid gap-4">
+              <Tabs default-value="summary" class="grid min-w-0 gap-4">
                 <TabsList class="w-fit">
                   <TabsTrigger value="summary">Summary</TabsTrigger>
                   <TabsTrigger value="lines">Lines</TabsTrigger>
@@ -1342,9 +1342,9 @@ watch([statType, statInput], () => {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="lines" class="m-0">
-                  <ScrollArea class="max-h-[360px] rounded-lg border">
-                    <Table>
+                <TabsContent value="lines" class="m-0 min-w-0">
+                  <ScrollArea class="max-h-[360px] min-w-0 rounded-lg border">
+                    <Table class="min-w-[520px]">
                       <TableHeader>
                         <TableRow>
                           <TableHead>Stat</TableHead>
@@ -1376,7 +1376,7 @@ watch([statType, statInput], () => {
                   </ScrollArea>
                 </TabsContent>
 
-                <TabsContent v-if="results.sssOdds.available" value="sss" class="m-0 grid gap-3">
+                <TabsContent v-if="results.sssOdds.available" value="sss" class="m-0 grid min-w-0 gap-3">
                   <div class="grid gap-3 md:grid-cols-5">
                     <div class="rounded-lg border p-3">
                       <div class="text-xs text-muted-foreground">Total odds</div>
@@ -1402,8 +1402,8 @@ watch([statType, statInput], () => {
                     </div>
                   </div>
 
-                  <ScrollArea class="max-h-[320px] rounded-lg border">
-                    <Table>
+                  <ScrollArea class="max-h-[320px] min-w-0 rounded-lg border">
+                    <Table class="min-w-[620px]">
                       <TableHeader>
                         <TableRow>
                           <TableHead class="w-[88px]">Order</TableHead>
@@ -1541,9 +1541,9 @@ watch([statType, statInput], () => {
             <SheetDescription>{{ highlightedPiece[1] }} {{ highlightedPiece[0] }}</SheetDescription>
           </SheetHeader>
 
-          <div class="min-h-0 flex-1 overflow-y-auto p-4">
-            <div class="grid min-h-full gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-              <section class="min-h-0 rounded-lg border bg-card">
+          <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
+            <div class="grid min-h-full min-w-0 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+              <section class="min-h-0 min-w-0 rounded-lg border bg-card">
                 <div class="border-b px-3 py-2">
                   <div class="text-sm font-medium">Gear catalog</div>
                   <div class="text-xs text-muted-foreground">Hover to inspect, click to select</div>
@@ -1570,7 +1570,7 @@ watch([statType, statInput], () => {
                 </ScrollArea>
               </section>
 
-              <section class="grid min-h-0 content-start gap-4">
+              <section class="grid min-h-0 min-w-0 content-start gap-4">
                 <div class="flex items-center gap-3 rounded-lg border bg-card p-3">
                   <img class="size-12 rounded-lg border bg-muted p-1" :src="getItemImage(highlightedPiece[1], highlightedPiece[0])" alt="">
                   <div class="min-w-0">
@@ -1581,15 +1581,15 @@ watch([statType, statInput], () => {
                   </div>
                 </div>
 
-                <Tabs default-value="enchants" class="grid min-h-0 gap-3">
+                <Tabs default-value="enchants" class="grid min-h-0 min-w-0 gap-3">
                   <TabsList class="w-full justify-start overflow-x-auto sm:w-fit">
                     <TabsTrigger value="enchants">Enchants</TabsTrigger>
                     <TabsTrigger value="tiers">Tiers</TabsTrigger>
                     <TabsTrigger value="traits">Traits</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="enchants" class="m-0 min-h-0">
-                    <ScrollArea class="max-h-[52vh] rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
+                  <TabsContent value="enchants" class="m-0 min-h-0 min-w-0">
+                    <ScrollArea class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
                       <Table class="min-w-[560px]">
                         <TableHeader>
                           <TableRow>
@@ -1616,8 +1616,8 @@ watch([statType, statInput], () => {
                     </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="tiers" class="m-0 min-h-0">
-                    <ScrollArea class="max-h-[52vh] rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
+                  <TabsContent value="tiers" class="m-0 min-h-0 min-w-0">
+                    <ScrollArea class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
                       <Table class="min-w-[720px]">
                         <TableHeader>
                           <TableRow>
