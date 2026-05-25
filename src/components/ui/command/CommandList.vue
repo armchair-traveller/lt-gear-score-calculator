@@ -1,6 +1,6 @@
 <script setup>
 import { reactiveOmit } from "@vueuse/core";
-import { ComboboxSeparator } from "reka-ui";
+import { ListboxContent, useForwardProps } from "reka-ui";
 import { cn } from "@/lib/utils";
 
 const props = defineProps({
@@ -14,14 +14,17 @@ const props = defineProps({
 });
 
 const delegatedProps = reactiveOmit(props, "class");
+const forwarded = useForwardProps(delegatedProps);
 </script>
 
 <template>
-  <ComboboxSeparator
-    data-slot="combobox-separator"
-    v-bind="delegatedProps"
-    :class="cn('bg-border -mx-1 my-1 h-px', props.class)"
+  <ListboxContent
+    data-slot="command-list"
+    v-bind="forwarded"
+    :class="cn('no-scrollbar max-h-72 scroll-py-1 outline-none overflow-x-hidden overflow-y-auto', props.class)"
   >
-    <slot />
-  </ComboboxSeparator>
+    <div role="presentation">
+      <slot />
+    </div>
+  </ListboxContent>
 </template>

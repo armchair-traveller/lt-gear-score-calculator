@@ -1,10 +1,11 @@
 <script setup>
 import { reactiveOmit } from "@vueuse/core";
-import { ComboboxAnchor, useForwardProps } from "reka-ui";
+import { Separator } from "reka-ui";
 import { cn } from "@/lib/utils";
 
 const props = defineProps({
-  reference: { type: null, required: false },
+  orientation: { type: String, required: false },
+  decorative: { type: Boolean, required: false },
   asChild: { type: Boolean, required: false },
   as: { type: null, required: false },
   class: {
@@ -15,15 +16,14 @@ const props = defineProps({
 });
 
 const delegatedProps = reactiveOmit(props, "class");
-const forwarded = useForwardProps(delegatedProps);
 </script>
 
 <template>
-  <ComboboxAnchor
-    data-slot="combobox-anchor"
-    v-bind="forwarded"
-    :class="cn('', props.class)"
+  <Separator
+    data-slot="command-separator"
+    v-bind="delegatedProps"
+    :class="cn('bg-border/50 my-1.5 h-px', props.class)"
   >
     <slot />
-  </ComboboxAnchor>
+  </Separator>
 </template>

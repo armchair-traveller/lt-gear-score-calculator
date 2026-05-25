@@ -1,7 +1,9 @@
 <script setup>
 import { reactiveOmit } from "@vueuse/core";
-import { ComboboxItemIndicator, useForwardProps } from "reka-ui";
+import { Primitive } from "reka-ui";
+import { computed } from "vue";
 import { cn } from "@/lib/utils";
+import { useCommand } from ".";
 
 const props = defineProps({
   asChild: { type: Boolean, required: false },
@@ -14,15 +16,17 @@ const props = defineProps({
 });
 
 const delegatedProps = reactiveOmit(props, "class");
-const forwarded = useForwardProps(delegatedProps);
+const { filterState } = useCommand();
+const isRender = computed(() => !!filterState.search && filterState.filtered.count === 0);
 </script>
 
 <template>
-  <ComboboxItemIndicator
-    data-slot="combobox-item-indicator"
-    v-bind="forwarded"
-    :class="cn('pointer-events-none absolute right-2 flex size-4 items-center justify-center', props.class)"
+  <Primitive
+    v-if="isRender"
+    data-slot="command-empty"
+    v-bind="delegatedProps"
+    :class="cn('py-6 text-center text-sm', props.class)"
   >
     <slot />
-  </ComboboxItemIndicator>
+  </Primitive>
 </template>

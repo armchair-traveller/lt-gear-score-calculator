@@ -5,6 +5,7 @@ import {
   ArrowUpIcon,
   CalculatorIcon,
   CheckIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
   ClipboardIcon,
   ExternalLinkIcon,
@@ -28,21 +29,18 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
-  Combobox,
-  ComboboxAnchor,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxItemIndicator,
-  ComboboxList,
-  ComboboxViewport,
-} from '@/components/ui/combobox'
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import {
   Dialog,
   DialogContent,
@@ -54,6 +52,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
@@ -110,6 +113,7 @@ const inputEnchantLevel = ref('2')
 
 const statType = ref([])
 const statInput = ref(['', '', '', '', ''])
+const statPickerOpen = ref([])
 const sssOddsOrder = ref([0, 1, 2, 3, 4])
 const validStats = ref([])
 
@@ -394,6 +398,11 @@ function setStatType(index, stat) {
   }
 
   statType.value[index] = stat
+}
+
+function selectStatType(index, stat) {
+  setStatType(index, stat)
+  statPickerOpen.value[index] = false
 }
 
 function setGear(category, piece) {
@@ -1273,40 +1282,48 @@ watch([statType, statInput, inputEnchantLevel], () => {
                     </span>
                   </div>
                   <div class="grid gap-2 sm:grid-cols-[1fr_120px]">
-                    <Combobox
-                      :model-value="statType[index]"
-                      open-on-click
-                      open-on-focus
-                      reset-search-term-on-select
-                      @update:model-value="setStatType(index, $event)"
-                    >
-                      <ComboboxAnchor>
-                        <ComboboxInput
+                    <Popover v-model:open="statPickerOpen[index]">
+                      <PopoverTrigger as-child>
+                        <Button
                           :id="`stat-${index}`"
-                          class="min-w-0"
-                          placeholder="Search stat..."
-                        />
-                      </ComboboxAnchor>
-                      <ComboboxList>
-                        <ComboboxViewport>
-                          <ComboboxEmpty>No stat found.</ComboboxEmpty>
-                          <ComboboxGroup>
-                            <ComboboxItem
-                              v-for="stat in statOptions"
-                              :key="stat"
-                              :value="stat"
-                              :text-value="stat"
-                              :disabled="isStatSelectedOnOtherLine(stat, index)"
-                            >
-                              {{ stat }}
-                              <ComboboxItemIndicator>
-                                <CheckIcon class="size-4" />
-                              </ComboboxItemIndicator>
-                            </ComboboxItem>
-                          </ComboboxGroup>
-                        </ComboboxViewport>
-                      </ComboboxList>
-                    </Combobox>
+                          variant="outline"
+                          role="combobox"
+                          :aria-expanded="statPickerOpen[index] || false"
+                          class="w-full justify-between border-input/30 bg-input/50 px-3 font-normal hover:bg-muted dark:bg-input/30 dark:hover:bg-input/40"
+                        >
+                          <span class="min-w-0 truncate text-left">
+                            {{ statType[index] || 'Select stat...' }}
+                          </span>
+                          <ChevronDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent class="w-[var(--reka-popover-trigger-width)] gap-0 p-0" align="start">
+                        <Command highlight-on-hover>
+                          <CommandInput placeholder="Search stat..." />
+                          <CommandList>
+                            <CommandEmpty>No stat found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                v-for="stat in statOptions"
+                                :key="stat"
+                                :value="stat"
+                                :text-value="stat"
+                                :disabled="isStatSelectedOnOtherLine(stat, index)"
+                                @select="selectStatType(index, stat)"
+                              >
+                                <CheckIcon
+                                  :class="[
+                                    'size-4',
+                                    statType[index] === stat ? 'opacity-100' : 'opacity-0',
+                                  ]"
+                                />
+                                <span class="truncate">{{ stat }}</span>
+                              </CommandItem>
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
 
                     <Input
                       v-model="statInput[index]"
