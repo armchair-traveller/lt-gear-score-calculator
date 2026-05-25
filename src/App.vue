@@ -931,8 +931,9 @@ function generateURL() {
 
   const resString = gearNum + pieceNum + statNums.join('')
   const params = new URLSearchParams({ it: resString })
-  if (supportsInputEnchantLevel()) {
-    params.set('el', inputEnchantLevel.value)
+  const enchantLevel = getInputEnchantLevelNumber()
+  if (supportsInputEnchantLevel() && enchantLevel > 2) {
+    params.set('el', String(enchantLevel))
   }
 
   navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?${params.toString()}`)
