@@ -13,7 +13,7 @@ const props = defineProps({
 <template>
   <div
     data-slot="dialog-header"
-    :class="cn('gap-2 flex flex-col', props.class)"
+    :class="cn('gap-1.5 flex flex-col', props.class)"
   >
     <slot />
   </div>
