@@ -1267,7 +1267,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
               <Separator />
 
-              <div class="overflow-hidden rounded-lg border bg-muted/10 divide-y divide-border">
+              <div class="overflow-hidden rounded-lg border bg-muted/10">
                 <div
                   v-for="(_, index) in statType"
                   :key="index"
@@ -1477,7 +1477,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   <Progress :model-value="totalProgress" class="mt-4 h-2" />
                 </div>
 
-                <div class="overflow-hidden rounded-lg border bg-muted/10 divide-y divide-border">
+                <div class="overflow-hidden rounded-lg border bg-muted/10">
                   <div
                     v-for="(_, index) in statType"
                     :key="`result-${index}`"
@@ -1542,7 +1542,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                       <Progress :model-value="potentialProgress" class="mt-4 h-2" />
                     </div>
 
-                    <div class="overflow-hidden rounded-lg border bg-muted/10 divide-y divide-border">
+                    <div class="overflow-hidden rounded-lg border bg-muted/10">
                       <div
                         v-for="(_, index) in statType"
                         :key="`potential-${index}`"
@@ -1731,8 +1731,8 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea class="max-h-[420px] rounded-lg border">
-                  <Table>
+                <ScrollArea type="always" class="max-h-[360px] min-w-0 rounded-lg border">
+                  <Table class="[&_td]:py-2.5 [&_th]:h-10">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Score</TableHead>
