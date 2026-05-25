@@ -268,12 +268,12 @@ const recommendedOptionGuide = {
       secondary: ['Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
     },
     Crystal: {
-      main: ['Dual Damage', 'Normal Amplification', 'Minimum Damage'],
-      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Movement Speed', 'Back Attack Damage'],
-    },
-    Stockings: {
       main: ['Critical Damage', 'Basic Stats %', 'Boss Amplification'],
       secondary: ['Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
+    },
+    Stockings: {
+      main: ['Dual Damage', 'Normal Amplification', 'Minimum Damage'],
+      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Movement Speed', 'Back Attack Damage'],
     },
   },
 }
