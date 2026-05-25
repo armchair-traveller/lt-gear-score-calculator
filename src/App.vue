@@ -1257,11 +1257,11 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
               <Separator />
 
-              <div class="grid gap-3">
+              <div class="overflow-hidden rounded-lg border bg-muted/10 divide-y divide-border">
                 <div
                   v-for="(_, index) in statType"
                   :key="index"
-                  class="grid gap-2 rounded-lg border bg-muted/20 p-3"
+                  class="grid gap-2 p-3"
                 >
                   <div class="flex items-center justify-between gap-3">
                     <Label :for="`stat-${index}`" class="text-xs font-medium text-muted-foreground">
@@ -1459,11 +1459,11 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   <Progress :model-value="totalProgress" class="mt-4 h-2" />
                 </div>
 
-                <div class="grid gap-2">
+                <div class="overflow-hidden rounded-lg border bg-muted/10 divide-y divide-border">
                   <div
                     v-for="(_, index) in statType"
                     :key="`result-${index}`"
-                    class="grid gap-2 rounded-lg border p-3"
+                    class="grid gap-2 p-3"
                   >
                     <div class="flex flex-wrap items-center justify-between gap-2">
                       <div class="min-w-0">
@@ -1524,11 +1524,11 @@ watch([statType, statInput, inputEnchantLevel], () => {
                       <Progress :model-value="potentialProgress" class="mt-4 h-2" />
                     </div>
 
-                    <div class="grid gap-2">
+                    <div class="overflow-hidden rounded-lg border bg-muted/10 divide-y divide-border">
                       <div
                         v-for="(_, index) in statType"
                         :key="`potential-${index}`"
-                        class="grid gap-2 rounded-lg border p-3"
+                        class="grid gap-2 p-3"
                       >
                         <div class="flex flex-wrap items-center justify-between gap-2">
                           <div class="min-w-0">
