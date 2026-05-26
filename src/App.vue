@@ -1579,7 +1579,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                       ]"
                     >
                       <InputGroup
-                        class="h-full rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0"
+                        class="h-full rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0 has-[[data-slot][aria-invalid=true]]:border-transparent has-[[data-slot][aria-invalid=true]]:ring-0"
                       >
                         <InputGroupInput
                           :id="`line-${index}-value`"
