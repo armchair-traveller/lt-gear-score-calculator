@@ -72,7 +72,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
   SheetContent,
@@ -1281,15 +1280,15 @@ function getPotentialLineTier(index) {
 function getTierClass(tier) {
   const firstTier = String(tier).split(' ')[0]
   const classes = {
-    F: 'border-neutral-300 bg-neutral-100 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
-    E: 'border-neutral-300 bg-neutral-100 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
-    D: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300',
-    C: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300',
-    B: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300',
-    A: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300',
-    S: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-900 dark:bg-fuchsia-950 dark:text-fuchsia-300',
-    SS: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300',
-    SSS: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300',
+    F: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
+    E: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
+    D: 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
+    C: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    B: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+    A: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+    S: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300',
+    SS: 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
+    SSS: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
   }
 
   return classes[firstTier] ?? classes.F
@@ -1341,10 +1340,10 @@ watch([statType, statInput, inputEnchantLevel], () => {
 <template>
   <TooltipProvider>
     <div class="min-h-screen bg-background text-foreground">
-      <header class="border-b bg-background/95 backdrop-blur">
+      <header class="bg-background/95 backdrop-blur shadow-[0_1px_12px_rgb(15_23_42_/_0.04)] dark:shadow-none">
         <div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
           <div class="flex min-w-0 items-center gap-3">
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-card">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/55">
               <img class="size-6" :src="getAsset('hammer.png')" alt="">
             </div>
             <div class="min-w-0">
@@ -1413,12 +1412,12 @@ watch([statType, statInput, inputEnchantLevel], () => {
             <CardHeader class="p-0">
               <button
                 type="button"
-                class="group flex w-full items-center justify-between gap-3 rounded-t-lg border-b px-4 py-4 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                class="group flex w-full items-center justify-between gap-3 rounded-t-lg px-4 py-4 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 aria-label="Open gear selector"
                 @click="gearSheetOpen = true"
               >
                 <div class="flex min-w-0 items-center gap-3">
-                  <img class="size-12 shrink-0 rounded-lg border bg-muted p-1" :src="selectedImage" alt="">
+                  <img class="size-12 shrink-0 rounded-lg bg-muted p-1" :src="selectedImage" alt="">
                   <div class="min-w-0">
                     <CardTitle class="truncate text-base">
                       {{ pieceType }} {{ gearType }}
@@ -1428,7 +1427,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                     </CardDescription>
                   </div>
                 </div>
-                <div class="flex shrink-0 items-center gap-1.5 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:border-ring/50 group-hover:text-foreground">
+                <div class="flex shrink-0 items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
                   <SearchIcon class="size-3.5" />
                   <span class="hidden sm:inline">Change gear</span>
                   <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -1485,7 +1484,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
               <div v-if="supportsInputEnchantLevel()">
                 <div
-                  class="grid gap-1 rounded-md border bg-muted p-1"
+                  class="grid gap-1 rounded-md bg-muted/70 p-1"
                   :class="currentInputEnchantLevelOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'"
                   role="group"
                   aria-label="Input enchant level"
@@ -1506,9 +1505,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 </div>
               </div>
 
-              <Separator />
-
-              <div class="overflow-hidden rounded-lg border bg-muted/10">
+              <div class="overflow-hidden rounded-lg bg-muted/20">
                 <div
                   v-for="(_, index) in statType"
                   :key="index"
@@ -1614,7 +1611,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 </div>
               </div>
 
-              <div class="grid gap-3 rounded-lg border p-3">
+              <div class="grid gap-3 rounded-lg bg-muted/15 p-3">
                 <div class="flex flex-wrap items-center gap-2">
                   <Button variant="outline" size="sm" @click="setValues(0, 0)">
                     <RefreshCcwIcon />
@@ -1642,7 +1639,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 v-if="currentRecommendations"
                 v-slot="{ open }"
                 :key="`${gearType}-${pieceType}`"
-                class="rounded-lg border bg-muted/20"
+                class="rounded-lg bg-muted/15"
               >
                 <CollapsibleTrigger as-child>
                   <Button
@@ -1658,7 +1655,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 </CollapsibleTrigger>
 
                 <CollapsibleContent>
-                  <div class="grid gap-3 border-t px-3 py-3">
+                  <div class="grid gap-3 px-3 pb-3 pt-1">
                     <div class="grid gap-2">
                       <div class="text-xs font-medium text-muted-foreground">Main</div>
                       <div class="flex flex-wrap gap-1.5">
@@ -1691,7 +1688,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
           </Card>
 
           <Card class="rounded-lg">
-            <CardHeader class="border-b">
+            <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
                 <ShieldCheckIcon class="size-4" />
                 Stat Notes
@@ -1702,7 +1699,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 <div
                   v-for="trait in selectedTraitRows"
                   :key="trait.id"
-                  class="flex gap-3 rounded-lg border bg-muted/20 p-3"
+                  class="flex gap-3 rounded-lg bg-muted/20 p-3"
                 >
                   <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
                   <div>
@@ -1711,7 +1708,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   </div>
                 </div>
               </div>
-              <div v-else class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              <div v-else class="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
                 No special stat notes for the current rolled lines.
               </div>
             </CardContent>
@@ -1720,7 +1717,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
         <section class="grid content-start gap-4">
           <Card class="rounded-lg">
-            <CardHeader class="border-b">
+            <CardHeader>
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <CardTitle class="flex items-center gap-2 text-base">
@@ -1748,7 +1745,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
             <CardContent class="grid gap-4">
               <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
-                <div class="rounded-lg border bg-muted/20 p-4">
+                <div class="rounded-lg bg-muted/20 p-4">
                   <div class="text-sm text-muted-foreground">Total</div>
                   <div class="mt-1 flex items-end gap-2">
                     <div class="text-4xl font-semibold tracking-normal">
@@ -1761,7 +1758,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   <Progress :model-value="totalProgress" class="mt-4 h-2" />
                 </div>
 
-                <div class="overflow-hidden rounded-lg border bg-muted/10">
+                <div class="overflow-hidden rounded-lg bg-muted/20">
                   <div
                     v-for="(_, index) in statType"
                     :key="`result-${index}`"
@@ -1792,7 +1789,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
           </Card>
 
           <Card v-if="getFinalUpgrade(gearType) !== ''" class="rounded-lg">
-            <CardHeader class="border-b">
+            <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
                 <SparklesIcon class="size-4" />
                 {{ getFinalUpgrade(gearType) }} Projection
@@ -1812,7 +1809,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
                 <TabsContent value="summary" class="m-0">
                   <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
-                    <div class="rounded-lg border bg-muted/20 p-4">
+                    <div class="rounded-lg bg-muted/20 p-4">
                       <div class="text-sm text-muted-foreground">Projected</div>
                       <div class="mt-1 flex items-end gap-2">
                         <div class="text-3xl font-semibold tracking-normal">
@@ -1826,7 +1823,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                       <Progress :model-value="potentialProgress" class="mt-4 h-2" />
                     </div>
 
-                    <div class="overflow-hidden rounded-lg border bg-muted/10">
+                    <div class="overflow-hidden rounded-lg bg-muted/20">
                       <div
                         v-for="(_, index) in statType"
                         :key="`potential-${index}`"
@@ -1896,25 +1893,25 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
                 <TabsContent v-if="results.sssOdds.available" value="sss" class="m-0 grid min-w-0 gap-3">
                   <div class="grid gap-3 md:grid-cols-5">
-                    <div class="rounded-lg border p-3">
+                    <div class="rounded-lg bg-muted/20 p-3">
                       <div class="text-xs text-muted-foreground">Total odds</div>
                       <div class="text-lg font-semibold">{{ results.sssOdds.totalChanceText }}</div>
                     </div>
-                    <div class="rounded-lg border p-3">
+                    <div class="rounded-lg bg-muted/20 p-3">
                       <div class="text-xs text-muted-foreground">Target</div>
                       <div class="text-lg font-semibold">{{ results.sssOdds.targetScore }}</div>
                     </div>
-                    <div class="rounded-lg border p-3">
+                    <div class="rounded-lg bg-muted/20 p-3">
                       <div class="text-xs text-muted-foreground">Planned</div>
                       <div class="text-lg font-semibold">
                         {{ resultMode === 'rating' ? results.sssOdds.plannedDIText : results.sssOdds.plannedScoreText }}
                       </div>
                     </div>
-                    <div class="rounded-lg border p-3">
+                    <div class="rounded-lg bg-muted/20 p-3">
                       <div class="text-xs text-muted-foreground">Base rolls</div>
                       <div class="text-lg font-semibold">{{ results.sssOdds.baseRollText }}</div>
                     </div>
-                    <div class="rounded-lg border p-3">
+                    <div class="rounded-lg bg-muted/20 p-3">
                       <div class="text-xs text-muted-foreground">Full survival</div>
                       <div class="text-lg font-semibold">{{ results.sssOdds.survivalChanceText }}</div>
                     </div>
@@ -1972,7 +1969,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
           <div class="grid gap-4 2xl:grid-cols-2">
             <Card class="rounded-lg">
-              <CardHeader class="border-b">
+              <CardHeader>
                 <CardTitle class="flex items-center gap-2 text-base">
                   <SwordsIcon class="size-4" />
                   Tier Evaluation
@@ -2007,7 +2004,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
             </Card>
 
             <Card class="rounded-lg">
-              <CardHeader class="border-b">
+              <CardHeader>
                 <CardTitle class="flex items-center gap-2 text-base">
                   <TablePropertiesIcon class="size-4" />
                   Tier Equivalence
@@ -2054,15 +2051,15 @@ watch([statType, statInput, inputEnchantLevel], () => {
           side="right"
           class="gap-0 p-0 data-[side=right]:!w-full sm:data-[side=right]:!max-w-none md:data-[side=right]:!w-[92vw] lg:data-[side=right]:!w-[86vw] xl:data-[side=right]:!w-[1120px]"
         >
-          <SheetHeader class="border-b px-5 py-4 pr-12">
+          <SheetHeader class="px-5 py-4 pr-12">
             <SheetTitle>Select Gear</SheetTitle>
             <SheetDescription>{{ highlightedPiece[1] }} {{ highlightedPiece[0] }}</SheetDescription>
           </SheetHeader>
 
           <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
             <div class="grid min-h-full min-w-0 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-              <section class="min-h-0 min-w-0 rounded-lg border bg-card">
-                <div class="border-b px-3 py-2">
+              <section class="min-h-0 min-w-0 rounded-lg bg-muted/15">
+                <div class="px-3 py-2">
                   <div class="text-sm font-medium">Gear catalog</div>
                   <div class="text-xs text-muted-foreground">Hover to inspect, click to select</div>
                 </div>
@@ -2089,8 +2086,8 @@ watch([statType, statInput, inputEnchantLevel], () => {
               </section>
 
               <section class="grid min-h-0 min-w-0 content-start gap-4">
-                <div class="flex items-center gap-3 rounded-lg border bg-card p-3">
-                  <img class="size-12 rounded-lg border bg-muted p-1" :src="getItemImage(highlightedPiece[1], highlightedPiece[0])" alt="">
+                <div class="flex items-center gap-3 rounded-lg bg-muted/15 p-3">
+                  <img class="size-12 rounded-lg bg-muted p-1" :src="getItemImage(highlightedPiece[1], highlightedPiece[0])" alt="">
                   <div class="min-w-0">
                     <div class="truncate font-semibold">{{ highlightedPiece[1] }} {{ highlightedPiece[0] }}</div>
                     <div class="truncate text-sm text-muted-foreground">
@@ -2170,7 +2167,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                       <div
                         v-for="trait in highlightedTraitRows"
                         :key="trait.id"
-                        class="flex gap-3 rounded-lg border bg-card p-3"
+                        class="flex gap-3 rounded-lg bg-muted/15 p-3"
                       >
                         <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
                         <div>
@@ -2179,7 +2176,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                         </div>
                       </div>
                     </div>
-                    <div v-else class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                    <div v-else class="rounded-lg bg-muted/15 p-4 text-sm text-muted-foreground">
                       No special traits listed for this piece.
                     </div>
                   </TabsContent>
@@ -2192,7 +2189,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
       <Dialog v-model:open="snapshotOpen">
         <DialogContent class="max-h-[94vh] sm:!max-w-5xl overflow-y-auto rounded-lg p-0">
-          <DialogHeader class="border-b px-5 py-4 pr-14">
+          <DialogHeader class="px-5 py-4 pr-14">
             <DialogTitle class="flex items-center gap-2">
               <CameraIcon class="size-4" />
               Snapshot
@@ -2203,7 +2200,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
           </DialogHeader>
 
           <div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_240px]">
-            <div class="min-h-[320px] overflow-hidden rounded-lg border bg-muted/30 p-2">
+            <div class="min-h-[320px] overflow-hidden rounded-lg bg-muted/30 p-2">
               <div
                 v-if="snapshotIsGenerating"
                 class="grid min-h-[320px] place-items-center text-sm text-muted-foreground"
@@ -2234,7 +2231,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 <DownloadIcon />
                 Download PNG
               </Button>
-              <div class="grid gap-3 rounded-lg border bg-muted/20 p-3">
+              <div class="grid gap-3 rounded-lg bg-muted/20 p-3">
                 <div>
                   <div class="text-xs font-medium uppercase text-muted-foreground">
                     {{ getSnapshotCurrentHeading() }}
@@ -2246,8 +2243,6 @@ watch([statType, statInput, inputEnchantLevel], () => {
                     </Badge>
                   </div>
                 </div>
-
-                <Separator />
 
                 <div>
                   <div class="text-xs font-medium uppercase text-muted-foreground">
