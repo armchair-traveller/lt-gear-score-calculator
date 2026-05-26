@@ -1789,24 +1789,28 @@ watch([statType, statInput, inputEnchantLevel], () => {
           </Card>
 
           <Card v-if="getFinalUpgrade(gearType) !== ''" class="rounded-lg">
-            <CardHeader>
-              <CardTitle class="flex items-center gap-2 text-base">
-                <SparklesIcon class="size-4" />
-                {{ getFinalUpgrade(gearType) }} Projection
-              </CardTitle>
-              <CardDescription>
-                Lv.{{ getProjectionEnchantLevel() }} {{ pieceType }} {{ gearType }}
-              </CardDescription>
-            </CardHeader>
+            <Tabs default-value="summary" class="min-w-0 gap-6">
+              <CardHeader>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="min-w-0">
+                    <CardTitle class="flex items-center gap-2 text-base">
+                      <SparklesIcon class="size-4" />
+                      {{ getFinalUpgrade(gearType) }} Projection
+                    </CardTitle>
+                    <CardDescription>
+                      Lv.{{ getProjectionEnchantLevel() }} {{ pieceType }} {{ gearType }}
+                    </CardDescription>
+                  </div>
 
-            <CardContent>
-              <Tabs default-value="summary" class="grid min-w-0 gap-4">
-                <TabsList class="w-fit">
-                  <TabsTrigger value="summary">Summary</TabsTrigger>
-                  <TabsTrigger value="lines">Lines</TabsTrigger>
-                  <TabsTrigger v-if="results.sssOdds.available" value="sss">SSS odds</TabsTrigger>
-                </TabsList>
+                  <TabsList class="w-fit max-w-full">
+                    <TabsTrigger value="summary">Summary</TabsTrigger>
+                    <TabsTrigger value="lines">Lines</TabsTrigger>
+                    <TabsTrigger v-if="results.sssOdds.available" value="sss">SSS odds</TabsTrigger>
+                  </TabsList>
+                </div>
+              </CardHeader>
 
+              <CardContent class="min-w-0">
                 <TabsContent value="summary" class="m-0">
                   <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
                     <div class="rounded-lg bg-muted/20 p-4">
@@ -1963,8 +1967,8 @@ watch([statType, statInput, inputEnchantLevel], () => {
                     </Table>
                   </ScrollArea>
                 </TabsContent>
-              </Tabs>
-            </CardContent>
+              </CardContent>
+            </Tabs>
           </Card>
 
           <div class="grid gap-4 2xl:grid-cols-2">
