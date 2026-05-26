@@ -1298,7 +1298,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent class="w-[var(--reka-popover-trigger-width)] gap-0 p-0" align="start">
-                        <Command highlight-on-hover>
+                        <Command :model-value="statType[index]" highlight-on-hover>
                           <CommandInput placeholder="Search stat..." />
                           <CommandList>
                             <CommandEmpty>No stat found.</CommandEmpty>
