@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -138,9 +138,12 @@ const snapshotOpen = ref(false)
 const snapshotImageUrl = ref('')
 const snapshotBlob = ref(null)
 const snapshotIsGenerating = ref(false)
-const snapshotStatus = ref('')
 const snapshotError = ref('')
+const snapshotCopySucceeded = ref(false)
+const snapshotDownloadSucceeded = ref(false)
 let snapshotObjectUrl = ''
+let snapshotCopySucceededTimeout = null
+let snapshotDownloadSucceededTimeout = null
 
 const results = ref({
   individual: [
@@ -1141,10 +1144,33 @@ function getSnapshotPayload() {
   }
 }
 
+function clearSnapshotActionFeedback() {
+  clearTimeout(snapshotCopySucceededTimeout)
+  clearTimeout(snapshotDownloadSucceededTimeout)
+  snapshotCopySucceeded.value = false
+  snapshotDownloadSucceeded.value = false
+}
+
+function showSnapshotCopySucceeded() {
+  clearTimeout(snapshotCopySucceededTimeout)
+  snapshotCopySucceeded.value = true
+  snapshotCopySucceededTimeout = setTimeout(() => {
+    snapshotCopySucceeded.value = false
+  }, 1800)
+}
+
+function showSnapshotDownloadSucceeded() {
+  clearTimeout(snapshotDownloadSucceededTimeout)
+  snapshotDownloadSucceeded.value = true
+  snapshotDownloadSucceededTimeout = setTimeout(() => {
+    snapshotDownloadSucceeded.value = false
+  }, 1800)
+}
+
 async function refreshSnapshot() {
   snapshotIsGenerating.value = true
-  snapshotStatus.value = ''
   snapshotError.value = ''
+  clearSnapshotActionFeedback()
   updateValues()
 
   try {
@@ -1157,7 +1183,6 @@ async function refreshSnapshot() {
 
     snapshotObjectUrl = URL.createObjectURL(blob)
     snapshotImageUrl.value = snapshotObjectUrl
-    snapshotStatus.value = 'Snapshot ready'
   }
   catch (error) {
     console.error(error)
@@ -1192,7 +1217,6 @@ function getSnapshotFilename() {
 
 async function copySnapshot() {
   const blob = await ensureSnapshotBlob()
-  snapshotStatus.value = ''
   snapshotError.value = ''
 
   if (!blob) {
@@ -1209,7 +1233,7 @@ async function copySnapshot() {
     await navigator.clipboard.write([
       new ClipboardItem({ [blob.type]: blob }),
     ])
-    snapshotStatus.value = 'Copied image'
+    showSnapshotCopySucceeded()
   }
   catch (error) {
     console.error(error)
@@ -1219,7 +1243,6 @@ async function copySnapshot() {
 
 async function downloadSnapshot() {
   const blob = await ensureSnapshotBlob()
-  snapshotStatus.value = ''
   snapshotError.value = ''
 
   if (!blob) {
@@ -1235,7 +1258,7 @@ async function downloadSnapshot() {
   link.click()
   link.remove()
   URL.revokeObjectURL(downloadUrl)
-  snapshotStatus.value = 'Downloaded image'
+  showSnapshotDownloadSucceeded()
 }
 
 function getLineScoreText(index) {
@@ -1334,6 +1357,14 @@ watch([statType, statInput, inputEnchantLevel], () => {
 }, {
   deep: true,
   flush: 'post',
+})
+
+onUnmounted(() => {
+  clearSnapshotActionFeedback()
+
+  if (snapshotObjectUrl) {
+    URL.revokeObjectURL(snapshotObjectUrl)
+  }
 })
 </script>
 
@@ -2224,17 +2255,26 @@ watch([statType, statInput, inputEnchantLevel], () => {
             </div>
 
             <div class="grid content-start gap-3">
-              <Button :disabled="snapshotIsGenerating || !snapshotImageUrl" @click="copySnapshot">
-                <ClipboardIcon />
-                Copy image
+              <Button
+                :aria-label="snapshotCopySucceeded ? 'Copied image' : 'Copy image'"
+                aria-live="polite"
+                :disabled="snapshotIsGenerating || !snapshotImageUrl"
+                @click="copySnapshot"
+              >
+                <CheckIcon v-if="snapshotCopySucceeded" />
+                <ClipboardIcon v-else />
+                {{ snapshotCopySucceeded ? 'Copied' : 'Copy image' }}
               </Button>
               <Button
                 variant="outline"
+                :aria-label="snapshotDownloadSucceeded ? 'Downloaded PNG' : 'Download PNG'"
+                aria-live="polite"
                 :disabled="snapshotIsGenerating || !snapshotImageUrl"
                 @click="downloadSnapshot"
               >
-                <DownloadIcon />
-                Download PNG
+                <CheckIcon v-if="snapshotDownloadSucceeded" />
+                <DownloadIcon v-else />
+                {{ snapshotDownloadSucceeded ? 'Downloaded' : 'Download PNG' }}
               </Button>
               <div class="grid gap-3 rounded-lg bg-muted/20 p-3">
                 <div>
@@ -2266,7 +2306,6 @@ watch([statType, statInput, inputEnchantLevel], () => {
               </div>
 
               <p v-if="snapshotError" class="text-sm text-destructive">{{ snapshotError }}</p>
-              <p v-else-if="snapshotStatus" class="text-sm text-muted-foreground">{{ snapshotStatus }}</p>
             </div>
           </div>
         </DialogContent>
