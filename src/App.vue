@@ -1443,7 +1443,7 @@ onUnmounted(() => {
             <CardHeader class="p-0">
               <button
                 type="button"
-                class="group flex w-full items-center justify-between gap-3 rounded-t-lg px-4 py-4 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                class="group flex w-full items-center justify-between gap-3 rounded-t-lg px-4 py-4 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
                 aria-label="Open gear selector"
                 @click="gearSheetOpen = true"
               >
