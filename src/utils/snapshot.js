@@ -95,6 +95,30 @@ function drawFittedText(ctx, text, x, y, maxWidth, size, weight = 600, color = c
   ctx.fillText(`${shortened}...`, x, y)
 }
 
+function drawCenteredFittedText(ctx, text, centerX, y, maxWidth, size, weight = 600, color = colors.ink) {
+  setFont(ctx, size, weight)
+  ctx.fillStyle = color
+
+  const normalized = String(text || '-')
+  let output = normalized
+  if (ctx.measureText(output).width > maxWidth) {
+    while (output.length > 1 && ctx.measureText(`${output}...`).width > maxWidth) {
+      output = output.slice(0, -1)
+    }
+    output = `${output}...`
+  }
+
+  ctx.textAlign = 'center'
+  ctx.fillText(output, centerX, y)
+  ctx.textAlign = 'left'
+}
+
+function getBadgeWidth(ctx, text, options = {}) {
+  const paddingX = options.paddingX ?? 18
+  setFont(ctx, options.size ?? 20, 800)
+  return Math.ceil(ctx.measureText(String(text || '-')).width + paddingX * 2)
+}
+
 function drawBadge(ctx, text, x, y, options = {}) {
   const normalized = String(text || '-')
   const firstTier = normalized.split(' ')[0]
@@ -102,12 +126,16 @@ function drawBadge(ctx, text, x, y, options = {}) {
   const paddingX = options.paddingX ?? 18
   const height = options.height ?? 38
 
-  setFont(ctx, options.size ?? 20, 800)
-  const width = Math.ceil(ctx.measureText(normalized).width + paddingX * 2)
+  const width = getBadgeWidth(ctx, normalized, options)
   fillRoundRect(ctx, x, y, width, height, height / 2, bg)
   ctx.fillStyle = fg
   ctx.fillText(normalized, x + paddingX, y + height / 2 + 8)
   return width
+}
+
+function drawCenteredBadge(ctx, text, centerX, y, options = {}) {
+  const width = getBadgeWidth(ctx, text, options)
+  drawBadge(ctx, text, centerX - width / 2, y, options)
 }
 
 function drawProgress(ctx, x, y, width, value, fill = colors.gold, track = '#e8e1d5') {
@@ -135,6 +163,10 @@ function drawMetricCard(ctx, metric, x, y, width, height, accent = colors.gold) 
 function drawLineRow(ctx, line, x, y, width, index) {
   const rowHeight = 122
   const rowFill = index % 2 === 0 ? '#ffffff' : '#faf7f0'
+  const currentColumn = { center: x + 560, width: 130 }
+  const projectedColumn = { center: x + 740, width: 170 }
+  const tierColumn = { center: x + 950, width: 140 }
+
   fillRoundRect(ctx, x, y, width, rowHeight, 18, rowFill)
   strokeRoundRect(ctx, x, y, width, rowHeight, 18, '#e2dacc')
 
@@ -146,14 +178,14 @@ function drawLineRow(ctx, line, x, y, width, index) {
   ctx.textAlign = 'left'
 
   drawFittedText(ctx, line.stat, x + 86, y + 44, 390, 28, 800)
-  drawFittedText(ctx, `Rolled ${line.value}`, x + 86, y + 80, 280, 22, 600, colors.muted)
+  drawFittedText(ctx, line.value, x + 86, y + 80, 280, 22, 600, colors.muted)
 
-  drawFittedText(ctx, line.currentScore, x + 505, y + 48, 110, 30, 800)
-  drawBadge(ctx, line.currentTier, x + 505, y + 64, { size: 17, height: 30, paddingX: 13 })
+  drawCenteredFittedText(ctx, line.currentScore, currentColumn.center, y + 48, currentColumn.width, 30, 800)
+  drawCenteredBadge(ctx, line.currentTier, currentColumn.center, y + 64, { size: 17, height: 30, paddingX: 13 })
 
-  drawFittedText(ctx, line.projectedScore, x + 665, y + 48, 150, 30, 800)
-  drawFittedText(ctx, line.projectedValue, x + 665, y + 80, 190, 22, 700, colors.muted)
-  drawBadge(ctx, line.projectedTier, x + 910, y + 44, { size: 18, height: 34, paddingX: 14 })
+  drawCenteredFittedText(ctx, line.projectedScore, projectedColumn.center, y + 48, projectedColumn.width, 30, 800)
+  drawCenteredFittedText(ctx, line.projectedValue, projectedColumn.center, y + 80, projectedColumn.width, 22, 700, colors.muted)
+  drawCenteredBadge(ctx, line.projectedTier, tierColumn.center, y + 44, { size: 18, height: 34, paddingX: 14 })
 
   drawProgress(ctx, x + 86, y + 96, width - 122, line.progress, colors.gold)
 }
@@ -200,7 +232,7 @@ function drawSummary(ctx, payload, y) {
   drawMetricCard(ctx, {
     label: 'Score',
     value: payload.current.score,
-    meta: `${payload.current.rating} rating`,
+    meta: `${payload.current.levelLabel} / ${payload.current.rating} rating`,
   }, x + 34, y + 72, 224, 176, colors.blue)
 
   drawMetricCard(ctx, {
@@ -213,7 +245,7 @@ function drawSummary(ctx, payload, y) {
   drawMetricCard(ctx, {
     label: 'Projected Score',
     value: payload.projected.score,
-    meta: `${payload.projected.rating} rating`,
+    meta: `${payload.projected.levelLabel} / ${payload.projected.rating} rating`,
     highlight: true,
   }, x + 548, y + 72, 284, 176, colors.gold)
 
@@ -221,7 +253,7 @@ function drawSummary(ctx, payload, y) {
     label: 'Projected Tier',
     value: payload.projected.tier,
     size: payload.projected.tier.length > 6 ? 40 : 46,
-    meta: `${payload.projected.scoreGain} score gain`,
+    meta: `${payload.projected.scoreGain} score`,
     metaColor: colors.emerald,
     highlight: true,
   }, x + 850, y + 72, 224, 176, colors.emerald)
@@ -233,51 +265,26 @@ function drawSummary(ctx, payload, y) {
 function drawLineSection(ctx, payload, y) {
   const x = snapshotPadding
   const width = snapshotWidth - snapshotPadding * 2
-  fillRoundRect(ctx, x, y, width, 122 + payload.lines.length * 138, 30, colors.panel)
-  drawLabel(ctx, 'Line Breakdown', x + 34, y + 50)
+  const rowX = x + 34
+  const currentColumn = { center: rowX + 560, width: 130 }
+  const projectedColumn = { center: rowX + 740, width: 170 }
+  const tierColumn = { center: rowX + 950, width: 140 }
+
+  fillRoundRect(ctx, x, y, width, 86 + payload.lines.length * 138, 30, colors.panel)
 
   setFont(ctx, 20, 800)
   ctx.fillStyle = colors.muted
-  ctx.fillText('CURRENT %', x + 505, y + 52)
-  ctx.fillText('PROJECTED %', x + 665, y + 52)
-  ctx.fillText('TIER', x + 910, y + 52)
+  drawCenteredFittedText(ctx, 'CURRENT %', currentColumn.center, y + 48, currentColumn.width, 20, 800, colors.muted)
+  drawCenteredFittedText(ctx, 'PROJECTED %', projectedColumn.center, y + 48, projectedColumn.width, 20, 800, colors.muted)
+  drawCenteredFittedText(ctx, 'TIER', tierColumn.center, y + 48, tierColumn.width, 20, 800, colors.muted)
 
-  let rowY = y + 78
+  let rowY = y + 70
   payload.lines.forEach((line, index) => {
-    drawLineRow(ctx, line, x + 34, rowY, width - 68, index)
+    drawLineRow(ctx, line, rowX, rowY, width - 68, index)
     rowY += 138
   })
 
-  return y + 122 + payload.lines.length * 138
-}
-
-function drawFooter(ctx, payload, y) {
-  const x = snapshotPadding
-  const width = snapshotWidth - snapshotPadding * 2
-  fillRoundRect(ctx, x, y, width, payload.sssOdds?.available ? 156 : 102, 30, colors.darkPanel)
-  strokeRoundRect(ctx, x, y, width, payload.sssOdds?.available ? 156 : 102, 30, colors.darkLine)
-
-  if (payload.sssOdds?.available) {
-    drawLabel(ctx, 'SSS Odds', x + 32, y + 44, '#aaa59b')
-    const metrics = [
-      ['Total', payload.sssOdds.totalChanceText],
-      ['Target', payload.sssOdds.targetScore],
-      ['Planned', payload.sssOdds.plannedScoreText],
-      ['Base Rolls', payload.sssOdds.baseRollText],
-      ['Survival', payload.sssOdds.survivalChanceText],
-    ]
-
-    metrics.forEach(([label, value], index) => {
-      const metricX = x + 32 + index * 204
-      drawFittedText(ctx, label, metricX, y + 78, 160, 19, 700, '#aaa59b')
-      drawFittedText(ctx, value, metricX, y + 116, 170, 27, 800, colors.white)
-    })
-  }
-  else {
-    drawFittedText(ctx, payload.footer, x + 32, y + 62, width - 64, 24, 700, '#d7d0c3')
-  }
-
-  return y + (payload.sssOdds?.available ? 156 : 102)
+  return y + 86 + payload.lines.length * 138
 }
 
 function canvasToBlob(canvas) {
@@ -310,9 +317,9 @@ export async function renderGearSnapshot(payload) {
   const [canvas, ctx] = getCanvasContext()
   const itemImage = await loadImage(payload.itemImage)
 
-  const lineHeight = 122 + payload.lines.length * 138
-  const footerHeight = payload.sssOdds?.available ? 156 : 102
-  const height = snapshotPadding + 200 + 34 + 306 + 34 + lineHeight + 34 + footerHeight + snapshotPadding
+  const hasLines = payload.lines.length > 0
+  const lineHeight = hasLines ? 86 + payload.lines.length * 138 : 0
+  const height = snapshotPadding + 200 + 34 + 306 + (hasLines ? 34 + lineHeight : 0) + snapshotPadding
   canvas.height = height
 
   const gradient = ctx.createLinearGradient(0, 0, 0, height)
@@ -332,10 +339,10 @@ export async function renderGearSnapshot(payload) {
   drawHeader(ctx, payload, itemImage, y)
   y += 234
   drawSummary(ctx, payload, y)
-  y += 340
-  y = drawLineSection(ctx, payload, y)
-  y += 34
-  drawFooter(ctx, payload, y)
+  if (hasLines) {
+    y += 340
+    drawLineSection(ctx, payload, y)
+  }
 
   return canvasToBlob(canvas)
 }

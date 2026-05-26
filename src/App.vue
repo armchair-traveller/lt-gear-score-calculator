@@ -1065,9 +1065,29 @@ function getPotentialValueRange(index) {
     : `${row.potentialMin} ~ ${row.potentialMax}`
 }
 
+function getSnapshotCurrentLevelLabel(item = gearType.value) {
+  if (getFinalUpgrade(item) === '') {
+    return 'Current'
+  }
+
+  const level = supportsInputEnchantLevel(item) ? getInputEnchantLevelNumber(item) : 2
+  return `Lv.${level}`
+}
+
+function getSnapshotProjectedLevelLabel(item = gearType.value) {
+  const finalUpgrade = getFinalUpgrade(item)
+  return finalUpgrade ? `Lv.${getProjectionEnchantLevel(item)} ${finalUpgrade}` : 'Current'
+}
+
+function getSnapshotCurrentHeading(item = gearType.value) {
+  const levelLabel = getSnapshotCurrentLevelLabel(item)
+  return levelLabel === 'Current' ? levelLabel : `${levelLabel} Current`
+}
+
 function getSnapshotPayload() {
   const finalUpgrade = getFinalUpgrade(gearType.value)
-  const projectionLevel = getProjectionEnchantLevel()
+  const currentLevelLabel = getSnapshotCurrentLevelLabel()
+  const projectedLevelLabel = getSnapshotProjectedLevelLabel()
   const itemMaxRating = currentItem.value?.DI?.toFixed(2) ?? '0.00'
   const selectedMaxRating = getSelectedRating().toFixed(2)
 
@@ -1075,8 +1095,8 @@ function getSnapshotPayload() {
     itemName: `${pieceType.value} ${gearType.value}`,
     itemImage: selectedImage.value,
     finalUpgrade,
-    upgradeLabel: finalUpgrade ? `Lv.${projectionLevel} ${finalUpgrade}` : 'Current only',
-    subtitle: `${selectedMaxRating}% selected max / ${itemMaxRating}% item max`,
+    upgradeLabel: finalUpgrade ? `${currentLevelLabel} -> ${projectedLevelLabel}` : 'Current only',
+    subtitle: `${currentLevelLabel} current / ${selectedMaxRating}% selected max / ${itemMaxRating}% item max`,
     generatedLabel: new Intl.DateTimeFormat(undefined, {
       month: 'short',
       day: 'numeric',
@@ -1087,6 +1107,7 @@ function getSnapshotPayload() {
       rating: `${results.value.DI}%`,
       tier: results.value.tier,
       progress: totalProgress.value,
+      levelLabel: currentLevelLabel,
     },
     projected: {
       score: results.value.potentialScore,
@@ -1094,34 +1115,28 @@ function getSnapshotPayload() {
       tier: results.value.potentialTier,
       progress: potentialProgress.value,
       scoreGain: formatGainRangeWithPrecision(results.value.potentialScore, Number(results.value.percent), 0),
+      levelLabel: projectedLevelLabel,
     },
-    lines: statType.value.map((stat, index) => {
+    lines: statType.value.flatMap((stat, index) => {
       const hasValue = hasRolledValue(index)
+      if (!hasValue) {
+        return []
+      }
+
       const row = results.value.individual[index]
 
-      return {
+      return [{
         index: index + 1,
-        stat: hasValue ? stat : 'Empty line',
-        value: hasValue ? formatStatValue(getInputValue(index), stat) : '-',
-        currentScore: hasValue ? `${row.percent}%` : '--',
-        currentTier: hasValue ? row.tier : '-',
-        projectedValue: hasValue ? getPotentialValueRange(index) : '-',
-        projectedScore: hasValue ? getPotentialScoreLineText(index) : '--',
-        projectedTier: hasValue ? getPotentialLineTier(index) : '-',
-        progress: hasValue ? clamp(Number(row.potentialMinPerc || row.percent), 0, 100) : 0,
-      }
+        stat,
+        value: formatStatValue(getInputValue(index), stat),
+        currentScore: `${row.percent}%`,
+        currentTier: row.tier,
+        projectedValue: getPotentialValueRange(index),
+        projectedScore: getPotentialScoreLineText(index),
+        projectedTier: getPotentialLineTier(index),
+        progress: clamp(Number(row.potentialMinPerc || row.percent), 0, 100),
+      }]
     }),
-    sssOdds: results.value.sssOdds.available
-      ? {
-          available: true,
-          totalChanceText: results.value.sssOdds.totalChanceText,
-          targetScore: results.value.sssOdds.targetScore,
-          plannedScoreText: results.value.sssOdds.plannedScoreText,
-          baseRollText: results.value.sssOdds.baseRollText,
-          survivalChanceText: results.value.sssOdds.survivalChanceText,
-        }
-      : { available: false },
-    footer: `Current roll summary for ${pieceType.value} ${gearType.value}`,
   }
 }
 
@@ -2224,7 +2239,9 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
               <div class="grid gap-3 rounded-lg border bg-muted/20 p-3">
                 <div>
-                  <div class="text-xs font-medium uppercase text-muted-foreground">Current</div>
+                  <div class="text-xs font-medium uppercase text-muted-foreground">
+                    {{ getSnapshotCurrentHeading() }}
+                  </div>
                   <div class="mt-1 flex items-center gap-2">
                     <span class="text-xl font-semibold">{{ results.percent }}%</span>
                     <Badge variant="outline" :class="getTierClass(results.tier)">
@@ -2237,7 +2254,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
                 <div>
                   <div class="text-xs font-medium uppercase text-muted-foreground">
-                    {{ getFinalUpgrade(gearType) || 'Projected' }}
+                    {{ getSnapshotProjectedLevelLabel() }}
                   </div>
                   <div class="mt-1 flex flex-wrap items-center gap-2">
                     <span class="text-xl font-semibold">{{ results.potentialScore }}</span>
@@ -2246,7 +2263,7 @@ watch([statType, statInput, inputEnchantLevel], () => {
                     </Badge>
                   </div>
                   <div class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
-                    {{ formatGainRangeWithPrecision(results.potentialScore, Number(results.percent), 0) }} gain
+                    {{ formatGainRangeWithPrecision(results.potentialScore, Number(results.percent), 0) }} score
                   </div>
                 </div>
               </div>
