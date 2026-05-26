@@ -49,7 +49,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -1033,6 +1038,20 @@ function getLineScoreText(index) {
   return resultMode.value === 'rating' ? `${row.DI}%` : `${row.percent}%`
 }
 
+function isInputOverMax(index) {
+  const maxValue = getInputMaxValue(statType.value[index])
+  return maxValue !== null && hasRolledValue(index) && getInputValue(index) > maxValue
+}
+
+function getLineMaxRatingText(index) {
+  const maxRating = currentItem.value?.Stats?.[statType.value[index]]?.DI
+  return Number.isFinite(maxRating) ? `${maxRating.toFixed(2)}%` : '0.00%'
+}
+
+function getLineMaxSummaryText(index) {
+  return `Max ${getInputMaxValueText(statType.value[index])} / ${getLineMaxRatingText(index)}`
+}
+
 function getPotentialLineText(index) {
   const row = results.value.individual[index]
   if (resultMode.value === 'rating') {
@@ -1273,23 +1292,26 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   :key="index"
                   class="grid gap-2 p-3"
                 >
-                  <div class="flex items-center justify-between gap-3">
-                    <Label :for="`stat-${index}`" class="text-xs font-medium text-muted-foreground">
-                      Line {{ index + 1 }}
-                    </Label>
-                    <span class="text-xs text-muted-foreground">
-                      Max {{ getInputMaxValueText(statType[index]) }} / {{ currentItem?.Stats?.[statType[index]]?.DI?.toFixed(2) ?? '0.00' }}%
-                    </span>
-                  </div>
-                  <div class="grid gap-2 sm:grid-cols-[1fr_120px]">
+                  <div
+                    role="group"
+                    :aria-label="`Line ${index + 1}`"
+                    class="grid grid-cols-[auto_minmax(0,1fr)] overflow-hidden rounded-3xl border border-input/30 bg-input/40 dark:bg-input/30 sm:grid-cols-[auto_minmax(0,1fr)_minmax(190px,220px)]"
+                  >
+                    <div
+                      aria-hidden="true"
+                      class="flex h-10 items-center px-3 text-xs font-semibold text-muted-foreground sm:h-9"
+                    >
+                      {{ index + 1 }}
+                    </div>
                     <Popover v-model:open="statPickerOpen[index]">
                       <PopoverTrigger as-child>
                         <Button
                           :id="`stat-${index}`"
-                          variant="outline"
+                          variant="ghost"
                           role="combobox"
+                          :aria-label="`Line ${index + 1} stat`"
                           :aria-expanded="statPickerOpen[index] || false"
-                          class="w-full justify-between border-input/30 bg-input/50 px-3 font-normal hover:bg-muted dark:bg-input/30 dark:hover:bg-input/40"
+                          class="h-10 w-full justify-between rounded-none border-0 bg-transparent px-3 font-normal shadow-none hover:bg-muted/60 focus-visible:ring-inset dark:bg-transparent dark:hover:bg-input/40 sm:h-9"
                         >
                           <span class="min-w-0 truncate text-left">
                             {{ statType[index] || 'Select stat...' }}
@@ -1300,40 +1322,71 @@ watch([statType, statInput, inputEnchantLevel], () => {
                       <PopoverContent class="w-[var(--reka-popover-trigger-width)] gap-0 p-0" align="start">
                         <Command :model-value="statType[index]" highlight-on-hover>
                           <CommandInput placeholder="Search stat..." />
-                          <CommandList>
-                            <CommandEmpty>No stat found.</CommandEmpty>
-                            <CommandGroup>
-                              <CommandItem
-                                v-for="stat in statOptions"
-                                :key="stat"
-                                :value="stat"
-                                :text-value="stat"
-                                :disabled="isStatSelectedOnOtherLine(stat, index)"
-                                @select="selectStatType(index, stat)"
-                              >
-                                <CheckIcon
-                                  :class="[
-                                    'size-4',
-                                    statType[index] === stat ? 'opacity-100' : 'opacity-0',
-                                  ]"
-                                />
-                                <span class="truncate">{{ stat }}</span>
-                              </CommandItem>
-                            </CommandGroup>
-                          </CommandList>
+                          <ScrollArea type="always" class="max-h-72">
+                            <CommandList class="max-h-none overflow-visible pr-3">
+                              <CommandEmpty>No stat found.</CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  v-for="stat in statOptions"
+                                  :key="stat"
+                                  :value="stat"
+                                  :text-value="stat"
+                                  :disabled="isStatSelectedOnOtherLine(stat, index)"
+                                  @select="selectStatType(index, stat)"
+                                >
+                                  <CheckIcon
+                                    :class="[
+                                      'size-4',
+                                      statType[index] === stat ? 'opacity-100' : 'opacity-0',
+                                    ]"
+                                  />
+                                  <span class="truncate">{{ stat }}</span>
+                                </CommandItem>
+                              </CommandGroup>
+                            </CommandList>
+                          </ScrollArea>
                         </Command>
                       </PopoverContent>
                     </Popover>
 
-                    <Input
-                      v-model="statInput[index]"
-                      type="number"
-                      :step="getStatStep(statType[index])"
-                      min="0"
-                      inputmode="decimal"
-                      placeholder="Value"
-                    />
+                    <div
+                      :class="[
+                        'col-span-2 rounded-b-3xl rounded-t-none border border-transparent transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30 sm:col-span-1 sm:rounded-l-none sm:rounded-r-3xl',
+                        isInputOverMax(index)
+                          ? 'border-destructive ring-3 ring-inset ring-destructive/20 dark:ring-destructive/40'
+                          : '',
+                      ]"
+                    >
+                      <InputGroup
+                        class="h-10 rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0 sm:h-9"
+                      >
+                        <InputGroupInput
+                          :id="`line-${index}-value`"
+                          v-model="statInput[index]"
+                          type="number"
+                          :step="getStatStep(statType[index])"
+                          min="0"
+                          :max="getInputMaxValue(statType[index]) ?? undefined"
+                          inputmode="decimal"
+                          placeholder="Value"
+                          :aria-label="`Line ${index + 1} value`"
+                          :aria-invalid="isInputOverMax(index)"
+                          class="min-w-[4.5rem]"
+                        />
+                        <InputGroupAddon align="inline-end" class="pr-3 text-xs">
+                          <InputGroupText
+                            class="whitespace-nowrap text-xs font-medium"
+                            :class="isInputOverMax(index) ? 'text-destructive' : 'text-muted-foreground'"
+                          >
+                            {{ getLineMaxSummaryText(index) }}
+                          </InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </div>
                   </div>
+                  <p v-if="isInputOverMax(index)" class="text-xs text-destructive">
+                    Value is over max {{ getInputMaxValueText(statType[index]) }}.
+                  </p>
                 </div>
               </div>
 
