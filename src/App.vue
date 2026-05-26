@@ -2016,34 +2016,35 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea type="always" class="max-h-[360px] min-w-0 rounded-lg border">
-                  <Table class="[&_td]:py-2.5 [&_th]:h-10">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Score</TableHead>
-                        <TableHead>Tier</TableHead>
-                        <TableHead>Single</TableHead>
-                        <TableHead>Duo</TableHead>
-                        <TableHead>Trio</TableHead>
-                        <TableHead>Quad</TableHead>
-                        <TableHead>Penta</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow v-for="row in selectedTierRows" :key="row.tier">
-                        <TableCell>{{ row.Score }}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
-                        </TableCell>
-                        <TableCell>{{ row.Single }}</TableCell>
-                        <TableCell>{{ row.Duo }}</TableCell>
-                        <TableCell>{{ row.Trio }}</TableCell>
-                        <TableCell>{{ row.Quad }}</TableCell>
-                        <TableCell>{{ row.Penta }}</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
+                <Table
+                  container-class="max-h-[360px] min-w-0 overflow-auto rounded-lg border"
+                  class="min-w-[720px] [&_td]:py-2.5 [&_th]:h-10"
+                >
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Tier</TableHead>
+                      <TableHead>Single</TableHead>
+                      <TableHead>Duo</TableHead>
+                      <TableHead>Trio</TableHead>
+                      <TableHead>Quad</TableHead>
+                      <TableHead>Penta</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="row in selectedTierRows" :key="row.tier">
+                      <TableCell>{{ row.Score }}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
+                      </TableCell>
+                      <TableCell>{{ row.Single }}</TableCell>
+                      <TableCell>{{ row.Duo }}</TableCell>
+                      <TableCell>{{ row.Trio }}</TableCell>
+                      <TableCell>{{ row.Quad }}</TableCell>
+                      <TableCell>{{ row.Penta }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </div>
