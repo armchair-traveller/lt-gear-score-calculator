@@ -152,7 +152,7 @@ function drawLineRow(ctx, line, x, y, width, index) {
   drawBadge(ctx, line.currentTier, x + 505, y + 64, { size: 17, height: 30, paddingX: 13 })
 
   drawFittedText(ctx, line.projectedScore, x + 665, y + 48, 150, 30, 800)
-  drawFittedText(ctx, `Value ${line.projectedValue}`, x + 665, y + 80, 190, 22, 700, colors.muted)
+  drawFittedText(ctx, line.projectedValue, x + 665, y + 80, 190, 22, 700, colors.muted)
   drawBadge(ctx, line.projectedTier, x + 910, y + 44, { size: 18, height: 34, paddingX: 14 })
 
   drawProgress(ctx, x + 86, y + 96, width - 122, line.progress, colors.gold)
