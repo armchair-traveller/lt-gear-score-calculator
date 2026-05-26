@@ -1129,6 +1129,7 @@ async function refreshSnapshot() {
   snapshotIsGenerating.value = true
   snapshotStatus.value = ''
   snapshotError.value = ''
+  updateValues()
 
   try {
     const blob = await renderGearSnapshot(getSnapshotPayload())
