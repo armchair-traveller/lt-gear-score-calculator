@@ -211,9 +211,20 @@ function drawHeader(ctx, payload, itemImage, y) {
     ctx.drawImage(itemImage, x + 48, y + 52, 96, 96)
   }
 
-  drawLabel(ctx, 'LaTale Gear Snapshot', x + 190, y + 58, '#aaa59b')
-  drawFittedText(ctx, payload.itemName, x + 190, y + 114, 650, 44, 800, colors.white)
-  drawFittedText(ctx, payload.subtitle, x + 190, y + 154, 690, 24, 600, '#cfc7b8')
+  const titleX = x + 190
+  const titleWidth = 610
+  const itemPiece = payload.itemPiece || payload.itemName
+  const itemGearType = payload.itemGearType || ''
+
+  drawLabel(ctx, 'LaTale Gear Snapshot', titleX, y + 50, '#aaa59b')
+  drawFittedText(ctx, itemPiece, titleX, y + 94, titleWidth, 36, 800, colors.white)
+  if (itemGearType) {
+    drawFittedText(ctx, itemGearType, titleX, y + 128, titleWidth, 30, 800, colors.white)
+    drawFittedText(ctx, payload.subtitle, titleX, y + 166, titleWidth, 22, 600, '#cfc7b8')
+  }
+  else {
+    drawFittedText(ctx, payload.subtitle, titleX, y + 140, titleWidth, 24, 600, '#cfc7b8')
+  }
 
   const badgeWidth = drawBadge(ctx, payload.upgradeLabel, snapshotWidth - snapshotPadding - 260, y + 44, {
     palette: ['#f8de9d', '#6d4700'],

@@ -1093,6 +1093,8 @@ function getSnapshotPayload() {
 
   return {
     itemName: `${pieceType.value} ${gearType.value}`,
+    itemPiece: pieceType.value,
+    itemGearType: gearType.value,
     itemImage: selectedImage.value,
     finalUpgrade,
     upgradeLabel: finalUpgrade ? `${currentLevelLabel} -> ${projectedLevelLabel}` : 'Current only',
