@@ -1231,11 +1231,21 @@ watch([statType, statInput, inputEnchantLevel], () => {
             </CardHeader>
 
             <CardContent class="grid gap-4 p-4">
-              <div class="grid gap-3 sm:grid-cols-2">
-                <div class="grid gap-1.5">
-                  <Label for="gear-type">Tier</Label>
+              <div
+                class="grid gap-1 sm:grid-cols-2"
+                role="group"
+                aria-label="Gear selection"
+              >
+                <div class="min-w-0">
+                  <Label for="gear-type" class="sr-only">Tier</Label>
                   <Select v-model="gearType">
-                    <SelectTrigger id="gear-type" class="w-full">
+                    <SelectTrigger
+                      id="gear-type"
+                      class="w-full justify-start rounded-b-none rounded-t-3xl sm:rounded-l-3xl sm:rounded-r-none *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
+                    >
+                      <span class="flex shrink-0 items-center text-muted-foreground">
+                        <SparklesIcon class="size-3.5" aria-hidden="true" />
+                      </span>
                       <SelectValue placeholder="Tier" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1246,10 +1256,16 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   </Select>
                 </div>
 
-                <div class="grid gap-1.5">
-                  <Label for="piece-type">Piece</Label>
+                <div class="min-w-0">
+                  <Label for="piece-type" class="sr-only">Piece</Label>
                   <Select v-model="pieceType">
-                    <SelectTrigger id="piece-type" class="w-full">
+                    <SelectTrigger
+                      id="piece-type"
+                      class="w-full justify-start rounded-b-3xl rounded-t-none sm:rounded-l-none sm:rounded-r-3xl *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
+                    >
+                      <span class="flex shrink-0 items-center text-muted-foreground">
+                        <img class="size-4 rounded-sm" :src="selectedImage" alt="" aria-hidden="true">
+                      </span>
                       <SelectValue placeholder="Piece" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1295,14 +1311,8 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   <div
                     role="group"
                     :aria-label="`Line ${index + 1}`"
-                    class="grid grid-cols-[auto_minmax(0,1fr)] overflow-hidden rounded-3xl border border-input/30 bg-input/40 dark:bg-input/30 sm:grid-cols-[auto_minmax(0,1fr)_minmax(190px,220px)]"
+                    class="grid gap-1 sm:grid-cols-[minmax(0,1fr)_minmax(190px,220px)]"
                   >
-                    <div
-                      aria-hidden="true"
-                      class="flex h-10 items-center px-3 text-xs font-semibold text-muted-foreground sm:h-9"
-                    >
-                      {{ index + 1 }}
-                    </div>
                     <Popover v-model:open="statPickerOpen[index]">
                       <PopoverTrigger as-child>
                         <Button
@@ -1311,10 +1321,18 @@ watch([statType, statInput, inputEnchantLevel], () => {
                           role="combobox"
                           :aria-label="`Line ${index + 1} stat`"
                           :aria-expanded="statPickerOpen[index] || false"
-                          class="h-10 w-full justify-between rounded-none border-0 bg-transparent px-3 font-normal shadow-none hover:bg-muted/60 focus-visible:ring-inset dark:bg-transparent dark:hover:bg-input/40 sm:h-9"
+                          class="h-10 w-full justify-between rounded-b-none rounded-t-3xl bg-input/50 px-3 font-normal shadow-none hover:bg-muted/60 focus-visible:ring-inset dark:bg-input/30 dark:hover:bg-input/40 sm:h-9 sm:rounded-l-3xl sm:rounded-r-none"
                         >
-                          <span class="min-w-0 truncate text-left">
-                            {{ statType[index] || 'Select stat...' }}
+                          <span class="flex min-w-0 items-center gap-3">
+                            <span
+                              aria-hidden="true"
+                              class="shrink-0 text-xs font-semibold text-muted-foreground"
+                            >
+                              {{ index + 1 }}
+                            </span>
+                            <span class="min-w-0 truncate text-left">
+                              {{ statType[index] || 'Select stat...' }}
+                            </span>
                           </span>
                           <ChevronDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
                         </Button>
@@ -1351,14 +1369,14 @@ watch([statType, statInput, inputEnchantLevel], () => {
 
                     <div
                       :class="[
-                        'col-span-2 rounded-b-3xl rounded-t-none border border-transparent transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30 sm:col-span-1 sm:rounded-l-none sm:rounded-r-3xl',
+                        'h-10 rounded-b-3xl rounded-t-none border border-transparent bg-input/50 transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30 dark:bg-input/30 sm:h-9 sm:rounded-l-none sm:rounded-r-3xl',
                         isInputOverMax(index)
                           ? 'border-destructive ring-3 ring-inset ring-destructive/20 dark:ring-destructive/40'
                           : '',
                       ]"
                     >
                       <InputGroup
-                        class="h-10 rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0 sm:h-9"
+                        class="h-full rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0"
                       >
                         <InputGroupInput
                           :id="`line-${index}-value`"
