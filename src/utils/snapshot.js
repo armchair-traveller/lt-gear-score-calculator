@@ -166,6 +166,9 @@ function drawLineRow(ctx, line, x, y, width, index) {
   const currentColumn = { center: x + 560, width: 130 }
   const projectedColumn = { center: x + 740, width: 170 }
   const tierColumn = { center: x + 950, width: 140 }
+  const tierBadgeCenterY = y + 79
+  const currentTierBadgeHeight = 30
+  const projectedTierBadgeHeight = 34
 
   fillRoundRect(ctx, x, y, width, rowHeight, 18, rowFill)
   strokeRoundRect(ctx, x, y, width, rowHeight, 18, '#e2dacc')
@@ -181,13 +184,21 @@ function drawLineRow(ctx, line, x, y, width, index) {
   drawFittedText(ctx, line.value, x + 86, y + 80, 280, 22, 600, colors.muted)
 
   drawCenteredFittedText(ctx, line.currentScore, currentColumn.center, y + 48, currentColumn.width, 30, 800)
-  drawCenteredBadge(ctx, line.currentTier, currentColumn.center, y + 64, { size: 17, height: 30, paddingX: 13 })
+  drawCenteredBadge(ctx, line.currentTier, currentColumn.center, tierBadgeCenterY - currentTierBadgeHeight / 2, {
+    size: 17,
+    height: currentTierBadgeHeight,
+    paddingX: 13,
+  })
 
   drawCenteredFittedText(ctx, line.projectedScore, projectedColumn.center, y + 48, projectedColumn.width, 30, 800)
   drawCenteredFittedText(ctx, line.projectedValue, projectedColumn.center, y + 80, projectedColumn.width, 22, 700, colors.muted)
-  drawCenteredBadge(ctx, line.projectedTier, tierColumn.center, y + 44, { size: 18, height: 34, paddingX: 14 })
+  drawCenteredBadge(ctx, line.projectedTier, tierColumn.center, tierBadgeCenterY - projectedTierBadgeHeight / 2, {
+    size: 18,
+    height: projectedTierBadgeHeight,
+    paddingX: 14,
+  })
 
-  drawProgress(ctx, x + 86, y + 96, width - 122, line.progress, colors.gold)
+  drawProgress(ctx, x + 86, y + 104, width - 122, line.progress, colors.gold)
 }
 
 function drawHeader(ctx, payload, itemImage, y) {
