@@ -230,33 +230,32 @@ function drawSummary(ctx, payload, y) {
   drawLabel(ctx, payload.finalUpgrade ? `${payload.finalUpgrade} Summary` : 'Projection Summary', x + 548, y + 48)
 
   drawMetricCard(ctx, {
-    label: 'Score',
-    value: payload.current.score,
-    meta: `${payload.current.levelLabel} / ${payload.current.rating} rating`,
-  }, x + 34, y + 72, 224, 176, colors.blue)
-
-  drawMetricCard(ctx, {
     label: 'Tier',
     value: payload.current.tier,
     size: 46,
-    meta: 'Current roll',
+  }, x + 34, y + 72, 224, 176, colors.blue)
+
+  drawMetricCard(ctx, {
+    label: 'Score',
+    value: payload.current.score,
+    meta: `${payload.current.rating} rating`,
   }, x + 276, y + 72, 224, 176, colors.blue)
 
   drawMetricCard(ctx, {
-    label: 'Projected Score',
-    value: payload.projected.score,
-    meta: `${payload.projected.levelLabel} / ${payload.projected.rating} rating`,
-    highlight: true,
-  }, x + 548, y + 72, 284, 176, colors.gold)
-
-  drawMetricCard(ctx, {
-    label: 'Projected Tier',
+    label: 'Tier',
     value: payload.projected.tier,
     size: payload.projected.tier.length > 6 ? 40 : 46,
     meta: `${payload.projected.scoreGain} score`,
     metaColor: colors.emerald,
     highlight: true,
-  }, x + 850, y + 72, 224, 176, colors.emerald)
+  }, x + 548, y + 72, 284, 176, colors.emerald)
+
+  drawMetricCard(ctx, {
+    label: 'Score',
+    value: payload.projected.score,
+    meta: `${payload.projected.rating} rating`,
+    highlight: true,
+  }, x + 850, y + 72, 224, 176, colors.gold)
 
   drawProgress(ctx, x + 34, y + 276, 466, payload.current.progress, colors.blue, '#ddd8cf')
   drawProgress(ctx, x + 548, y + 276, 526, payload.projected.progress, colors.gold, '#ddd8cf')
@@ -274,8 +273,8 @@ function drawLineSection(ctx, payload, y) {
 
   setFont(ctx, 20, 800)
   ctx.fillStyle = colors.muted
-  drawCenteredFittedText(ctx, 'CURRENT %', currentColumn.center, y + 48, currentColumn.width, 20, 800, colors.muted)
-  drawCenteredFittedText(ctx, 'PROJECTED %', projectedColumn.center, y + 48, projectedColumn.width, 20, 800, colors.muted)
+  drawCenteredFittedText(ctx, 'CURRENT', currentColumn.center, y + 48, currentColumn.width, 20, 800, colors.muted)
+  drawCenteredFittedText(ctx, 'PROJECTED', projectedColumn.center, y + 48, projectedColumn.width, 20, 800, colors.muted)
   drawCenteredFittedText(ctx, 'TIER', tierColumn.center, y + 48, tierColumn.width, 20, 800, colors.muted)
 
   let rowY = y + 70
