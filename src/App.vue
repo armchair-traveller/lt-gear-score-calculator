@@ -4,10 +4,12 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   CalculatorIcon,
+  CameraIcon,
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ClipboardIcon,
+  DownloadIcon,
   ExternalLinkIcon,
   InfoIcon,
   LinkIcon,
@@ -100,6 +102,7 @@ import {
 } from '@/components/ui/tooltip'
 import ModeToggle from '@/components/ModeToggle.vue'
 import gears from './utils/gear.js'
+import { renderGearSnapshot } from './utils/snapshot.js'
 import tiers from './utils/tiers.js'
 
 const decimalStats = ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction']
@@ -132,6 +135,13 @@ const disclaimerOpen = ref(!hasSeenDisclaimer)
 const gearSheetOpen = ref(false)
 const clipboardTooltip = ref(false)
 const clipboardToolTipTimeout = ref(null)
+const snapshotOpen = ref(false)
+const snapshotImageUrl = ref('')
+const snapshotBlob = ref(null)
+const snapshotIsGenerating = ref(false)
+const snapshotStatus = ref('')
+const snapshotError = ref('')
+let snapshotObjectUrl = ''
 
 const results = ref({
   individual: [
@@ -1018,6 +1028,10 @@ function getFirstPercent(text) {
 }
 
 function formatGainRange(text, baseValue) {
+  return formatGainRangeWithPrecision(text, baseValue, resultMode.value === 'rating' ? 2 : 0)
+}
+
+function formatGainRangeWithPrecision(text, baseValue, decimals) {
   const values = String(text)
     .replaceAll('%', '')
     .split(' ~ ')
@@ -1029,8 +1043,182 @@ function formatGainRange(text, baseValue) {
   }
 
   const gains = values.map((value) => value - baseValue)
-  const formatted = gains.map((value) => `${value >= 0 ? '+' : ''}${value.toFixed(resultMode.value === 'rating' ? 2 : 0)}%`)
+  const formatted = gains.map((value) => `${value >= 0 ? '+' : ''}${value.toFixed(decimals)}%`)
   return formatted.length === 1 ? formatted[0] : formatted.join(' ~ ')
+}
+
+function getPotentialScoreLineText(index) {
+  const row = results.value.individual[index]
+  return row.potentialMinPerc === row.potentialMaxPerc
+    ? `${row.potentialMinPerc}%`
+    : `${row.potentialMinPerc}% ~ ${row.potentialMaxPerc}%`
+}
+
+function getPotentialValueRange(index) {
+  const row = results.value.individual[index]
+  if (!row.potentialMin && !row.potentialMax) {
+    return '-'
+  }
+
+  return row.potentialMin === row.potentialMax
+    ? row.potentialMin
+    : `${row.potentialMin} ~ ${row.potentialMax}`
+}
+
+function getSnapshotPayload() {
+  const finalUpgrade = getFinalUpgrade(gearType.value)
+  const projectionLevel = getProjectionEnchantLevel()
+  const itemMaxRating = currentItem.value?.DI?.toFixed(2) ?? '0.00'
+  const selectedMaxRating = getSelectedRating().toFixed(2)
+
+  return {
+    itemName: `${pieceType.value} ${gearType.value}`,
+    itemImage: selectedImage.value,
+    finalUpgrade,
+    upgradeLabel: finalUpgrade ? `Lv.${projectionLevel} ${finalUpgrade}` : 'Current only',
+    subtitle: `${selectedMaxRating}% selected max / ${itemMaxRating}% item max`,
+    generatedLabel: new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(new Date()),
+    current: {
+      score: `${results.value.percent}%`,
+      rating: `${results.value.DI}%`,
+      tier: results.value.tier,
+      progress: totalProgress.value,
+    },
+    projected: {
+      score: results.value.potentialScore,
+      rating: results.value.potentialDI,
+      tier: results.value.potentialTier,
+      progress: potentialProgress.value,
+      scoreGain: formatGainRangeWithPrecision(results.value.potentialScore, Number(results.value.percent), 0),
+    },
+    lines: statType.value.map((stat, index) => {
+      const hasValue = hasRolledValue(index)
+      const row = results.value.individual[index]
+
+      return {
+        index: index + 1,
+        stat: hasValue ? stat : 'Empty line',
+        value: hasValue ? formatStatValue(getInputValue(index), stat) : '-',
+        currentScore: hasValue ? `${row.percent}%` : '--',
+        currentTier: hasValue ? row.tier : '-',
+        projectedValue: hasValue ? getPotentialValueRange(index) : '-',
+        projectedScore: hasValue ? getPotentialScoreLineText(index) : '--',
+        projectedTier: hasValue ? getPotentialLineTier(index) : '-',
+        progress: hasValue ? clamp(Number(row.potentialMinPerc || row.percent), 0, 100) : 0,
+      }
+    }),
+    sssOdds: results.value.sssOdds.available
+      ? {
+          available: true,
+          totalChanceText: results.value.sssOdds.totalChanceText,
+          targetScore: results.value.sssOdds.targetScore,
+          plannedScoreText: results.value.sssOdds.plannedScoreText,
+          baseRollText: results.value.sssOdds.baseRollText,
+          survivalChanceText: results.value.sssOdds.survivalChanceText,
+        }
+      : { available: false },
+    footer: `Current roll summary for ${pieceType.value} ${gearType.value}`,
+  }
+}
+
+async function refreshSnapshot() {
+  snapshotIsGenerating.value = true
+  snapshotStatus.value = ''
+  snapshotError.value = ''
+
+  try {
+    const blob = await renderGearSnapshot(getSnapshotPayload())
+    snapshotBlob.value = blob
+
+    if (snapshotObjectUrl) {
+      URL.revokeObjectURL(snapshotObjectUrl)
+    }
+
+    snapshotObjectUrl = URL.createObjectURL(blob)
+    snapshotImageUrl.value = snapshotObjectUrl
+    snapshotStatus.value = 'Snapshot ready'
+  }
+  catch (error) {
+    console.error(error)
+    snapshotError.value = 'Could not generate snapshot.'
+  }
+  finally {
+    snapshotIsGenerating.value = false
+  }
+}
+
+function openSnapshot() {
+  snapshotOpen.value = true
+  refreshSnapshot()
+}
+
+async function ensureSnapshotBlob() {
+  if (!snapshotBlob.value) {
+    await refreshSnapshot()
+  }
+
+  return snapshotBlob.value
+}
+
+function getSnapshotFilename() {
+  const itemName = `${pieceType.value}-${gearType.value}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+
+  return `lt-gear-${itemName || 'snapshot'}.png`
+}
+
+async function copySnapshot() {
+  const blob = await ensureSnapshotBlob()
+  snapshotStatus.value = ''
+  snapshotError.value = ''
+
+  if (!blob) {
+    snapshotError.value = 'Snapshot is not ready yet.'
+    return
+  }
+
+  if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+    snapshotError.value = 'Image copy is not supported in this browser.'
+    return
+  }
+
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({ [blob.type]: blob }),
+    ])
+    snapshotStatus.value = 'Copied image'
+  }
+  catch (error) {
+    console.error(error)
+    snapshotError.value = 'Could not copy image.'
+  }
+}
+
+async function downloadSnapshot() {
+  const blob = await ensureSnapshotBlob()
+  snapshotStatus.value = ''
+  snapshotError.value = ''
+
+  if (!blob) {
+    snapshotError.value = 'Snapshot is not ready yet.'
+    return
+  }
+
+  const downloadUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = downloadUrl
+  link.download = getSnapshotFilename()
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(downloadUrl)
+  snapshotStatus.value = 'Downloaded image'
 }
 
 function getLineScoreText(index) {
@@ -1524,12 +1712,19 @@ watch([statType, statInput, inputEnchantLevel], () => {
                   <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
                 </div>
 
-                <Tabs v-model="resultMode" class="w-auto">
-                  <TabsList>
-                    <TabsTrigger value="score">Score</TabsTrigger>
-                    <TabsTrigger value="rating">Rating</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div class="flex flex-wrap items-center gap-2">
+                  <Tabs v-model="resultMode" class="w-auto">
+                    <TabsList>
+                      <TabsTrigger value="score">Score</TabsTrigger>
+                      <TabsTrigger value="rating">Rating</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+
+                  <Button variant="outline" size="sm" @click="openSnapshot">
+                    <CameraIcon />
+                    Snapshot
+                  </Button>
+                </div>
               </div>
             </CardHeader>
 
@@ -1976,6 +2171,91 @@ watch([statType, statInput, inputEnchantLevel], () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog v-model:open="snapshotOpen">
+        <DialogContent class="max-h-[94vh] sm:!max-w-5xl overflow-y-auto rounded-lg p-0">
+          <DialogHeader class="border-b px-5 py-4 pr-14">
+            <DialogTitle class="flex items-center gap-2">
+              <CameraIcon class="size-4" />
+              Snapshot
+            </DialogTitle>
+            <DialogDescription>
+              {{ pieceType }} {{ gearType }} / {{ getFinalUpgrade(gearType) || 'Current results' }}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_240px]">
+            <div class="min-h-[320px] overflow-hidden rounded-lg border bg-muted/30 p-2">
+              <div
+                v-if="snapshotIsGenerating"
+                class="grid min-h-[320px] place-items-center text-sm text-muted-foreground"
+              >
+                Generating snapshot...
+              </div>
+              <img
+                v-else-if="snapshotImageUrl"
+                class="mx-auto max-h-[70vh] w-full rounded-md object-contain"
+                :src="snapshotImageUrl"
+                alt="Generated gear score snapshot"
+              >
+              <div v-else class="grid min-h-[320px] place-items-center text-sm text-muted-foreground">
+                No snapshot yet.
+              </div>
+            </div>
+
+            <div class="grid content-start gap-3">
+              <Button :disabled="snapshotIsGenerating || !snapshotImageUrl" @click="copySnapshot">
+                <ClipboardIcon />
+                Copy image
+              </Button>
+              <Button
+                variant="outline"
+                :disabled="snapshotIsGenerating || !snapshotImageUrl"
+                @click="downloadSnapshot"
+              >
+                <DownloadIcon />
+                Download PNG
+              </Button>
+              <Button variant="secondary" :disabled="snapshotIsGenerating" @click="refreshSnapshot">
+                <RefreshCcwIcon />
+                Regenerate
+              </Button>
+
+              <div class="grid gap-3 rounded-lg border bg-muted/20 p-3">
+                <div>
+                  <div class="text-xs font-medium uppercase text-muted-foreground">Current</div>
+                  <div class="mt-1 flex items-center gap-2">
+                    <span class="text-xl font-semibold">{{ results.percent }}%</span>
+                    <Badge variant="outline" :class="getTierClass(results.tier)">
+                      {{ results.tier }}
+                    </Badge>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <div class="text-xs font-medium uppercase text-muted-foreground">
+                    {{ getFinalUpgrade(gearType) || 'Projected' }}
+                  </div>
+                  <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="text-xl font-semibold">{{ results.potentialScore }}</span>
+                    <Badge variant="outline" :class="getTierClass(results.potentialTier)">
+                      {{ results.potentialTier }}
+                    </Badge>
+                  </div>
+                  <div class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
+                    {{ formatGainRangeWithPrecision(results.potentialScore, Number(results.percent), 0) }} gain
+                  </div>
+                </div>
+              </div>
+
+              <p v-if="snapshotError" class="text-sm text-destructive">{{ snapshotError }}</p>
+              <p v-else-if="snapshotStatus" class="text-sm text-muted-foreground">{{ snapshotStatus }}</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog v-model:open="disclaimerOpen">
         <DialogContent class="max-h-[90vh] max-w-3xl overflow-y-auto rounded-lg">
