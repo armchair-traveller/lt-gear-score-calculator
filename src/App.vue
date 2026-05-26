@@ -2234,11 +2234,6 @@ watch([statType, statInput, inputEnchantLevel], () => {
                 <DownloadIcon />
                 Download PNG
               </Button>
-              <Button variant="secondary" :disabled="snapshotIsGenerating" @click="refreshSnapshot">
-                <RefreshCcwIcon />
-                Regenerate
-              </Button>
-
               <div class="grid gap-3 rounded-lg border bg-muted/20 p-3">
                 <div>
                   <div class="text-xs font-medium uppercase text-muted-foreground">
