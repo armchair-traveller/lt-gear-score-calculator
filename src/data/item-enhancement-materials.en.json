@@ -1,0 +1,2395 @@
+[
+  {
+    "value": "weapon",
+    "name": "Weapon/Elemental Stone (Annihilation, Recall)",
+    "disabled": false,
+    "summary": {
+      "type": "Weapon/Elemental Stone (Annihilation, Recall)",
+      "farm": "Pleroma",
+      "max": "+6",
+      "total": "3,839",
+      "fee": "100M (600M total)",
+      "quarter": "24.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "400"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "480",
+        "fee": "100M",
+        "cumulative": "880"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "560",
+        "fee": "100M",
+        "cumulative": "1,440"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "640",
+        "fee": "100M",
+        "cumulative": "2,080"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "760",
+        "fee": "100M",
+        "cumulative": "2,840"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "999",
+        "fee": "100M",
+        "cumulative": "3,839"
+      }
+    ]
+  },
+  {
+    "value": "weapon_transcend",
+    "name": "Weapon/Elemental Stone [Ascended]",
+    "disabled": false,
+    "summary": {
+      "type": "Weapon/Elemental Stone [Ascended] + Demiurgos Ascension Stone x999",
+      "farm": "Pleroma [Stage 5]",
+      "max": "+1",
+      "total": "999",
+      "fee": "2B (2B total)",
+      "quarter": "24.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "999",
+        "fee": "2B",
+        "cumulative": "999"
+      }
+    ]
+  },
+  {
+    "value": "armor_icarus",
+    "name": "Armor (Icarus)",
+    "disabled": false,
+    "summary": {
+      "type": "Armor (Icarus)",
+      "farm": "Wings of Icarus",
+      "max": "+6",
+      "total": "1,650",
+      "fee": "100M (600M total)",
+      "quarter": "25.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "170",
+        "fee": "100M",
+        "cumulative": "170"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "210",
+        "fee": "100M",
+        "cumulative": "380"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "240",
+        "fee": "100M",
+        "cumulative": "620"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "270",
+        "fee": "100M",
+        "cumulative": "890"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "330",
+        "fee": "100M",
+        "cumulative": "1,220"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "430",
+        "fee": "100M",
+        "cumulative": "1,650"
+      }
+    ]
+  },
+  {
+    "value": "armor_grendel",
+    "name": "Armor (Grendel)",
+    "disabled": false,
+    "summary": {
+      "type": "Armor (Grendel)",
+      "farm": "Wings of Icarus",
+      "max": "+6",
+      "total": "4,990",
+      "fee": "100M (600M total)",
+      "quarter": "25.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "520",
+        "fee": "100M",
+        "cumulative": "520"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "620",
+        "fee": "100M",
+        "cumulative": "1,140"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "730",
+        "fee": "100M",
+        "cumulative": "1,870"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "830",
+        "fee": "100M",
+        "cumulative": "2,700"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "990",
+        "fee": "100M",
+        "cumulative": "3,690"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "1,300",
+        "fee": "100M",
+        "cumulative": "4,990"
+      }
+    ]
+  },
+  {
+    "value": "armor_combine_icarus",
+    "name": "Armor [Combined] (Icarus)",
+    "disabled": false,
+    "summary": {
+      "type": "Armor [Combined] (Icarus) + Icarus Ascension Stone x166",
+      "farm": "Wings of Icarus [Stage 5]",
+      "max": "+1",
+      "total": "430",
+      "fee": "-",
+      "quarter": "25.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "430",
+        "fee": "-",
+        "cumulative": "430"
+      }
+    ]
+  },
+  {
+    "value": "armor_combine_grendel",
+    "name": "Armor [Combined] (Grendel)",
+    "disabled": false,
+    "summary": {
+      "type": "Armor [Combined] (Grendel) + Icarus Ascension Stone x500",
+      "farm": "Wings of Icarus [Stage 5]",
+      "max": "+1",
+      "total": "1,300",
+      "fee": "-",
+      "quarter": "25.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "1,300",
+        "fee": "-",
+        "cumulative": "1,300"
+      }
+    ]
+  },
+  {
+    "value": "relic",
+    "name": "Relic (Mirror)",
+    "disabled": false,
+    "summary": {
+      "type": "Relic (Mirror)",
+      "farm": "Likimo Felke",
+      "max": "+5",
+      "total": "16,250",
+      "fee": "-",
+      "quarter": "25.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "3,250",
+        "fee": "-",
+        "cumulative": "3,250"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "3,250",
+        "fee": "-",
+        "cumulative": "6,500"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "3,250",
+        "fee": "-",
+        "cumulative": "9,750"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "3,250",
+        "fee": "-",
+        "cumulative": "13,000"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "3,250",
+        "fee": "-",
+        "cumulative": "16,250"
+      }
+    ]
+  },
+  {
+    "value": "clock",
+    "name": "Watch (Black Dragon)",
+    "disabled": false,
+    "summary": {
+      "type": "Watch (Black Dragon)",
+      "farm": "Emeraldia",
+      "max": "+6",
+      "total": "3,840",
+      "fee": "100M (600M total)",
+      "quarter": "24.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "400"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "480",
+        "fee": "100M",
+        "cumulative": "880"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "560",
+        "fee": "100M",
+        "cumulative": "1,440"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "640",
+        "fee": "100M",
+        "cumulative": "2,080"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "760",
+        "fee": "100M",
+        "cumulative": "2,840"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "1,000",
+        "fee": "100M",
+        "cumulative": "3,840"
+      }
+    ]
+  },
+  {
+    "value": "acc1",
+    "name": "Accessory 1 (Tattoo/Glasses/Stockings)",
+    "disabled": false,
+    "summary": {
+      "type": "Accessory 1 (Tattoo/Glasses/Stockings)",
+      "farm": "Emeraldia",
+      "max": "+6",
+      "total": "3,839",
+      "fee": "100M (600M total)",
+      "quarter": "24.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "400"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "480",
+        "fee": "100M",
+        "cumulative": "880"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "560",
+        "fee": "100M",
+        "cumulative": "1,440"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "640",
+        "fee": "100M",
+        "cumulative": "2,080"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "760",
+        "fee": "100M",
+        "cumulative": "2,840"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "999",
+        "fee": "100M",
+        "cumulative": "3,839"
+      }
+    ]
+  },
+  {
+    "value": "acc1_combine",
+    "name": "Accessory 1 [Combined]",
+    "disabled": false,
+    "summary": {
+      "type": "Accessory 1 [Combined] + Dorothea Ascension Stone x500",
+      "farm": "Emeraldia [Stage 5]",
+      "max": "+1",
+      "total": "999",
+      "fee": "2B (2B total)",
+      "quarter": "24.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "999",
+        "fee": "2B",
+        "cumulative": "999"
+      }
+    ]
+  },
+  {
+    "value": "acc2_mirror",
+    "name": "Accessory 2 (Mirror)",
+    "disabled": false,
+    "summary": {
+      "type": "Accessory 2 (Mirror)",
+      "farm": "Likimo Felke",
+      "max": "+6",
+      "total": "2,495",
+      "fee": "100M (600M total)",
+      "quarter": "25.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "260",
+        "fee": "100M",
+        "cumulative": "260"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "310",
+        "fee": "100M",
+        "cumulative": "570"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "365",
+        "fee": "100M",
+        "cumulative": "935"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "415",
+        "fee": "100M",
+        "cumulative": "1,350"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "495",
+        "fee": "100M",
+        "cumulative": "1,845"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "650",
+        "fee": "100M",
+        "cumulative": "2,495"
+      }
+    ]
+  },
+  {
+    "value": "acc2_belial",
+    "name": "Accessory 2 (Belial)",
+    "disabled": false,
+    "summary": {
+      "type": "Accessory 2 (Belial)",
+      "farm": "Likimo Felke",
+      "max": "+6",
+      "total": "4,990",
+      "fee": "100M (600M total)",
+      "quarter": "25.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "520",
+        "fee": "100M",
+        "cumulative": "520"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "620",
+        "fee": "100M",
+        "cumulative": "1,140"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "730",
+        "fee": "100M",
+        "cumulative": "1,870"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "830",
+        "fee": "100M",
+        "cumulative": "2,700"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "990",
+        "fee": "100M",
+        "cumulative": "3,690"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "1,300",
+        "fee": "100M",
+        "cumulative": "4,990"
+      }
+    ]
+  },
+  {
+    "value": "acc2_combine_mirror",
+    "name": "Accessory 2 [Combined] (Mirror)",
+    "disabled": false,
+    "summary": {
+      "type": "Accessory 2 [Combined] (Mirror) + Belial Ascension Stone x250",
+      "farm": "Likimo Felke [Stage 5]",
+      "max": "+1",
+      "total": "650",
+      "fee": "-",
+      "quarter": "25.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "650",
+        "fee": "-",
+        "cumulative": "650"
+      }
+    ]
+  },
+  {
+    "value": "acc2_combine_belial",
+    "name": "Accessory 2 [Combined] (Belial)",
+    "disabled": false,
+    "summary": {
+      "type": "Accessory 2 [Combined] (Belial) + Belial Ascension Stone x500",
+      "farm": "Likimo Felke [Stage 5]",
+      "max": "+1",
+      "total": "1,300",
+      "fee": "-",
+      "quarter": "25.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "1,300",
+        "fee": "-",
+        "cumulative": "1,300"
+      }
+    ]
+  },
+  {
+    "value": "charm",
+    "name": "Charm (Dmitri)",
+    "disabled": false,
+    "summary": {
+      "type": "Charm (Dmitri)",
+      "farm": "Helepol Fort",
+      "max": "+9",
+      "total": "5,400",
+      "fee": "100M (900M total)",
+      "quarter": "24.3Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "360",
+        "fee": "100M",
+        "cumulative": "360"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "420",
+        "fee": "100M",
+        "cumulative": "780"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "480",
+        "fee": "100M",
+        "cumulative": "1,260"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "540",
+        "fee": "100M",
+        "cumulative": "1,800"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "600",
+        "fee": "100M",
+        "cumulative": "2,400"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "660",
+        "fee": "100M",
+        "cumulative": "3,060"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "720",
+        "fee": "100M",
+        "cumulative": "3,780"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "780",
+        "fee": "100M",
+        "cumulative": "4,560"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "840",
+        "fee": "100M",
+        "cumulative": "5,400"
+      }
+    ]
+  },
+  {
+    "value": "totem",
+    "name": "Totem (Gnosis)",
+    "disabled": false,
+    "summary": {
+      "type": "Totem (Gnosis)",
+      "farm": "Boundary of the Void",
+      "max": "+50",
+      "total": "5,450",
+      "fee": "10M (500M total)",
+      "quarter": "24.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "60",
+        "fee": "10M",
+        "cumulative": "60"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "62",
+        "fee": "10M",
+        "cumulative": "122"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "64",
+        "fee": "10M",
+        "cumulative": "186"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "66",
+        "fee": "10M",
+        "cumulative": "252"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "68",
+        "fee": "10M",
+        "cumulative": "320"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "70",
+        "fee": "10M",
+        "cumulative": "390"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "72",
+        "fee": "10M",
+        "cumulative": "462"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "74",
+        "fee": "10M",
+        "cumulative": "536"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "76",
+        "fee": "10M",
+        "cumulative": "612"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "78",
+        "fee": "10M",
+        "cumulative": "690"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "80",
+        "fee": "10M",
+        "cumulative": "770"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "82",
+        "fee": "10M",
+        "cumulative": "852"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "84",
+        "fee": "10M",
+        "cumulative": "936"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "86",
+        "fee": "10M",
+        "cumulative": "1,022"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "88",
+        "fee": "10M",
+        "cumulative": "1,110"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "90",
+        "fee": "10M",
+        "cumulative": "1,200"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "92",
+        "fee": "10M",
+        "cumulative": "1,292"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "94",
+        "fee": "10M",
+        "cumulative": "1,386"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "96",
+        "fee": "10M",
+        "cumulative": "1,482"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "98",
+        "fee": "10M",
+        "cumulative": "1,580"
+      },
+      {
+        "step": "+20 → +21",
+        "material": "100",
+        "fee": "10M",
+        "cumulative": "1,680"
+      },
+      {
+        "step": "+21 → +22",
+        "material": "102",
+        "fee": "10M",
+        "cumulative": "1,782"
+      },
+      {
+        "step": "+22 → +23",
+        "material": "104",
+        "fee": "10M",
+        "cumulative": "1,886"
+      },
+      {
+        "step": "+23 → +24",
+        "material": "106",
+        "fee": "10M",
+        "cumulative": "1,992"
+      },
+      {
+        "step": "+24 → +25",
+        "material": "108",
+        "fee": "10M",
+        "cumulative": "2,100"
+      },
+      {
+        "step": "+25 → +26",
+        "material": "110",
+        "fee": "10M",
+        "cumulative": "2,210"
+      },
+      {
+        "step": "+26 → +27",
+        "material": "112",
+        "fee": "10M",
+        "cumulative": "2,322"
+      },
+      {
+        "step": "+27 → +28",
+        "material": "114",
+        "fee": "10M",
+        "cumulative": "2,436"
+      },
+      {
+        "step": "+28 → +29",
+        "material": "116",
+        "fee": "10M",
+        "cumulative": "2,552"
+      },
+      {
+        "step": "+29 → +30",
+        "material": "118",
+        "fee": "10M",
+        "cumulative": "2,670"
+      },
+      {
+        "step": "+30 → +31",
+        "material": "120",
+        "fee": "10M",
+        "cumulative": "2,790"
+      },
+      {
+        "step": "+31 → +32",
+        "material": "122",
+        "fee": "10M",
+        "cumulative": "2,912"
+      },
+      {
+        "step": "+32 → +33",
+        "material": "124",
+        "fee": "10M",
+        "cumulative": "3,036"
+      },
+      {
+        "step": "+33 → +34",
+        "material": "126",
+        "fee": "10M",
+        "cumulative": "3,162"
+      },
+      {
+        "step": "+34 → +35",
+        "material": "128",
+        "fee": "10M",
+        "cumulative": "3,290"
+      },
+      {
+        "step": "+35 → +36",
+        "material": "130",
+        "fee": "10M",
+        "cumulative": "3,420"
+      },
+      {
+        "step": "+36 → +37",
+        "material": "132",
+        "fee": "10M",
+        "cumulative": "3,552"
+      },
+      {
+        "step": "+37 → +38",
+        "material": "134",
+        "fee": "10M",
+        "cumulative": "3,686"
+      },
+      {
+        "step": "+38 → +39",
+        "material": "136",
+        "fee": "10M",
+        "cumulative": "3,822"
+      },
+      {
+        "step": "+39 → +40",
+        "material": "138",
+        "fee": "10M",
+        "cumulative": "3,960"
+      },
+      {
+        "step": "+40 → +41",
+        "material": "140",
+        "fee": "10M",
+        "cumulative": "4,100"
+      },
+      {
+        "step": "+41 → +42",
+        "material": "142",
+        "fee": "10M",
+        "cumulative": "4,242"
+      },
+      {
+        "step": "+42 → +43",
+        "material": "144",
+        "fee": "10M",
+        "cumulative": "4,386"
+      },
+      {
+        "step": "+43 → +44",
+        "material": "146",
+        "fee": "10M",
+        "cumulative": "4,532"
+      },
+      {
+        "step": "+44 → +45",
+        "material": "148",
+        "fee": "10M",
+        "cumulative": "4,680"
+      },
+      {
+        "step": "+45 → +46",
+        "material": "150",
+        "fee": "10M",
+        "cumulative": "4,830"
+      },
+      {
+        "step": "+46 → +47",
+        "material": "152",
+        "fee": "10M",
+        "cumulative": "4,982"
+      },
+      {
+        "step": "+47 → +48",
+        "material": "154",
+        "fee": "10M",
+        "cumulative": "5,136"
+      },
+      {
+        "step": "+48 → +49",
+        "material": "156",
+        "fee": "10M",
+        "cumulative": "5,292"
+      },
+      {
+        "step": "+49 → +50",
+        "material": "158",
+        "fee": "10M",
+        "cumulative": "5,450"
+      }
+    ]
+  },
+  {
+    "value": "necklace",
+    "name": "Necklace (Black Dragon)",
+    "disabled": false,
+    "summary": {
+      "type": "Necklace (Black Dragon)",
+      "farm": "Emeraldia",
+      "max": "+6",
+      "total": "3,840",
+      "fee": "100M (600M total)",
+      "quarter": "24.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "400"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "480",
+        "fee": "100M",
+        "cumulative": "880"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "560",
+        "fee": "100M",
+        "cumulative": "1,440"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "640",
+        "fee": "100M",
+        "cumulative": "2,080"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "760",
+        "fee": "100M",
+        "cumulative": "2,840"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "1,000",
+        "fee": "100M",
+        "cumulative": "3,840"
+      }
+    ]
+  },
+  {
+    "value": "manual",
+    "name": "Manual (Craft Keeper)",
+    "disabled": false,
+    "summary": {
+      "type": "Manual (Craft Keeper)",
+      "farm": "Wings of Icarus",
+      "max": "+6",
+      "total": "3,839",
+      "fee": "100M (600M total)",
+      "quarter": "25.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "400"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "480",
+        "fee": "100M",
+        "cumulative": "880"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "560",
+        "fee": "100M",
+        "cumulative": "1,440"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "640",
+        "fee": "100M",
+        "cumulative": "2,080"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "760",
+        "fee": "100M",
+        "cumulative": "2,840"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "999",
+        "fee": "100M",
+        "cumulative": "3,839"
+      }
+    ]
+  },
+  {
+    "value": "sticker",
+    "name": "Sticker (Camelot)",
+    "disabled": false,
+    "summary": {
+      "type": "Sticker (Camelot)",
+      "farm": "Camelot Ranch",
+      "max": "+30",
+      "total": "6,675",
+      "fee": "100M (3B total)",
+      "quarter": "26.1Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "150",
+        "fee": "100M",
+        "cumulative": "150"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "155",
+        "fee": "100M",
+        "cumulative": "305"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "160",
+        "fee": "100M",
+        "cumulative": "465"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "165",
+        "fee": "100M",
+        "cumulative": "630"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "170",
+        "fee": "100M",
+        "cumulative": "800"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "175",
+        "fee": "100M",
+        "cumulative": "975"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "180",
+        "fee": "100M",
+        "cumulative": "1,155"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "185",
+        "fee": "100M",
+        "cumulative": "1,340"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "190",
+        "fee": "100M",
+        "cumulative": "1,530"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "195",
+        "fee": "100M",
+        "cumulative": "1,725"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "200",
+        "fee": "100M",
+        "cumulative": "1,925"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "205",
+        "fee": "100M",
+        "cumulative": "2,130"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "210",
+        "fee": "100M",
+        "cumulative": "2,340"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "215",
+        "fee": "100M",
+        "cumulative": "2,555"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "220",
+        "fee": "100M",
+        "cumulative": "2,775"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "225",
+        "fee": "100M",
+        "cumulative": "3,000"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "230",
+        "fee": "100M",
+        "cumulative": "3,230"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "235",
+        "fee": "100M",
+        "cumulative": "3,465"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "240",
+        "fee": "100M",
+        "cumulative": "3,705"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "245",
+        "fee": "100M",
+        "cumulative": "3,950"
+      },
+      {
+        "step": "+20 → +21",
+        "material": "250",
+        "fee": "100M",
+        "cumulative": "4,200"
+      },
+      {
+        "step": "+21 → +22",
+        "material": "255",
+        "fee": "100M",
+        "cumulative": "4,455"
+      },
+      {
+        "step": "+22 → +23",
+        "material": "260",
+        "fee": "100M",
+        "cumulative": "4,715"
+      },
+      {
+        "step": "+23 → +24",
+        "material": "265",
+        "fee": "100M",
+        "cumulative": "4,980"
+      },
+      {
+        "step": "+24 → +25",
+        "material": "270",
+        "fee": "100M",
+        "cumulative": "5,250"
+      },
+      {
+        "step": "+25 → +26",
+        "material": "275",
+        "fee": "100M",
+        "cumulative": "5,525"
+      },
+      {
+        "step": "+26 → +27",
+        "material": "280",
+        "fee": "100M",
+        "cumulative": "5,805"
+      },
+      {
+        "step": "+27 → +28",
+        "material": "285",
+        "fee": "100M",
+        "cumulative": "6,090"
+      },
+      {
+        "step": "+28 → +29",
+        "material": "290",
+        "fee": "100M",
+        "cumulative": "6,380"
+      },
+      {
+        "step": "+29 → +30",
+        "material": "295",
+        "fee": "100M",
+        "cumulative": "6,675"
+      }
+    ]
+  },
+  {
+    "value": "belt",
+    "name": "Belt (Minuet)",
+    "disabled": false,
+    "summary": {
+      "type": "Belt (Minuet)",
+      "farm": "Spiral of Silence",
+      "max": "+30",
+      "total": "6,675",
+      "fee": "100M (3B total)",
+      "quarter": "26.1Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "150",
+        "fee": "100M",
+        "cumulative": "150"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "155",
+        "fee": "100M",
+        "cumulative": "305"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "160",
+        "fee": "100M",
+        "cumulative": "465"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "165",
+        "fee": "100M",
+        "cumulative": "630"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "170",
+        "fee": "100M",
+        "cumulative": "800"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "175",
+        "fee": "100M",
+        "cumulative": "975"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "180",
+        "fee": "100M",
+        "cumulative": "1,155"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "185",
+        "fee": "100M",
+        "cumulative": "1,340"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "190",
+        "fee": "100M",
+        "cumulative": "1,530"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "195",
+        "fee": "100M",
+        "cumulative": "1,725"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "200",
+        "fee": "100M",
+        "cumulative": "1,925"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "205",
+        "fee": "100M",
+        "cumulative": "2,130"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "210",
+        "fee": "100M",
+        "cumulative": "2,340"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "215",
+        "fee": "100M",
+        "cumulative": "2,555"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "220",
+        "fee": "100M",
+        "cumulative": "2,775"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "225",
+        "fee": "100M",
+        "cumulative": "3,000"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "230",
+        "fee": "100M",
+        "cumulative": "3,230"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "235",
+        "fee": "100M",
+        "cumulative": "3,465"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "240",
+        "fee": "100M",
+        "cumulative": "3,705"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "245",
+        "fee": "100M",
+        "cumulative": "3,950"
+      },
+      {
+        "step": "+20 → +21",
+        "material": "250",
+        "fee": "100M",
+        "cumulative": "4,200"
+      },
+      {
+        "step": "+21 → +22",
+        "material": "255",
+        "fee": "100M",
+        "cumulative": "4,455"
+      },
+      {
+        "step": "+22 → +23",
+        "material": "260",
+        "fee": "100M",
+        "cumulative": "4,715"
+      },
+      {
+        "step": "+23 → +24",
+        "material": "265",
+        "fee": "100M",
+        "cumulative": "4,980"
+      },
+      {
+        "step": "+24 → +25",
+        "material": "270",
+        "fee": "100M",
+        "cumulative": "5,250"
+      },
+      {
+        "step": "+25 → +26",
+        "material": "275",
+        "fee": "100M",
+        "cumulative": "5,525"
+      },
+      {
+        "step": "+26 → +27",
+        "material": "280",
+        "fee": "100M",
+        "cumulative": "5,805"
+      },
+      {
+        "step": "+27 → +28",
+        "material": "285",
+        "fee": "100M",
+        "cumulative": "6,090"
+      },
+      {
+        "step": "+28 → +29",
+        "material": "290",
+        "fee": "100M",
+        "cumulative": "6,380"
+      },
+      {
+        "step": "+29 → +30",
+        "material": "295",
+        "fee": "100M",
+        "cumulative": "6,675"
+      }
+    ]
+  },
+  {
+    "value": "brooch",
+    "name": "Brooch (Tyrenia)",
+    "disabled": false,
+    "summary": {
+      "type": "Brooch (Tyrenia)",
+      "farm": "Trial of Iron",
+      "max": "+30",
+      "total": "5,775",
+      "fee": "50M (1.5B total)",
+      "quarter": "24.3Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "120",
+        "fee": "50M",
+        "cumulative": "120"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "125",
+        "fee": "50M",
+        "cumulative": "245"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "130",
+        "fee": "50M",
+        "cumulative": "375"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "135",
+        "fee": "50M",
+        "cumulative": "510"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "140",
+        "fee": "50M",
+        "cumulative": "650"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "145",
+        "fee": "50M",
+        "cumulative": "795"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "150",
+        "fee": "50M",
+        "cumulative": "945"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "155",
+        "fee": "50M",
+        "cumulative": "1,100"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "160",
+        "fee": "50M",
+        "cumulative": "1,260"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "165",
+        "fee": "50M",
+        "cumulative": "1,425"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "170",
+        "fee": "50M",
+        "cumulative": "1,595"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "175",
+        "fee": "50M",
+        "cumulative": "1,770"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "180",
+        "fee": "50M",
+        "cumulative": "1,950"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "185",
+        "fee": "50M",
+        "cumulative": "2,135"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "190",
+        "fee": "50M",
+        "cumulative": "2,325"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "195",
+        "fee": "50M",
+        "cumulative": "2,520"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "200",
+        "fee": "50M",
+        "cumulative": "2,720"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "205",
+        "fee": "50M",
+        "cumulative": "2,925"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "210",
+        "fee": "50M",
+        "cumulative": "3,135"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "215",
+        "fee": "50M",
+        "cumulative": "3,350"
+      },
+      {
+        "step": "+20 → +21",
+        "material": "220",
+        "fee": "50M",
+        "cumulative": "3,570"
+      },
+      {
+        "step": "+21 → +22",
+        "material": "225",
+        "fee": "50M",
+        "cumulative": "3,795"
+      },
+      {
+        "step": "+22 → +23",
+        "material": "230",
+        "fee": "50M",
+        "cumulative": "4,025"
+      },
+      {
+        "step": "+23 → +24",
+        "material": "235",
+        "fee": "50M",
+        "cumulative": "4,260"
+      },
+      {
+        "step": "+24 → +25",
+        "material": "240",
+        "fee": "50M",
+        "cumulative": "4,500"
+      },
+      {
+        "step": "+25 → +26",
+        "material": "245",
+        "fee": "50M",
+        "cumulative": "4,745"
+      },
+      {
+        "step": "+26 → +27",
+        "material": "250",
+        "fee": "50M",
+        "cumulative": "4,995"
+      },
+      {
+        "step": "+27 → +28",
+        "material": "255",
+        "fee": "50M",
+        "cumulative": "5,250"
+      },
+      {
+        "step": "+28 → +29",
+        "material": "260",
+        "fee": "50M",
+        "cumulative": "5,510"
+      },
+      {
+        "step": "+29 → +30",
+        "material": "265",
+        "fee": "50M",
+        "cumulative": "5,775"
+      }
+    ]
+  },
+  {
+    "value": "badge1",
+    "name": "Badge #1 (Tire Man)",
+    "disabled": false,
+    "summary": {
+      "type": "Badge #1 (Tire Man)",
+      "farm": "Playground of Inspiration",
+      "max": "+20",
+      "total": "6,750",
+      "fee": "100M (2B total)",
+      "quarter": "25.3Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "100",
+        "fee": "100M",
+        "cumulative": "100"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "125",
+        "fee": "100M",
+        "cumulative": "225"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "150",
+        "fee": "100M",
+        "cumulative": "375"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "175",
+        "fee": "100M",
+        "cumulative": "550"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "200",
+        "fee": "100M",
+        "cumulative": "750"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "225",
+        "fee": "100M",
+        "cumulative": "975"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "250",
+        "fee": "100M",
+        "cumulative": "1,225"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "275",
+        "fee": "100M",
+        "cumulative": "1,500"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "300",
+        "fee": "100M",
+        "cumulative": "1,800"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "325",
+        "fee": "100M",
+        "cumulative": "2,125"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "350",
+        "fee": "100M",
+        "cumulative": "2,475"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "375",
+        "fee": "100M",
+        "cumulative": "2,850"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "3,250"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "425",
+        "fee": "100M",
+        "cumulative": "3,675"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "450",
+        "fee": "100M",
+        "cumulative": "4,125"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "475",
+        "fee": "100M",
+        "cumulative": "4,600"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "500",
+        "fee": "100M",
+        "cumulative": "5,100"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "525",
+        "fee": "100M",
+        "cumulative": "5,625"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "550",
+        "fee": "100M",
+        "cumulative": "6,175"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "575",
+        "fee": "100M",
+        "cumulative": "6,750"
+      }
+    ]
+  },
+  {
+    "value": "badge2",
+    "name": "Badge #2 (Gabriela)",
+    "disabled": false,
+    "summary": {
+      "type": "Badge #2 (Gabriela)",
+      "farm": "Mare Ingenii",
+      "max": "+30",
+      "total": "5,775",
+      "fee": "100M (2B total)",
+      "quarter": "25.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "120",
+        "fee": "100M",
+        "cumulative": "120"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "125",
+        "fee": "100M",
+        "cumulative": "245"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "130",
+        "fee": "100M",
+        "cumulative": "375"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "135",
+        "fee": "100M",
+        "cumulative": "510"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "140",
+        "fee": "100M",
+        "cumulative": "650"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "145",
+        "fee": "100M",
+        "cumulative": "795"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "150",
+        "fee": "100M",
+        "cumulative": "945"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "155",
+        "fee": "100M",
+        "cumulative": "1,100"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "160",
+        "fee": "100M",
+        "cumulative": "1,260"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "165",
+        "fee": "100M",
+        "cumulative": "1,425"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "170",
+        "fee": "100M",
+        "cumulative": "1,595"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "175",
+        "fee": "100M",
+        "cumulative": "1,770"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "180",
+        "fee": "100M",
+        "cumulative": "1,950"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "185",
+        "fee": "100M",
+        "cumulative": "2,135"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "190",
+        "fee": "100M",
+        "cumulative": "2,325"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "195",
+        "fee": "100M",
+        "cumulative": "2,520"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "200",
+        "fee": "100M",
+        "cumulative": "2,720"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "205",
+        "fee": "100M",
+        "cumulative": "2,925"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "210",
+        "fee": "100M",
+        "cumulative": "3,135"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "215",
+        "fee": "100M",
+        "cumulative": "3,350"
+      },
+      {
+        "step": "+20 → +21",
+        "material": "220",
+        "fee": "100M",
+        "cumulative": "3,570"
+      },
+      {
+        "step": "+21 → +22",
+        "material": "225",
+        "fee": "100M",
+        "cumulative": "3,795"
+      },
+      {
+        "step": "+22 → +23",
+        "material": "230",
+        "fee": "100M",
+        "cumulative": "4,025"
+      },
+      {
+        "step": "+23 → +24",
+        "material": "235",
+        "fee": "100M",
+        "cumulative": "4,260"
+      },
+      {
+        "step": "+24 → +25",
+        "material": "240",
+        "fee": "100M",
+        "cumulative": "4,500"
+      },
+      {
+        "step": "+25 → +26",
+        "material": "245",
+        "fee": "100M",
+        "cumulative": "4,745"
+      },
+      {
+        "step": "+26 → +27",
+        "material": "250",
+        "fee": "100M",
+        "cumulative": "4,995"
+      },
+      {
+        "step": "+27 → +28",
+        "material": "255",
+        "fee": "100M",
+        "cumulative": "5,250"
+      },
+      {
+        "step": "+28 → +29",
+        "material": "260",
+        "fee": "100M",
+        "cumulative": "5,510"
+      },
+      {
+        "step": "+29 → +30",
+        "material": "265",
+        "fee": "100M",
+        "cumulative": "5,775"
+      }
+    ]
+  },
+  {
+    "value": "badge3",
+    "name": "Badge #3 (Circus)",
+    "disabled": false,
+    "summary": {
+      "type": "Badge #3 (Circus)",
+      "farm": "Nectar Circus",
+      "max": "+20",
+      "total": "6,750",
+      "fee": "100M (2B total)",
+      "quarter": "25.3Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "100",
+        "fee": "100M",
+        "cumulative": "100"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "125",
+        "fee": "100M",
+        "cumulative": "225"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "150",
+        "fee": "100M",
+        "cumulative": "375"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "175",
+        "fee": "100M",
+        "cumulative": "550"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "200",
+        "fee": "100M",
+        "cumulative": "750"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "225",
+        "fee": "100M",
+        "cumulative": "975"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "250",
+        "fee": "100M",
+        "cumulative": "1,225"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "275",
+        "fee": "100M",
+        "cumulative": "1,500"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "300",
+        "fee": "100M",
+        "cumulative": "1,800"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "325",
+        "fee": "100M",
+        "cumulative": "2,125"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "350",
+        "fee": "100M",
+        "cumulative": "2,475"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "375",
+        "fee": "100M",
+        "cumulative": "2,850"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "3,250"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "425",
+        "fee": "100M",
+        "cumulative": "3,675"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "450",
+        "fee": "100M",
+        "cumulative": "4,125"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "475",
+        "fee": "100M",
+        "cumulative": "4,600"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "500",
+        "fee": "100M",
+        "cumulative": "5,100"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "525",
+        "fee": "100M",
+        "cumulative": "5,625"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "550",
+        "fee": "100M",
+        "cumulative": "6,175"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "575",
+        "fee": "100M",
+        "cumulative": "6,750"
+      }
+    ]
+  },
+  {
+    "value": "badge4",
+    "name": "Badge #4 (Ferdia)",
+    "disabled": false,
+    "summary": {
+      "type": "Badge #4 (Ferdia)",
+      "farm": "Wings of Icarus",
+      "max": "+6",
+      "total": "3,840",
+      "fee": "100M (600M total)",
+      "quarter": "25.2Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "400",
+        "fee": "100M",
+        "cumulative": "400"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "480",
+        "fee": "100M",
+        "cumulative": "880"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "560",
+        "fee": "100M",
+        "cumulative": "1,440"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "640",
+        "fee": "100M",
+        "cumulative": "2,080"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "760",
+        "fee": "100M",
+        "cumulative": "2,840"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "1,000",
+        "fee": "100M",
+        "cumulative": "3,840"
+      }
+    ]
+  },
+  {
+    "value": "badge5",
+    "name": "Badge #5 (Zephyros)",
+    "disabled": false,
+    "summary": {
+      "type": "Badge #5 (Zephyros)",
+      "farm": "Magic Training Hall (Stage 4)",
+      "max": "+30",
+      "total": "7,350",
+      "fee": "100M (3B total)",
+      "quarter": "25.3Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "100",
+        "fee": "100M",
+        "cumulative": "100"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "110",
+        "fee": "100M",
+        "cumulative": "210"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "120",
+        "fee": "100M",
+        "cumulative": "330"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "130",
+        "fee": "100M",
+        "cumulative": "460"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "140",
+        "fee": "100M",
+        "cumulative": "600"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "150",
+        "fee": "100M",
+        "cumulative": "750"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "160",
+        "fee": "100M",
+        "cumulative": "910"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "170",
+        "fee": "100M",
+        "cumulative": "1,080"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "180",
+        "fee": "100M",
+        "cumulative": "1,260"
+      },
+      {
+        "step": "+9 → +10",
+        "material": "190",
+        "fee": "100M",
+        "cumulative": "1,450"
+      },
+      {
+        "step": "+10 → +11",
+        "material": "200",
+        "fee": "100M",
+        "cumulative": "1,650"
+      },
+      {
+        "step": "+11 → +12",
+        "material": "210",
+        "fee": "100M",
+        "cumulative": "1,860"
+      },
+      {
+        "step": "+12 → +13",
+        "material": "220",
+        "fee": "100M",
+        "cumulative": "2,080"
+      },
+      {
+        "step": "+13 → +14",
+        "material": "230",
+        "fee": "100M",
+        "cumulative": "2,310"
+      },
+      {
+        "step": "+14 → +15",
+        "material": "240",
+        "fee": "100M",
+        "cumulative": "2,550"
+      },
+      {
+        "step": "+15 → +16",
+        "material": "250",
+        "fee": "100M",
+        "cumulative": "2,800"
+      },
+      {
+        "step": "+16 → +17",
+        "material": "260",
+        "fee": "100M",
+        "cumulative": "3,060"
+      },
+      {
+        "step": "+17 → +18",
+        "material": "270",
+        "fee": "100M",
+        "cumulative": "3,330"
+      },
+      {
+        "step": "+18 → +19",
+        "material": "280",
+        "fee": "100M",
+        "cumulative": "3,610"
+      },
+      {
+        "step": "+19 → +20",
+        "material": "290",
+        "fee": "100M",
+        "cumulative": "3,900"
+      },
+      {
+        "step": "+20 → +21",
+        "material": "300",
+        "fee": "100M",
+        "cumulative": "4,200"
+      },
+      {
+        "step": "+21 → +22",
+        "material": "310",
+        "fee": "100M",
+        "cumulative": "4,510"
+      },
+      {
+        "step": "+22 → +23",
+        "material": "320",
+        "fee": "100M",
+        "cumulative": "4,830"
+      },
+      {
+        "step": "+23 → +24",
+        "material": "330",
+        "fee": "100M",
+        "cumulative": "5,160"
+      },
+      {
+        "step": "+24 → +25",
+        "material": "340",
+        "fee": "100M",
+        "cumulative": "5,500"
+      },
+      {
+        "step": "+25 → +26",
+        "material": "350",
+        "fee": "100M",
+        "cumulative": "5,850"
+      },
+      {
+        "step": "+26 → +27",
+        "material": "360",
+        "fee": "100M",
+        "cumulative": "6,210"
+      },
+      {
+        "step": "+27 → +28",
+        "material": "370",
+        "fee": "100M",
+        "cumulative": "6,580"
+      },
+      {
+        "step": "+28 → +29",
+        "material": "380",
+        "fee": "100M",
+        "cumulative": "6,960"
+      },
+      {
+        "step": "+29 → +30",
+        "material": "390",
+        "fee": "100M",
+        "cumulative": "7,350"
+      }
+    ]
+  },
+  {
+    "value": "badge6",
+    "name": "Badge #6 (Cancer) (Unconfirmed)",
+    "disabled": true,
+    "summary": {
+      "type": "Badge #6 (Cancer)",
+      "farm": "Unknown Beach",
+      "max": "-",
+      "total": "Unconfirmed",
+      "fee": "-",
+      "quarter": "-"
+    },
+    "rows": []
+  },
+  {
+    "value": "gem1",
+    "name": "Gem #1 (Peridot)",
+    "disabled": false,
+    "summary": {
+      "type": "Gem #1 (Peridot)",
+      "farm": "Blind Bird's Nest",
+      "max": "+9",
+      "total": "4,950",
+      "fee": "100M (900M total)",
+      "quarter": "25.4Q"
+    },
+    "rows": [
+      {
+        "step": "+0 → +1",
+        "material": "150",
+        "fee": "100M",
+        "cumulative": "150"
+      },
+      {
+        "step": "+1 → +2",
+        "material": "225",
+        "fee": "100M",
+        "cumulative": "375"
+      },
+      {
+        "step": "+2 → +3",
+        "material": "300",
+        "fee": "100M",
+        "cumulative": "675"
+      },
+      {
+        "step": "+3 → +4",
+        "material": "525",
+        "fee": "100M",
+        "cumulative": "1,200"
+      },
+      {
+        "step": "+4 → +5",
+        "material": "600",
+        "fee": "100M",
+        "cumulative": "1,800"
+      },
+      {
+        "step": "+5 → +6",
+        "material": "675",
+        "fee": "100M",
+        "cumulative": "2,475"
+      },
+      {
+        "step": "+6 → +7",
+        "material": "750",
+        "fee": "100M",
+        "cumulative": "3,225"
+      },
+      {
+        "step": "+7 → +8",
+        "material": "825",
+        "fee": "100M",
+        "cumulative": "4,050"
+      },
+      {
+        "step": "+8 → +9",
+        "material": "900",
+        "fee": "100M",
+        "cumulative": "4,950"
+      }
+    ]
+  }
+]

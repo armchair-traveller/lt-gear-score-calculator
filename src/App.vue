@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onUnmounted, ref, watch } from 'vue'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -19,6 +19,7 @@ import {
   SparklesIcon,
   SwordsIcon,
   TablePropertiesIcon,
+  HammerIcon,
 } from '@lucide/vue'
 
 import { Badge } from '@/components/ui/badge'
@@ -104,6 +105,10 @@ import gears from './utils/gear.js'
 import { renderGearSnapshot } from './utils/snapshot.js'
 import tiers from './utils/tiers.js'
 
+const UpgradePage = defineAsyncComponent(() => import('@/pages/Upgrade.vue'))
+const normalizedPath = window.location.pathname.replace(/\/$/, '')
+const isUpgradePage = normalizedPath.endsWith('/upgrade')
+const upgradeHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}upgrade`
 const decimalStats = ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction']
 const repeatableStats = ['Other (Non-damaging)']
 const sssOddsGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
@@ -1369,7 +1374,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <TooltipProvider>
+  <UpgradePage v-if="isUpgradePage" />
+  <TooltipProvider v-else>
     <div class="min-h-screen bg-background text-foreground">
       <header class="bg-background/95 backdrop-blur shadow-[0_1px_12px_rgb(15_23_42_/_0.04)] dark:shadow-none">
         <div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
@@ -1389,6 +1395,18 @@ onUnmounted(() => {
 
           <div class="flex items-center gap-2">
             <ModeToggle />
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="outline" size="icon" as-child>
+                  <a :href="upgradeHref">
+                    <HammerIcon />
+                    <span class="sr-only">Open upgrade material calculator</span>
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Upgrade calculator</TooltipContent>
+            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger as-child>
