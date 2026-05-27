@@ -1,0 +1,396 @@
+<script setup>
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  RefreshCcwIcon,
+  SearchIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+} from '@lucide/vue'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from '@/components/ui/input-group'
+import { Label } from '@/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useGearScoreCalculatorContext } from '@/features/gear-score/context.js'
+
+const {
+  gearType,
+  pieceType,
+  valueButton,
+  inputEnchantLevel,
+  statType,
+  statInput,
+  statPickerOpen,
+  gearSheetOpen,
+  gearCategories,
+  pieceOptions,
+  currentItem,
+  statOptions,
+  selectedImage,
+  selectedTraitRows,
+  currentRecommendations,
+  currentInputEnchantLevelOptions,
+  getAsset,
+  isStatSelectedOnOtherLine,
+  selectStatType,
+  supportsInputEnchantLevel,
+  setInputEnchantLevel,
+  getStatStep,
+  getInputMaxValue,
+  getInputMaxValueText,
+  setValues,
+  getSelectedRating,
+  isInputOverMax,
+  getLineMaxSummaryText,
+} = useGearScoreCalculatorContext()
+</script>
+
+<template>
+  <section class="grid gap-4">
+    <Card class="gap-0 rounded-lg py-0">
+      <CardHeader class="p-0">
+        <button
+          type="button"
+          class="group flex w-full items-center justify-between gap-3 rounded-t-lg px-4 py-4 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
+          aria-label="Open gear selector"
+          @click="gearSheetOpen = true"
+        >
+          <div class="flex min-w-0 items-center gap-3">
+            <img class="size-12 shrink-0 rounded-lg bg-muted p-1" :src="selectedImage" alt="">
+            <div class="min-w-0">
+              <CardTitle class="truncate text-base">
+                {{ pieceType }} {{ gearType }}
+              </CardTitle>
+              <CardDescription>
+                Max rating {{ currentItem?.DI.toFixed(2) }}% / selected stats {{ getSelectedRating().toFixed(2) }}%
+              </CardDescription>
+            </div>
+          </div>
+          <div class="flex shrink-0 items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
+            <SearchIcon class="size-3.5" />
+            <span class="hidden sm:inline">Change gear</span>
+            <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          </div>
+        </button>
+      </CardHeader>
+
+      <CardContent class="grid gap-4 p-4">
+        <div
+          class="grid gap-1 sm:grid-cols-2"
+          role="group"
+          aria-label="Gear selection"
+        >
+          <div class="min-w-0">
+            <Label for="gear-type" class="sr-only">Tier</Label>
+            <Select v-model="gearType">
+              <SelectTrigger
+                id="gear-type"
+                class="w-full justify-start rounded-b-none rounded-t-3xl sm:rounded-l-3xl sm:rounded-r-none *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
+              >
+                <span class="flex shrink-0 items-center text-muted-foreground">
+                  <SparklesIcon class="size-3.5" aria-hidden="true" />
+                </span>
+                <SelectValue placeholder="Tier" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="category in gearCategories" :key="category" :value="category">
+                  {{ category }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div class="min-w-0">
+            <Label for="piece-type" class="sr-only">Piece</Label>
+            <Select v-model="pieceType">
+              <SelectTrigger
+                id="piece-type"
+                class="w-full justify-start rounded-b-3xl rounded-t-none sm:rounded-l-none sm:rounded-r-3xl *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
+              >
+                <span class="flex shrink-0 items-center text-muted-foreground">
+                  <img class="size-4 rounded-sm" :src="selectedImage" alt="" aria-hidden="true">
+                </span>
+                <SelectValue placeholder="Piece" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="piece in pieceOptions" :key="piece" :value="piece">
+                  {{ piece }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div v-if="supportsInputEnchantLevel()">
+          <div
+            class="grid gap-1 rounded-md bg-muted/70 p-1"
+            :class="currentInputEnchantLevelOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'"
+            role="group"
+            aria-label="Input enchant level"
+          >
+            <button
+              v-for="option in currentInputEnchantLevelOptions"
+              :key="option.value"
+              type="button"
+              :aria-pressed="inputEnchantLevel === option.value"
+              class="h-9 rounded-sm px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              :class="inputEnchantLevel === option.value
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'"
+              @click="setInputEnchantLevel(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg bg-muted/20">
+          <div
+            v-for="(_, index) in statType"
+            :key="index"
+            class="grid gap-2 p-3"
+          >
+            <div
+              role="group"
+              :aria-label="`Line ${index + 1}`"
+              class="grid gap-1 sm:grid-cols-[minmax(0,1fr)_minmax(190px,220px)]"
+            >
+              <Popover v-model:open="statPickerOpen[index]">
+                <PopoverTrigger as-child>
+                  <Button
+                    :id="`stat-${index}`"
+                    variant="ghost"
+                    role="combobox"
+                    :aria-label="`Line ${index + 1} stat`"
+                    :aria-expanded="statPickerOpen[index] || false"
+                    class="h-10 w-full justify-between rounded-b-none rounded-t-3xl bg-input/50 px-3 font-normal shadow-none hover:bg-muted/60 focus-visible:ring-inset dark:bg-input/30 dark:hover:bg-input/40 sm:h-9 sm:rounded-l-3xl sm:rounded-r-none"
+                  >
+                    <span class="flex min-w-0 items-center gap-3">
+                      <span
+                        aria-hidden="true"
+                        class="shrink-0 text-xs font-semibold text-muted-foreground"
+                      >
+                        {{ index + 1 }}
+                      </span>
+                      <span class="min-w-0 truncate text-left">
+                        {{ statType[index] || 'Select stat...' }}
+                      </span>
+                    </span>
+                    <ChevronDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-[var(--reka-popover-trigger-width)] gap-0 p-0" align="start">
+                  <Command :model-value="statType[index]" highlight-on-hover>
+                    <CommandInput placeholder="Search stat..." />
+                    <ScrollArea type="always" class="max-h-72">
+                      <CommandList class="max-h-none overflow-visible pr-3">
+                        <CommandEmpty>No stat found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            v-for="stat in statOptions"
+                            :key="stat"
+                            :value="stat"
+                            :text-value="stat"
+                            :disabled="isStatSelectedOnOtherLine(stat, index)"
+                            @select="selectStatType(index, stat)"
+                          >
+                            <CheckIcon
+                              :class="[
+                                'size-4',
+                                statType[index] === stat ? 'opacity-100' : 'opacity-0',
+                              ]"
+                            />
+                            <span class="truncate">{{ stat }}</span>
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </ScrollArea>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              <div
+                :class="[
+                  'h-10 rounded-b-3xl rounded-t-none border border-transparent bg-input/50 transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30 dark:bg-input/30 sm:h-9 sm:rounded-l-none sm:rounded-r-3xl',
+                  isInputOverMax(index)
+                    ? 'border-destructive ring-3 ring-inset ring-destructive/20 dark:ring-destructive/40'
+                    : '',
+                ]"
+              >
+                <InputGroup
+                  class="h-full rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0 has-[[data-slot][aria-invalid=true]]:border-transparent has-[[data-slot][aria-invalid=true]]:ring-0"
+                >
+                  <InputGroupInput
+                    :id="`line-${index}-value`"
+                    v-model="statInput[index]"
+                    type="number"
+                    :step="getStatStep(statType[index])"
+                    min="0"
+                    :max="getInputMaxValue(statType[index]) ?? undefined"
+                    inputmode="decimal"
+                    placeholder="Value"
+                    :aria-label="`Line ${index + 1} value`"
+                    :aria-invalid="isInputOverMax(index)"
+                    class="min-w-[4.5rem]"
+                  />
+                  <InputGroupAddon align="inline-end" class="pr-3 text-xs">
+                    <InputGroupText
+                      class="whitespace-nowrap text-xs font-medium"
+                      :class="isInputOverMax(index) ? 'text-destructive' : 'text-muted-foreground'"
+                    >
+                      {{ getLineMaxSummaryText(index) }}
+                    </InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
+              </div>
+            </div>
+            <p v-if="isInputOverMax(index)" class="text-xs text-destructive">
+              Value is over max {{ getInputMaxValueText(statType[index]) }}.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid gap-3 rounded-lg bg-muted/15 p-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" @click="setValues(0, 0)">
+              <RefreshCcwIcon />
+              Clear
+            </Button>
+            <Button variant="secondary" size="sm" @click="setValues(2, valueButton)">Duo</Button>
+            <Button variant="secondary" size="sm" @click="setValues(3, valueButton)">Trio</Button>
+            <Button variant="secondary" size="sm" @click="setValues(4, valueButton)">Quad</Button>
+            <Button variant="secondary" size="sm" @click="setValues(5, valueButton)">Penta</Button>
+
+            <Select v-model="valueButton">
+              <SelectTrigger class="ml-auto w-[110px]">
+                <SelectValue placeholder="Value" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="n in 10" :key="n" :value="String(n * 10)">
+                  {{ n * 10 }}%
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <Collapsible
+          v-if="currentRecommendations"
+          v-slot="{ open }"
+          :key="`${gearType}-${pieceType}`"
+          class="rounded-lg bg-muted/15"
+        >
+          <CollapsibleTrigger as-child>
+            <Button
+              variant="ghost"
+              class="h-auto w-full justify-between rounded-lg px-3 py-2.5 text-left text-sm"
+            >
+              <span>View recommended options</span>
+              <ChevronRightIcon
+                class="size-4 text-muted-foreground transition-transform"
+                :class="{ 'rotate-90': open }"
+              />
+            </Button>
+          </CollapsibleTrigger>
+
+          <CollapsibleContent>
+            <div class="grid gap-3 px-3 pb-3 pt-1">
+              <div class="grid gap-2">
+                <div class="text-xs font-medium text-muted-foreground">Main</div>
+                <div class="flex flex-wrap gap-1.5">
+                  <Badge
+                    v-for="stat in currentRecommendations.main"
+                    :key="`main-${stat}`"
+                    variant="secondary"
+                  >
+                    {{ stat }}
+                  </Badge>
+                </div>
+              </div>
+
+              <div class="grid gap-2">
+                <div class="text-xs font-medium text-muted-foreground">Secondary</div>
+                <div class="flex flex-wrap gap-1.5">
+                  <Badge
+                    v-for="stat in currentRecommendations.secondary"
+                    :key="`secondary-${stat}`"
+                    variant="outline"
+                  >
+                    {{ stat }}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
+
+    <Card class="rounded-lg">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2 text-base">
+          <ShieldCheckIcon class="size-4" />
+          Stat Notes
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div v-if="selectedTraitRows.length" class="grid gap-2">
+          <div
+            v-for="trait in selectedTraitRows"
+            :key="trait.id"
+            class="flex gap-3 rounded-lg bg-muted/20 p-3"
+          >
+            <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
+            <div>
+              <div class="text-sm font-medium">{{ trait.label }}</div>
+              <div class="text-sm text-muted-foreground">{{ trait.text }}</div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
+          No special stat notes for the current rolled lines.
+        </div>
+      </CardContent>
+    </Card>
+  </section>
+</template>

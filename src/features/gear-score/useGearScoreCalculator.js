@@ -1,0 +1,627 @@
+import { computed, ref, unref, watch } from 'vue'
+import gears from '@/utils/gear.js'
+import tiers from '@/utils/tiers.js'
+import {
+  decimalStats,
+  repeatableStats,
+  inputEnchantGearTypes,
+  tierGuideRows,
+  traitCatalog,
+  recommendedOptionGuide,
+} from '@/features/gear-score/data.js'
+import {
+  clamp,
+  formatGainRangeWithPrecision,
+  formatStatValue,
+  getFirstPercent,
+  getRollStatusClass,
+  getTierClass,
+} from '@/features/gear-score/helpers.js'
+import {
+  calculateGearScore,
+  createEmptyGearScoreResult,
+  getInputValue as getScoreInputValue,
+  getStatStep as getScoreStatStep,
+  hasRolledValue as hasScoreRolledValue,
+} from '@/features/gear-score/score-calculation.js'
+import {
+  encodeShareState,
+  getShareParams,
+  parseShareState,
+} from '@/features/gear-score/share-url.js'
+import { useGearScoreSnapshot } from '@/features/gear-score/useGearScoreSnapshot.js'
+
+export function useGearScoreCalculator() {
+  const upgradeHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}upgrade`
+
+  const gearType = ref('[9999] Armor')
+  const pieceType = ref('Helmet')
+  const highlightedPiece = ref(['[9999] Armor', 'Helmet'])
+  const valueButton = ref('90')
+  const resultMode = ref('score')
+  const inputEnchantLevel = ref('2')
+
+  const statType = ref([])
+  const statInput = ref(['', '', '', '', ''])
+  const statPickerOpen = ref([])
+  const sssOddsOrder = ref([0, 1, 2, 3, 4])
+  const validStats = ref([])
+
+  const imgUrls = import.meta.glob('/src/assets/*.png', {
+    import: 'default',
+    eager: true,
+  })
+
+  const hasSeenDisclaimer = localStorage.getItem('ltGearCalculatorDisclaimerAccepted') === 'true'
+  const disclaimerOpen = ref(!hasSeenDisclaimer)
+  const gearSheetOpen = ref(false)
+  const clipboardTooltip = ref(false)
+  const clipboardToolTipTimeout = ref(null)
+
+  const results = ref(createEmptyGearScoreResult())
+
+
+
+
+
+  const gearCategories = computed(() => Object.keys(gears))
+  const pieceOptions = computed(() => getPieceNames(gearType.value))
+  const currentItem = computed(() => gears[gearType.value]?.[pieceType.value])
+  const statOptions = computed(() => Object.keys(currentItem.value?.Stats ?? {}))
+  const selectedImage = computed(() => getItemImage(pieceType.value, gearType.value))
+  const selectedTierRows = computed(() => getTierRows(gearType.value, pieceType.value))
+  const highlightedStats = computed(() => Object.keys(highlightedItem.value?.Stats ?? {}))
+  const highlightedItem = computed(() => gears[highlightedPiece.value[0]]?.[highlightedPiece.value[1]])
+  const highlightedTierRows = computed(() => getTierRows(highlightedPiece.value[0], highlightedPiece.value[1]))
+  const selectedTraitRows = computed(() => getTraitMatches(validStats.value))
+  const highlightedTraitRows = computed(() => getTraitMatches(highlightedStats.value))
+  const currentRecommendations = computed(() => recommendedOptionGuide[gearType.value]?.[pieceType.value] ?? null)
+  const currentInputEnchantLevelOptions = computed(() => getInputEnchantLevelOptions())
+  const totalProgress = computed(() => clamp(Number(results.value.percent), 0, 100))
+  const potentialProgress = computed(() => clamp(getFirstPercent(results.value.potentialScore), 0, 100))
+  const potentialGainText = computed(() => {
+    if (resultMode.value === 'rating') {
+      return formatGainRange(results.value.potentialDI, Number(results.value.DI))
+    }
+
+    return formatGainRange(results.value.potentialScore, Number(results.value.percent))
+  })
+
+  function getPieceNames(category) {
+    return Object.keys(gears[category] ?? {}).filter((key) => !['Sheet Link', 'Potential'].includes(key))
+  }
+
+  function getItemImage(piece, category) {
+    return imgUrls[`/src/assets/${piece}_${category.slice(1, 5)}.png`] ?? ''
+  }
+
+  function getAsset(name) {
+    return imgUrls[`/src/assets/${name}`] ?? ''
+  }
+
+  function getTierRows(category, piece) {
+    const item = gears[category]?.[piece]
+    if (!item) {
+      return []
+    }
+
+    return Object.entries(tiers[category][item.Type]).map(([tier, values]) => ({
+      tier,
+      ...values,
+    }))
+  }
+
+  function getTraitMatches(stats) {
+    return traitCatalog.filter((trait) => trait.test(stats))
+  }
+
+  function canRepeatStat(stat) {
+    return repeatableStats.includes(stat)
+  }
+
+  function isStatSelectedOnOtherLine(stat, index) {
+    if (canRepeatStat(stat)) {
+      return false
+    }
+
+    return statType.value.some((selectedStat, selectedIndex) => selectedIndex !== index && selectedStat === stat)
+  }
+
+  function getUniqueStatTypes(stats) {
+    const usedStats = new Set()
+
+    return stats.map((stat) => {
+      if (canRepeatStat(stat)) {
+        return stat
+      }
+
+      if (!usedStats.has(stat)) {
+        usedStats.add(stat)
+        return stat
+      }
+
+      const fallback = statOptions.value.find((option) => !usedStats.has(option))
+      if (fallback) {
+        usedStats.add(fallback)
+        return fallback
+      }
+
+      return stat
+    })
+  }
+
+  function setStatType(index, stat) {
+    if (isStatSelectedOnOtherLine(stat, index)) {
+      return
+    }
+
+    statType.value[index] = stat
+  }
+
+  function selectStatType(index, stat) {
+    setStatType(index, stat)
+    statPickerOpen.value[index] = false
+  }
+
+  function setGear(category, piece) {
+    gearType.value = category
+    pieceType.value = piece
+    highlightedPiece.value = [category, piece]
+    gearSheetOpen.value = false
+  }
+
+  function changePiece() {
+    const options = statOptions.value
+    statType.value = options.slice(0, 5)
+    resetSssOddsOrder()
+    setValues(0, 0)
+  }
+
+  function isDecimalStat(stat) {
+    return decimalStats.includes(stat)
+  }
+
+  function getStatStep(stat) {
+    return getScoreStatStep(stat)
+  }
+
+  function getInputValue(index) {
+    return getScoreInputValue(statInput.value, index)
+  }
+
+  function hasRolledValue(index) {
+    return hasScoreRolledValue(statInput.value, index)
+  }
+
+  function getPotentialMultiplier(item = gearType.value) {
+    return parseInt(item.slice(1, 5)) < 9999 ? 2 : 3
+  }
+
+  function supportsInputEnchantLevel(item = gearType.value) {
+    return inputEnchantGearTypes.includes(item) && hasUpgradePotential(item)
+  }
+
+  function hasUpgradePotential(item = gearType.value) {
+    const category = gears[item]
+    if (!category) {
+      return false
+    }
+
+    return getPieceNames(item).some((piece) =>
+      Object.values(category[piece]?.Stats ?? {}).some((stat) =>
+        Array.isArray(stat.Potential) && Number(stat.Potential[0]) > 0,
+      ),
+    )
+  }
+
+  function getMaxInputEnchantLevel(item = gearType.value) {
+    return supportsInputEnchantLevel(item) ? getProjectionEnchantLevel(item) : 2
+  }
+
+  function getInputEnchantLevelOptions(item = gearType.value) {
+    const maxLevel = getMaxInputEnchantLevel(item)
+
+    return [2, 3, 4, 5]
+      .filter((level) => level <= maxLevel)
+      .map((level) => ({
+        value: String(level),
+        label: level === 2 ? 'Lv.2 Base' : `Lv.${level}${level === maxLevel ? ' Full' : ''}`,
+      }))
+  }
+
+  function getInputEnchantLevelNumber(item = gearType.value) {
+    if (!supportsInputEnchantLevel(item)) {
+      return 2
+    }
+
+    const level = parseInt(inputEnchantLevel.value)
+    return Number.isFinite(level) ? clamp(level, 2, getMaxInputEnchantLevel(item)) : 2
+  }
+
+  function getInputEnchantUpgradeCount(item = gearType.value) {
+    return Math.max(0, getInputEnchantLevelNumber(item) - 2)
+  }
+
+  function getRemainingPotentialMultiplier(item = gearType.value) {
+    return Math.max(0, getPotentialMultiplier(item) - getInputEnchantUpgradeCount(item))
+  }
+
+  function getInputMaxValue(stat) {
+    const statInfo = currentItem.value?.Stats?.[stat]
+    if (!statInfo) {
+      return null
+    }
+
+    return statInfo.Value + (statInfo.Potential?.[1] ?? 0) * getInputEnchantUpgradeCount()
+  }
+
+  function getInputMaxValueText(stat) {
+    const value = getInputMaxValue(stat)
+    return value === null ? '-' : formatStatValue(value, stat)
+  }
+
+  function getProjectionEnchantLevel(item = gearType.value) {
+    return parseInt(item.slice(1, 5)) < 9999 ? 4 : 5
+  }
+
+  function setInputEnchantLevel(value) {
+    const level = parseInt(value)
+    if (Number.isFinite(level)) {
+      inputEnchantLevel.value = String(clamp(level, 2, getMaxInputEnchantLevel()))
+    }
+  }
+
+  function getSssOddsOrder() {
+    const maxLines = statType.value.length
+    const ordered = sssOddsOrder.value.filter((index) => Number.isInteger(index) && index >= 0 && index < maxLines)
+
+    for (let i = 0; i < maxLines; i++) {
+      if (!ordered.includes(i)) {
+        ordered.push(i)
+      }
+    }
+
+    return ordered
+  }
+
+  function resetSssOddsOrder() {
+    sssOddsOrder.value = statType.value.map((_, index) => index)
+  }
+
+  function moveSssOddsLine(position, direction) {
+    const order = getSssOddsOrder()
+    const nextPosition = position + direction
+
+    if (nextPosition < 0 || nextPosition >= order.length) {
+      return
+    }
+
+    const nextOrder = order.slice()
+    ;[nextOrder[position], nextOrder[nextPosition]] = [nextOrder[nextPosition], nextOrder[position]]
+    sssOddsOrder.value = nextOrder
+    updateValues()
+  }
+
+  function updateValues() {
+    const item = currentItem.value
+    if (!item) {
+      return
+    }
+
+    const remainingPotentialMultiplier = getRemainingPotentialMultiplier()
+    const futurePotentialMultiplier = getPotentialMultiplier()
+    const tierEquivalence = tiers[gearType.value][item.Type]
+    const calculated = calculateGearScore({
+      gearType: gearType.value,
+      item,
+      tierEquivalence,
+      statTypes: statType.value,
+      statInputs: statInput.value,
+      sssOrder: getSssOddsOrder(),
+      remainingPotentialMultiplier,
+      futurePotentialMultiplier,
+    })
+    results.value = calculated.result
+    validStats.value = calculated.validStats
+  }
+
+  function setValues(enchants, value) {
+    const percent = Number(unref(value))
+    for (let i = 0; i < 5; i++) {
+      const stat = statType.value[i]
+      const maxValue = getInputMaxValue(stat) ?? 0
+
+      if (enchants > i) {
+        statInput.value[i] = isDecimalStat(stat) ? +(percent * maxValue / 100).toFixed(1) : parseInt(percent * maxValue / 100)
+      }
+      else {
+        statInput.value[i] = ''
+      }
+    }
+  }
+
+  function getFinalUpgrade(item) {
+    switch (item) {
+      case '[3500] Badge 6':
+      case '[9999] Badge 6':
+        return ''
+      case '[9999] Armor':
+        return 'Ascended'
+      default:
+        return 'Lucent'
+    }
+  }
+
+  function getSelectedRating() {
+    let rating = 0
+    const item = currentItem.value
+    if (!item) {
+      return rating
+    }
+
+    for (let i = 0; i < 4; i++) {
+      rating += item.Stats[statType.value[i]]?.DI ?? 0
+    }
+
+    if (['6000', '7000'].includes(gearType.value.slice(1, 5))) {
+      rating += (item.Stats[statType.value[4]]?.DI ?? 0) * 0.8
+    }
+    else {
+      rating += item.Stats[statType.value[4]]?.DI ?? 0
+    }
+
+    return rating
+  }
+
+  function generateURL() {
+    const resString = encodeShareState({
+      gearType: gearType.value,
+      pieceType: pieceType.value,
+      statType: statType.value,
+      statInput: statInput.value,
+    })
+    const enchantLevel = getInputEnchantLevelNumber()
+    const params = getShareParams({
+      itemString: resString,
+      enchantLevel,
+      includeEnchantLevel: supportsInputEnchantLevel() && enchantLevel > 2,
+    })
+
+    navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?${params.toString()}`)
+    toggleClipboardTooltip()
+    return resString
+  }
+
+  function readURL(pars) {
+    try {
+      const { gearName, pieceName, statNames, statValues } = parseShareState(pars)
+
+      gearType.value = gearName
+      pieceType.value = pieceName
+      highlightedPiece.value = [gearName, pieceName]
+      statType.value = getUniqueStatTypes(statNames.slice())
+      statInput.value = statValues.slice()
+      resetSssOddsOrder()
+    }
+    catch (error) {
+      console.error(error)
+    }
+  }
+
+  function acceptDisclaimer() {
+    localStorage.setItem('ltGearCalculatorDisclaimerAccepted', 'true')
+    disclaimerOpen.value = false
+  }
+
+  function toggleClipboardTooltip() {
+    clearTimeout(clipboardToolTipTimeout.value)
+    clipboardTooltip.value = true
+
+    clipboardToolTipTimeout.value = setTimeout(() => {
+      clipboardTooltip.value = false
+    }, 2000)
+  }
+
+  function formatGainRange(text, baseValue) {
+    return formatGainRangeWithPrecision(text, baseValue, resultMode.value === 'rating' ? 2 : 0)
+  }
+
+  function getPotentialScoreLineText(index) {
+    const row = results.value.individual[index]
+    return row.potentialMinPerc === row.potentialMaxPerc
+      ? `${row.potentialMinPerc}%`
+      : `${row.potentialMinPerc}% ~ ${row.potentialMaxPerc}%`
+  }
+
+  function getPotentialValueRange(index) {
+    const row = results.value.individual[index]
+    if (!row.potentialMin && !row.potentialMax) {
+      return '-'
+    }
+
+    return row.potentialMin === row.potentialMax
+      ? row.potentialMin
+      : `${row.potentialMin} ~ ${row.potentialMax}`
+  }
+
+  function getLineScoreText(index) {
+    const row = results.value.individual[index]
+    return resultMode.value === 'rating' ? `${row.DI}%` : `${row.percent}%`
+  }
+
+  function isInputOverMax(index) {
+    const maxValue = getInputMaxValue(statType.value[index])
+    return maxValue !== null && hasRolledValue(index) && getInputValue(index) > maxValue
+  }
+
+  function getLineMaxRatingText(index) {
+    const maxRating = currentItem.value?.Stats?.[statType.value[index]]?.DI
+    return Number.isFinite(maxRating) ? `${maxRating.toFixed(2)}%` : '0.00%'
+  }
+
+  function getLineMaxSummaryText(index) {
+    return `Max ${getInputMaxValueText(statType.value[index])} / ${getLineMaxRatingText(index)}`
+  }
+
+  function getPotentialLineText(index) {
+    const row = results.value.individual[index]
+    if (resultMode.value === 'rating') {
+      return row.potentialDIMin === row.potentialDIMax
+        ? `${row.potentialDIMin}%`
+        : `${row.potentialDIMin}% ~ ${row.potentialDIMax}%`
+    }
+
+    return row.potentialMinPerc === row.potentialMaxPerc
+      ? `${row.potentialMinPerc}%`
+      : `${row.potentialMinPerc}% ~ ${row.potentialMaxPerc}%`
+  }
+
+  function getPotentialLineTier(index) {
+    const row = results.value.individual[index]
+    return row.potentialTierMin === row.potentialTierMax
+      ? row.potentialTierMin
+      : `${row.potentialTierMin} ~ ${row.potentialTierMax}`
+  }
+
+  const {
+    snapshotOpen,
+    snapshotImageUrl,
+    snapshotIsGenerating,
+    snapshotError,
+    snapshotCopySucceeded,
+    snapshotDownloadSucceeded,
+    getSnapshotProjectedLevelLabel,
+    getSnapshotCurrentHeading,
+    openSnapshot,
+    copySnapshot,
+    downloadSnapshot,
+  } = useGearScoreSnapshot({
+    gearType,
+    pieceType,
+    currentItem,
+    selectedImage,
+    statType,
+    results,
+    totalProgress,
+    potentialProgress,
+    getFinalUpgrade,
+    supportsInputEnchantLevel,
+    getInputEnchantLevelNumber,
+    getProjectionEnchantLevel,
+    getSelectedRating,
+    hasRolledValue,
+    getInputValue,
+    formatStatValue,
+    getPotentialValueRange,
+    getPotentialScoreLineText,
+    getPotentialLineTier,
+    updateValues,
+    formatGainRangeWithPrecision,
+  })
+
+  changePiece()
+
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('it')) {
+    readURL(urlParams.get('it'))
+    if (urlParams.has('el') && supportsInputEnchantLevel()) {
+      setInputEnchantLevel(urlParams.get('el'))
+    }
+    disclaimerOpen.value = false
+  }
+
+  updateValues()
+
+  watch([gearType, pieceType], ([nextGear, nextPiece]) => {
+    const pieces = getPieceNames(nextGear)
+    if (!pieces.includes(nextPiece)) {
+      pieceType.value = pieces[0]
+      return
+    }
+
+    highlightedPiece.value = [nextGear, nextPiece]
+    changePiece()
+    setInputEnchantLevel(inputEnchantLevel.value)
+  }, { flush: 'sync' })
+
+  watch([statType, statInput, inputEnchantLevel], () => {
+    updateValues()
+  }, {
+    deep: true,
+    flush: 'post',
+  })
+
+  return {
+    gears,
+    upgradeHref,
+    gearType,
+    pieceType,
+    highlightedPiece,
+    valueButton,
+    resultMode,
+    inputEnchantLevel,
+    statType,
+    statInput,
+    statPickerOpen,
+    disclaimerOpen,
+    gearSheetOpen,
+    clipboardTooltip,
+    snapshotOpen,
+    snapshotImageUrl,
+    snapshotIsGenerating,
+    snapshotError,
+    snapshotCopySucceeded,
+    snapshotDownloadSucceeded,
+    results,
+    tierGuideRows,
+    gearCategories,
+    pieceOptions,
+    currentItem,
+    statOptions,
+    selectedImage,
+    selectedTierRows,
+    highlightedStats,
+    highlightedItem,
+    highlightedTierRows,
+    selectedTraitRows,
+    highlightedTraitRows,
+    currentRecommendations,
+    currentInputEnchantLevelOptions,
+    totalProgress,
+    potentialProgress,
+    potentialGainText,
+    getPieceNames,
+    getItemImage,
+    getAsset,
+    isStatSelectedOnOtherLine,
+    selectStatType,
+    setGear,
+    getStatStep,
+    hasRolledValue,
+    supportsInputEnchantLevel,
+    getInputMaxValue,
+    getInputMaxValueText,
+    getProjectionEnchantLevel,
+    setInputEnchantLevel,
+    moveSssOddsLine,
+    setValues,
+    getFinalUpgrade,
+    getSelectedRating,
+    generateURL,
+    acceptDisclaimer,
+    clamp,
+    formatGainRangeWithPrecision,
+    getSnapshotProjectedLevelLabel,
+    getSnapshotCurrentHeading,
+    openSnapshot,
+    copySnapshot,
+    downloadSnapshot,
+    getLineScoreText,
+    isInputOverMax,
+    getLineMaxSummaryText,
+    getPotentialLineText,
+    getPotentialLineTier,
+    getTierClass,
+    getRollStatusClass,
+  }
+}
