@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -59,6 +60,17 @@ const {
   getTierClass,
   getRollStatusClass,
 } = useGearScoreCalculatorContext()
+
+const rolledLineIndexes = computed(() =>
+  statType.value
+    .map((_, index) => index)
+    .filter((index) => hasRolledValue(index)),
+)
+
+const emptyLineCount = computed(() => statType.value.length - rolledLineIndexes.value.length)
+const emptyLineSummary = computed(() =>
+  emptyLineCount.value === 1 ? '1 unfilled line' : `${emptyLineCount.value} unfilled lines`,
+)
 </script>
 
 <template>
@@ -91,7 +103,10 @@ const {
       </CardHeader>
 
       <CardContent class="grid gap-4">
-        <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
+        <div
+          class="grid gap-3"
+          :class="rolledLineIndexes.length > 0 ? 'lg:grid-cols-[220px_1fr]' : 'lg:grid-cols-[220px]'"
+        >
           <div class="rounded-lg bg-muted/20 p-4">
             <div class="text-sm text-muted-foreground">Total</div>
             <div class="mt-1 flex items-end gap-2">
@@ -105,30 +120,35 @@ const {
             <Progress :model-value="totalProgress" class="mt-4 h-2" />
           </div>
 
-          <div class="overflow-hidden rounded-lg bg-muted/20">
+          <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-lg bg-muted/20">
             <div
-              v-for="(_, index) in statType"
+              v-for="index in rolledLineIndexes"
               :key="`result-${index}`"
               class="grid gap-2 p-3"
             >
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="min-w-0">
                   <div class="truncate text-sm font-medium">
-                    <span v-if="hasRolledValue(index)">{{ statType[index] }}</span>
-                    <span v-else class="text-muted-foreground">Empty line</span>
+                    {{ statType[index] }}
                   </div>
                   <div class="text-xs text-muted-foreground">
-                    {{ hasRolledValue(index) ? statInput[index] : 'No value entered' }}
+                    {{ statInput[index] }}
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="text-sm font-semibold">{{ hasRolledValue(index) ? getLineScoreText(index) : '---' }}</span>
-                  <Badge v-if="hasRolledValue(index)" variant="outline" :class="getTierClass(results.individual[index].tier)">
+                  <span class="text-sm font-semibold">{{ getLineScoreText(index) }}</span>
+                  <Badge variant="outline" :class="getTierClass(results.individual[index].tier)">
                     {{ results.individual[index].tier }}
                   </Badge>
                 </div>
               </div>
               <Progress :model-value="clamp(Number(results.individual[index].percent), 0, 100)" class="h-1.5" />
+            </div>
+            <div
+              v-if="emptyLineCount > 0"
+              class="border-t border-border/50 px-3 py-2 text-xs text-muted-foreground"
+            >
+              {{ emptyLineSummary }}
             </div>
           </div>
         </div>
@@ -159,7 +179,10 @@ const {
 
         <CardContent class="min-w-0">
           <TabsContent value="summary" class="m-0">
-            <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
+            <div
+              class="grid gap-3"
+              :class="rolledLineIndexes.length > 0 ? 'lg:grid-cols-[220px_1fr]' : 'lg:grid-cols-[220px]'"
+            >
               <div class="rounded-lg bg-muted/20 p-4">
                 <div class="text-sm text-muted-foreground">Projected</div>
                 <div class="mt-1 flex items-end gap-2">
@@ -174,35 +197,38 @@ const {
                 <Progress :model-value="potentialProgress" class="mt-4 h-2" />
               </div>
 
-              <div class="overflow-hidden rounded-lg bg-muted/20">
+              <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-lg bg-muted/20">
                 <div
-                  v-for="(_, index) in statType"
+                  v-for="index in rolledLineIndexes"
                   :key="`potential-${index}`"
                   class="grid gap-2 p-3"
                 >
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <div class="min-w-0">
                       <div class="truncate text-sm font-medium">
-                        <span v-if="hasRolledValue(index)">
-                          {{ statType[index] }}:
-                          <span v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
-                            {{ results.individual[index].potentialMin }}
-                          </span>
-                          <span v-else>
-                            {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
-                          </span>
+                        {{ statType[index] }}:
+                        <span v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
+                          {{ results.individual[index].potentialMin }}
                         </span>
-                        <span v-else class="text-muted-foreground">Empty line</span>
+                        <span v-else>
+                          {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
+                        </span>
                       </div>
                     </div>
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-semibold">{{ hasRolledValue(index) ? getPotentialLineText(index) : '---' }}</span>
-                      <Badge v-if="hasRolledValue(index)" variant="outline" :class="getTierClass(getPotentialLineTier(index))">
+                      <span class="text-sm font-semibold">{{ getPotentialLineText(index) }}</span>
+                      <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
                         {{ getPotentialLineTier(index) }}
                       </Badge>
                     </div>
                   </div>
                   <Progress :model-value="clamp(Number(results.individual[index].potentialMinPerc), 0, 100)" class="h-1.5" />
+                </div>
+                <div
+                  v-if="emptyLineCount > 0"
+                  class="border-t border-border/50 px-3 py-2 text-xs text-muted-foreground"
+                >
+                  {{ emptyLineSummary }}
                 </div>
               </div>
             </div>
