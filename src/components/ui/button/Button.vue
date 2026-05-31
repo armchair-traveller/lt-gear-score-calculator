@@ -3,10 +3,6 @@ import { Primitive } from "reka-ui";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from ".";
 
-defineOptions({
-  inheritAttrs: false,
-});
-
 const props = defineProps({
   variant: { type: null, required: false },
   size: { type: null, required: false },
@@ -27,9 +23,7 @@ const props = defineProps({
     :data-size="size"
     :as="as"
     :as-child="asChild"
-    :type="asChild || as !== 'button' ? undefined : ($attrs.type ?? 'button')"
     :class="cn(buttonVariants({ variant, size }), props.class)"
-    v-bind="$attrs"
   >
     <slot />
   </Primitive>
