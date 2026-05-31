@@ -1,7 +1,5 @@
 <script setup>
-import { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
-
-import ScrollBar from '@/components/ui/scroll-area/ScrollBar.vue'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 const props = defineProps({
@@ -19,23 +17,16 @@ const props = defineProps({
 </script>
 
 <template>
-  <ScrollAreaRoot
+  <ScrollArea
     data-slot="table-container"
-    :class="cn('relative w-full overflow-hidden', props.containerClass)"
+    :class="cn('w-full', props.containerClass)"
   >
-    <ScrollAreaViewport
-      data-slot="table-viewport"
-      class="size-full [max-height:inherit] rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+    <table
+      data-slot="table"
+      :class="cn('w-full caption-bottom text-sm', props.class)"
     >
-      <table
-        data-slot="table"
-        :class="cn('w-full caption-bottom text-sm', props.class)"
-      >
-        <slot />
-      </table>
-    </ScrollAreaViewport>
+      <slot />
+    </table>
     <ScrollBar orientation="horizontal" />
-    <ScrollBar />
-    <ScrollAreaCorner />
-  </ScrollAreaRoot>
+  </ScrollArea>
 </template>
