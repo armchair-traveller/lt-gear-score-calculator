@@ -964,10 +964,10 @@
   },
   {
     "value": "manual",
-    "name": "Manual (Craft Keeper)",
+    "name": "Textbook (Craft Keeper)",
     "disabled": false,
     "summary": {
-      "type": "Manual (Craft Keeper)",
+      "type": "Textbook (Craft Keeper)",
       "farm": "Wings of Icarus",
       "max": "+6",
       "total": "3,839",
