@@ -103,62 +103,64 @@ const {
               </TabsList>
 
               <TabsContent value="enchants" class="m-0 min-h-0 min-w-0">
-                <ScrollArea class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
-                  <Table class="min-w-[560px]">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Stat</TableHead>
-                        <TableHead>Max value</TableHead>
-                        <TableHead>Rating</TableHead>
-                        <TableHead v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">Potential</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow v-for="stat in highlightedStats" :key="stat">
-                        <TableCell class="font-medium">{{ stat }}</TableCell>
-                        <TableCell>{{ highlightedItem.Stats[stat].Value }}</TableCell>
-                        <TableCell>{{ highlightedItem.Stats[stat].DI }}%</TableCell>
-                        <TableCell v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">
-                          {{ highlightedItem.Stats[stat].Potential[0] }}
-                          <span v-if="highlightedItem.Stats[stat].Potential[0] !== highlightedItem.Stats[stat].Potential[1]">
-                            ~ {{ highlightedItem.Stats[stat].Potential[1] }}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
+                <Table
+                  container-class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]"
+                  class="min-w-[560px]"
+                >
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Stat</TableHead>
+                      <TableHead>Max value</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">Potential</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="stat in highlightedStats" :key="stat">
+                      <TableCell class="font-medium">{{ stat }}</TableCell>
+                      <TableCell>{{ highlightedItem.Stats[stat].Value }}</TableCell>
+                      <TableCell>{{ highlightedItem.Stats[stat].DI }}%</TableCell>
+                      <TableCell v-if="getFinalUpgrade(highlightedPiece[0]) !== ''">
+                        {{ highlightedItem.Stats[stat].Potential[0] }}
+                        <span v-if="highlightedItem.Stats[stat].Potential[0] !== highlightedItem.Stats[stat].Potential[1]">
+                          ~ {{ highlightedItem.Stats[stat].Potential[1] }}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </TabsContent>
 
               <TabsContent value="tiers" class="m-0 min-h-0 min-w-0">
-                <ScrollArea class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]">
-                  <Table class="min-w-[720px]">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Score</TableHead>
-                        <TableHead>Tier</TableHead>
-                        <TableHead>Single</TableHead>
-                        <TableHead>Duo</TableHead>
-                        <TableHead>Trio</TableHead>
-                        <TableHead>Quad</TableHead>
-                        <TableHead>Penta</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow v-for="row in highlightedTierRows" :key="row.tier">
-                        <TableCell>{{ row.Score }}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
-                        </TableCell>
-                        <TableCell>{{ row.Single }}</TableCell>
-                        <TableCell>{{ row.Duo }}</TableCell>
-                        <TableCell>{{ row.Trio }}</TableCell>
-                        <TableCell>{{ row.Quad }}</TableCell>
-                        <TableCell>{{ row.Penta }}</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
+                <Table
+                  container-class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]"
+                  class="min-w-[720px]"
+                >
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Tier</TableHead>
+                      <TableHead>Single</TableHead>
+                      <TableHead>Duo</TableHead>
+                      <TableHead>Trio</TableHead>
+                      <TableHead>Quad</TableHead>
+                      <TableHead>Penta</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="row in highlightedTierRows" :key="row.tier">
+                      <TableCell>{{ row.Score }}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
+                      </TableCell>
+                      <TableCell>{{ row.Single }}</TableCell>
+                      <TableCell>{{ row.Duo }}</TableCell>
+                      <TableCell>{{ row.Trio }}</TableCell>
+                      <TableCell>{{ row.Quad }}</TableCell>
+                      <TableCell>{{ row.Penta }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </TabsContent>
 
               <TabsContent value="traits" class="m-0">

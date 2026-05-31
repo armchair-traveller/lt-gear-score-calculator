@@ -78,6 +78,7 @@ const requiredMaterials = computed(() =>
 const requiredFeeMillions = computed(() =>
   selectedRows.value.reduce((total, row) => total + parseFeeToMillions(row.fee), 0) * quantityNumber.value,
 )
+const ascensionMaterial = computed(() => getAscensionMaterial(selectedItem.value, quantityNumber.value))
 const remainingMaterials = computed(() => Math.max(0, requiredMaterials.value - ownedMaterialNumber.value))
 const extraMaterials = computed(() => Math.max(0, ownedMaterialNumber.value - requiredMaterials.value))
 const completionPercent = computed(() => {
@@ -126,6 +127,7 @@ const visibleCatalogItems = computed(() => {
     item.summary?.type,
     item.summary?.farm,
     item.summary?.quarter,
+    getAscensionMaterialLabel(item),
   ].some((value) => String(value ?? '').toLowerCase().includes(query)))
 })
 
@@ -191,6 +193,33 @@ function parseFeeToMillions(value) {
   }
 
   return amount * (multipliers[unit] ?? 1)
+}
+
+function getAscensionMaterial(item, itemQuantity) {
+  const match = String(item?.summary?.type ?? '').match(/\+\s*([^+]*?\bAscension Stone)\s*x\s*([\d,]+)/i)
+  if (!match) {
+    return null
+  }
+
+  const perItem = parseNumber(match[2])
+  if (!perItem) {
+    return null
+  }
+
+  return {
+    name: match[1].trim(),
+    perItem,
+    total: perItem * itemQuantity,
+  }
+}
+
+function getAscensionMaterialLabel(item) {
+  const material = getAscensionMaterial(item, 1)
+  if (!material) {
+    return ''
+  }
+
+  return `${material.name} x${formatNumber(material.perItem)}`
 }
 
 function clampInteger(value, min, max) {
@@ -494,6 +523,33 @@ function trimDecimal(value) {
 
               <Progress :model-value="completionPercent" class="h-2" />
 
+              <div
+                v-if="ascensionMaterial"
+                class="rounded-lg border border-sky-200/80 bg-sky-50/70 p-4 dark:border-sky-900/70 dark:bg-sky-950/35"
+              >
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 text-sm font-medium">
+                      <SparklesIcon class="size-4 text-sky-700 dark:text-sky-300" />
+                      Ascension material
+                    </div>
+                    <div class="mt-1 truncate text-sm text-muted-foreground">
+                      {{ ascensionMaterial.name }}
+                    </div>
+                  </div>
+
+                  <div class="grid gap-1 sm:min-w-36 sm:text-right">
+                    <div class="text-xs text-muted-foreground">Required</div>
+                    <div class="text-2xl font-semibold tracking-normal text-sky-800 dark:text-sky-200">
+                      {{ formatNumber(ascensionMaterial.total) }}
+                    </div>
+                    <div class="text-xs text-muted-foreground">
+                      {{ formatNumber(ascensionMaterial.perItem) }} per item
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="grid gap-3 md:grid-cols-2">
                 <div class="rounded-lg bg-muted/20 p-3">
                   <div class="text-xs text-muted-foreground">Current cumulative</div>
@@ -514,7 +570,7 @@ function trimDecimal(value) {
             </CardHeader>
             <CardContent>
               <Table
-                container-class="max-h-[420px] min-w-0 overflow-auto rounded-lg border"
+                container-class="max-h-[420px] min-w-0 rounded-lg border"
                 class="min-w-[600px] [&_td]:py-2.5 [&_th]:h-10"
               >
                 <TableHeader>
@@ -571,6 +627,13 @@ function trimDecimal(value) {
                       <span class="block truncate text-sm font-medium">{{ item.name }}</span>
                       <span class="mt-0.5 block truncate text-xs text-muted-foreground">
                         {{ item.summary.farm }} / {{ item.summary.quarter }}
+                      </span>
+                      <span
+                        v-if="getAscensionMaterialLabel(item)"
+                        class="mt-1 flex min-w-0 items-center gap-1 text-xs font-medium text-sky-700 dark:text-sky-300"
+                      >
+                        <SparklesIcon class="size-3 shrink-0" />
+                        <span class="truncate">{{ getAscensionMaterialLabel(item) }}</span>
                       </span>
                     </span>
                     <span class="flex flex-wrap items-center gap-2 sm:justify-end">

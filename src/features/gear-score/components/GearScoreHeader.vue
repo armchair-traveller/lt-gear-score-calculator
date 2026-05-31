@@ -1,5 +1,6 @@
 <script setup>
 import {
+  CheckIcon,
   ClipboardIcon,
   ExternalLinkIcon,
   HammerIcon,
@@ -86,8 +87,9 @@ const {
         <Tooltip>
           <TooltipTrigger as-child>
             <Button variant="outline" size="icon" @click="generateURL">
-              <ClipboardIcon />
-              <span class="sr-only">Copy share link</span>
+              <CheckIcon v-if="clipboardTooltip" class="text-emerald-600 dark:text-emerald-400" />
+              <ClipboardIcon v-else />
+              <span class="sr-only">{{ clipboardTooltip ? 'Copied share link' : 'Copy share link' }}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>{{ clipboardTooltip ? 'Copied' : 'Copy link' }}</TooltipContent>

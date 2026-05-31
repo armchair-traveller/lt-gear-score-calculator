@@ -373,7 +373,7 @@ export function useGearScoreCalculator() {
     return rating
   }
 
-  function generateURL() {
+  async function generateURL() {
     const resString = encodeShareState({
       gearType: gearType.value,
       pieceType: pieceType.value,
@@ -387,8 +387,14 @@ export function useGearScoreCalculator() {
       includeEnchantLevel: supportsInputEnchantLevel() && enchantLevel > 2,
     })
 
-    navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?${params.toString()}`)
-    toggleClipboardTooltip()
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?${params.toString()}`)
+      toggleClipboardTooltip()
+    }
+    catch (error) {
+      console.error(error)
+    }
+
     return resString
   }
 
