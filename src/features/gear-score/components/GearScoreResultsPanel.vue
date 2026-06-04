@@ -114,7 +114,7 @@ const emptyLineSummary = computed(() =>
             >
               <CheckIcon v-if="gearPlanSaveSucceeded" class="text-emerald-600 dark:text-emerald-400" />
               <BookmarkPlusIcon v-else />
-              {{ gearPlanSaveSucceeded ? 'Added' : 'Add to upgrade finder' }}
+              {{ gearPlanSaveSucceeded ? 'Added' : 'Add to plan' }}
             </Button>
           </div>
         </div>

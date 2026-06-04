@@ -7,9 +7,9 @@ import {
   ClipboardIcon,
   HammerIcon,
   MoreHorizontalIcon,
+  PlusIcon,
   RotateCcwIcon,
   ShieldAlertIcon,
-  SparklesIcon,
   TargetIcon,
   TrendingUpIcon,
 } from '@lucide/vue'
@@ -75,7 +75,7 @@ function confirmDelete() {
               <TargetIcon class="size-5" />
             </div>
             <div class="min-w-0">
-              <h1 class="truncate text-lg font-semibold tracking-normal md:text-xl">Gear Upgrade Finder</h1>
+              <h1 class="truncate text-lg font-semibold tracking-normal md:text-xl">Planner</h1>
               <p class="truncate text-xs text-muted-foreground">
                 Final gear / optimal max-penta potential
               </p>
@@ -119,17 +119,17 @@ function confirmDelete() {
                 >
                   <CheckIcon v-if="planner.shareCopied" class="text-emerald-600 dark:text-emerald-400" />
                   <ClipboardIcon v-else />
-                  <span class="sr-only">Copy upgrade finder link</span>
+                  <span class="sr-only">Copy planner link</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{{ planner.shareCopied ? 'Copied' : 'Copy upgrade finder link' }}</TooltipContent>
+              <TooltipContent>{{ planner.shareCopied ? 'Copied' : 'Copy planner link' }}</TooltipContent>
             </Tooltip>
 
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
                 <Button variant="outline" size="icon">
                   <MoreHorizontalIcon />
-                  <span class="sr-only">More upgrade finder actions</span>
+                  <span class="sr-only">More planner actions</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -139,7 +139,7 @@ function confirmDelete() {
                   @click="resetOpen = true"
                 >
                   <RotateCcwIcon />
-                  Reset upgrade finder
+                  Reset planner
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -155,14 +155,14 @@ function confirmDelete() {
           <div class="flex items-start gap-3">
             <ShieldAlertIcon class="mt-0.5 size-5 shrink-0" />
             <div>
-              <div class="font-medium">Shared upgrade finder preview</div>
+              <div class="font-medium">Shared planner preview</div>
               <div class="text-sm opacity-80">Your locally saved entries have not been changed.</div>
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
             <Button variant="outline" @click="planner.returnToMyPlan">
               <ArrowLeftIcon />
-              My upgrades
+              My planner
             </Button>
             <Button @click="planner.useSharedPlan">Use these entries</Button>
           </div>
@@ -175,19 +175,19 @@ function confirmDelete() {
           <div class="flex items-start gap-3">
             <ShieldAlertIcon class="mt-0.5 size-5 shrink-0" />
             <div>
-              <div class="font-medium">Could not open shared upgrade finder</div>
+              <div class="font-medium">Could not open shared planner</div>
               <div class="text-sm opacity-80">{{ planner.shareError }}</div>
             </div>
           </div>
           <Button variant="outline" class="self-start sm:self-auto" @click="planner.returnToMyPlan">
             <ArrowLeftIcon />
-            My upgrades
+            My planner
           </Button>
         </section>
 
         <section class="grid gap-4 border-b pb-6 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(140px,190px))] lg:items-end">
           <div class="min-w-0">
-            <div class="text-sm text-muted-foreground">Best next upgrade</div>
+            <div class="text-sm text-muted-foreground">Best next</div>
             <template v-if="planner.topPriority">
               <button
                 type="button"
@@ -203,19 +203,17 @@ function confirmDelete() {
               <div class="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant="outline" class="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                   <TrendingUpIcon class="size-3.5" />
-                  {{ planner.topPriority.result.opportunityDI.toFixed(2) }}% DI upgrade potential
+                  {{ planner.topPriority.result.opportunityDI.toFixed(2) }}% DI potential
                 </Badge>
                 <span class="text-sm text-muted-foreground">{{ planner.getPrimaryReason(planner.topPriority) }}</span>
               </div>
             </template>
             <template v-else>
               <div class="mt-1 text-2xl font-semibold">
-                {{ planner.eligibleSlots.length ? 'No open upgrade potential' : 'No ranking yet' }}
+                {{ planner.eligibleSlots.length ? 'No open potential' : 'No ranking yet' }}
               </div>
-              <div class="mt-1 text-sm text-muted-foreground">
-                {{ planner.eligibleSlots.length
-                  ? 'Entered pieces meet or exceed their curated benchmarks.'
-                  : 'Enter at least 3 final lines on a gear piece to start ranking.' }}
+              <div v-if="planner.eligibleSlots.length" class="mt-1 text-sm text-muted-foreground">
+                Entered pieces meet or exceed their curated benchmarks.
               </div>
             </template>
           </div>
@@ -229,7 +227,7 @@ function confirmDelete() {
             <div class="mt-1 text-2xl font-semibold">{{ planner.loadoutQualityPercent.toFixed(0) }}%</div>
           </div>
           <div class="rounded-lg bg-muted/20 p-4">
-            <div class="text-xs text-muted-foreground">Total upgrade potential</div>
+            <div class="text-xs text-muted-foreground">Potential</div>
             <div class="mt-1 text-2xl font-semibold">{{ planner.totalOpportunityDI.toFixed(2) }}%</div>
           </div>
         </section>
@@ -238,7 +236,7 @@ function confirmDelete() {
           <section class="grid content-start gap-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 class="text-base font-semibold">Upgrade ranking</h2>
+                <h2 class="text-base font-semibold">Potential ranking</h2>
                 <p class="text-sm text-muted-foreground">Fully upgraded optimal max-penta benchmark</p>
               </div>
               <Tabs v-model="planner.sortMode" class="w-auto">
@@ -281,16 +279,14 @@ function confirmDelete() {
                       >
                         {{ slot.result.qualityPercent.toFixed(0) }}%
                       </Badge>
-                      <SparklesIcon v-else class="size-4 text-muted-foreground" />
+                      <PlusIcon v-else class="size-4 text-muted-foreground" />
                     </div>
                     <div>
                       <div class="truncate text-sm font-medium">{{ slot.pieceType }}</div>
-                      <div class="truncate text-xs text-muted-foreground">
-                        {{ !slot.result.eligible
-                          ? planner.getLineStatusLabel(slot.result)
-                          : slot.result.opportunityDI <= 0.0001
-                            ? `${planner.getLineStatusLabel(slot.result)} / ${slot.result.aboveBenchmark ? 'Above benchmark' : 'At benchmark'}`
-                            : `${planner.getLineStatusLabel(slot.result)} / ${slot.result.opportunityDI.toFixed(2)}% DI open` }}
+                      <div v-if="slot.result.eligible" class="truncate text-xs text-muted-foreground">
+                        {{ slot.result.opportunityDI <= 0.0001
+                          ? `${planner.getLineStatusLabel(slot.result)} / ${slot.result.aboveBenchmark ? 'Above benchmark' : 'At benchmark'}`
+                          : `${planner.getLineStatusLabel(slot.result)} / ${slot.result.opportunityDI.toFixed(2)}% DI open` }}
                       </div>
                     </div>
                   </button>
@@ -306,12 +302,12 @@ function confirmDelete() {
       <Dialog v-model:open="resetOpen">
         <DialogContent class="rounded-lg">
           <DialogHeader>
-            <DialogTitle>Reset upgrade finder?</DialogTitle>
+            <DialogTitle>Reset planner?</DialogTitle>
             <DialogDescription>This permanently removes every locally saved gear entry.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" @click="resetOpen = false">Cancel</Button>
-            <Button variant="destructive" @click="confirmReset">Reset upgrade finder</Button>
+            <Button variant="destructive" @click="confirmReset">Reset planner</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

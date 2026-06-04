@@ -29,7 +29,7 @@ function getWidth(value) {
   <section class="grid gap-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-base font-semibold">Upgrade potential</h2>
+        <h2 class="text-base font-semibold">Potential</h2>
         <p class="text-sm text-muted-foreground">Common DI scale across ranked pieces</p>
       </div>
 

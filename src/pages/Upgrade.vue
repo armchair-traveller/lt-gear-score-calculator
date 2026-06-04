@@ -315,11 +315,11 @@ function trimDecimal(value) {
                 <Button variant="outline" size="icon" as-child>
                   <a :href="planHref">
                     <TargetIcon />
-                    <span class="sr-only">Open gear upgrade finder</span>
+                    <span class="sr-only">Open planner</span>
                   </a>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Gear upgrade finder</TooltipContent>
+              <TooltipContent>Planner</TooltipContent>
             </Tooltip>
           </div>
         </div>

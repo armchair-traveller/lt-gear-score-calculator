@@ -2,6 +2,7 @@
 import {
   CheckCircle2Icon,
   GaugeIcon,
+  InfoIcon,
   TargetIcon,
   Trash2Icon,
   TrendingUpIcon,
@@ -79,7 +80,7 @@ function getLineStatusClass(status) {
               v-if="isSharedPreview"
               class="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200"
             >
-              Shared upgrade finder preview is read-only.
+              Shared planner preview is read-only.
             </div>
 
             <div class="grid gap-2 sm:grid-cols-3">
@@ -100,7 +101,7 @@ function getLineStatusClass(status) {
               <div class="rounded-lg bg-muted/20 p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                   <TrendingUpIcon class="size-3.5" />
-                  Upgrade potential
+                  Potential
                 </div>
                 <div
                   class="mt-1 text-xl font-semibold"
@@ -145,7 +146,7 @@ function getLineStatusClass(status) {
             </section>
 
             <section class="grid gap-3">
-              <h3 class="text-sm font-semibold">Upgrade potential breakdown</h3>
+              <h3 class="text-sm font-semibold">Potential breakdown</h3>
               <div class="grid gap-2">
                 <div class="grid grid-cols-[120px_1fr_auto] items-center gap-3 text-sm">
                   <span class="text-muted-foreground">Roll values</span>
@@ -184,6 +185,10 @@ function getLineStatusClass(status) {
                   {{ stat }}
                 </Badge>
               </div>
+              <p class="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <InfoIcon class="mt-0.5 size-3.5 shrink-0" />
+                <span>The best stats may vary by class and build. Use this as a general damage benchmark.</span>
+              </p>
             </section>
           </div>
         </div>

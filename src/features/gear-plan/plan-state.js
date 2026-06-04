@@ -200,7 +200,7 @@ export function parseGearPlanShare(value) {
   catch (error) {
     return {
       plan: null,
-      error: 'This shared upgrade finder link is invalid or no longer supported.',
+      error: 'This shared planner link is invalid or no longer supported.',
     }
   }
 }

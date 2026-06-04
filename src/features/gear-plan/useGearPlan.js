@@ -285,7 +285,7 @@ export function useGearPlan() {
 
   function getPrimaryReason(slot) {
     if (!slot?.result?.eligible) {
-      return 'Needs 3 lines to rank'
+      return 'Unranked'
     }
     if (slot.result.aboveBenchmark || slot.result.opportunityDI <= 0) {
       return slot.result.aboveBenchmark ? 'Above curated benchmark' : 'At curated benchmark'
@@ -306,7 +306,7 @@ export function useGearPlan() {
     if (result?.lineStatus === 'partial') {
       return 'Partial'
     }
-    return 'Needs 3 lines'
+    return 'Unranked'
   }
 
   return {
