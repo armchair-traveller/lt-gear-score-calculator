@@ -64,7 +64,9 @@ export function useGearScoreCalculator() {
 
 
 
-  const gearCategories = computed(() => Object.keys(gears))
+  const gearCategories = computed(() => Object.keys(gears).filter((category) =>
+    !['[5000] Accessories', '[4000] Weapon'].includes(category),
+  ))
   const pieceOptions = computed(() => getPieceNames(gearType.value))
   const currentItem = computed(() => gears[gearType.value]?.[pieceType.value])
   const statOptions = computed(() => Object.keys(currentItem.value?.Stats ?? {}))
