@@ -92,8 +92,8 @@ const emptyLineSummary = computed(() =>
             <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <Tabs v-model="resultMode" class="w-auto">
+          <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Tabs v-model="resultMode" class="w-auto sm:order-last">
               <TabsList>
                 <TabsTrigger value="score">Score</TabsTrigger>
                 <TabsTrigger value="rating">Rating</TabsTrigger>
