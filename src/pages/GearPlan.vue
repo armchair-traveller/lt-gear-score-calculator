@@ -6,6 +6,7 @@ import {
   CheckIcon,
   ClipboardIcon,
   HammerIcon,
+  InfoIcon,
   MoreHorizontalIcon,
   PlusIcon,
   RotateCcwIcon,
@@ -43,6 +44,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import GearPlanEditorSheet from '@/features/gear-plan/components/GearPlanEditorSheet.vue'
+import GearPlanNotesDialog from '@/features/gear-plan/components/GearPlanNotesDialog.vue'
 import GearPlanOpportunityChart from '@/features/gear-plan/components/GearPlanOpportunityChart.vue'
 import { provideGearPlan } from '@/features/gear-plan/context.js'
 import { useGearPlan } from '@/features/gear-plan/useGearPlan.js'
@@ -123,6 +125,16 @@ function confirmDelete() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{{ planner.shareCopied ? 'Copied' : 'Copy planner link' }}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="outline" size="icon" @click="planner.plannerNotesOpen = true">
+                  <InfoIcon />
+                  <span class="sr-only">Open planner notes</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Planner notes</TooltipContent>
             </Tooltip>
 
             <DropdownMenu>
@@ -298,6 +310,7 @@ function confirmDelete() {
       </main>
 
       <GearPlanEditorSheet @request-delete="deleteOpen = true" />
+      <GearPlanNotesDialog />
 
       <Dialog v-model:open="resetOpen">
         <DialogContent class="rounded-lg">

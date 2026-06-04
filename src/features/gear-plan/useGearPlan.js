@@ -27,6 +27,8 @@ export function useGearPlan() {
   const sortMode = ref('impact')
   const shareCopied = ref(false)
   const shareCopyTimeout = ref(null)
+  const hasAcceptedPlannerNotes = localStorage.getItem('ltGearPlanNotesAccepted') === 'true'
+  const plannerNotesOpen = ref(!hasAcceptedPlannerNotes)
   const editorOpen = ref(false)
   const editorSlotId = ref('')
   const editorStatType = ref([])
@@ -283,6 +285,11 @@ export function useGearPlan() {
     window.location.href = planHref
   }
 
+  function acceptPlannerNotes() {
+    localStorage.setItem('ltGearPlanNotesAccepted', 'true')
+    plannerNotesOpen.value = false
+  }
+
   function getPrimaryReason(slot) {
     if (!slot?.result?.eligible) {
       return 'Unranked'
@@ -315,6 +322,7 @@ export function useGearPlan() {
     upgradeHref,
     sortMode,
     shareCopied,
+    plannerNotesOpen,
     editorOpen,
     editorStatType,
     editorStatInput,
@@ -349,6 +357,7 @@ export function useGearPlan() {
     copyShareLink,
     useSharedPlan,
     returnToMyPlan,
+    acceptPlannerNotes,
     getPrimaryReason,
     getLineStatusLabel,
     getStatStep,
