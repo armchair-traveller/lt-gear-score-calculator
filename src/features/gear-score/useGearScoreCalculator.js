@@ -30,9 +30,15 @@ import {
   parseShareState,
 } from '@/features/gear-score/share-url.js'
 import { useGearScoreSnapshot } from '@/features/gear-score/useGearScoreSnapshot.js'
+import { isGearPlanSlot } from '@/features/gear-plan/data.js'
+import {
+  projectGearPlanEntry,
+  saveStoredGearPlanEntry,
+} from '@/features/gear-plan/plan-state.js'
 
 export function useGearScoreCalculator() {
   const upgradeHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}upgrade`
+  const planHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}plan`
 
   const gearType = ref('[9999] Armor')
   const pieceType = ref('Helmet')
@@ -57,6 +63,8 @@ export function useGearScoreCalculator() {
   const gearSheetOpen = ref(false)
   const clipboardTooltip = ref(false)
   const clipboardToolTipTimeout = ref(null)
+  const gearPlanSaveSucceeded = ref(false)
+  const gearPlanSaveTimeout = ref(null)
 
   const results = ref(createEmptyGearScoreResult())
 
@@ -87,6 +95,24 @@ export function useGearScoreCalculator() {
     }
 
     return formatGainRange(results.value.potentialScore, Number(results.value.percent))
+  })
+  const supportsGearPlan = computed(() => isGearPlanSlot(gearType.value, pieceType.value))
+  const canSaveToGearPlan = computed(() => {
+    if (!supportsGearPlan.value || statType.value.length !== 5) {
+      return false
+    }
+
+    const filledLineCount = statInput.value.filter((_, index) => hasRolledValue(index)).length
+    const allInputsValid = statInput.value.every((value, index) => {
+      const isBlank = value === '' || value === null || value === undefined || Number(value) === 0
+      return isBlank || (
+        currentItem.value?.Stats?.[statType.value[index]] &&
+        hasRolledValue(index) &&
+        !isInputOverMax(index)
+      )
+    })
+
+    return filledLineCount >= 3 && allInputsValid
   })
 
   function getPieceNames(category) {
@@ -354,6 +380,29 @@ export function useGearScoreCalculator() {
     }
   }
 
+  function saveCurrentGearToPlan() {
+    if (!canSaveToGearPlan.value) {
+      return
+    }
+
+    const entry = projectGearPlanEntry({
+      gearType: gearType.value,
+      pieceType: pieceType.value,
+      statType: statType.value,
+      statInput: statInput.value,
+      currentUpgradeCount: getInputEnchantUpgradeCount(),
+    })
+    if (!entry || !saveStoredGearPlanEntry(entry)) {
+      return
+    }
+
+    clearTimeout(gearPlanSaveTimeout.value)
+    gearPlanSaveSucceeded.value = true
+    gearPlanSaveTimeout.value = setTimeout(() => {
+      gearPlanSaveSucceeded.value = false
+    }, 1800)
+  }
+
   function getSelectedRating() {
     let rating = 0
     const item = currentItem.value
@@ -562,6 +611,7 @@ export function useGearScoreCalculator() {
   return {
     gears,
     upgradeHref,
+    planHref,
     gearType,
     pieceType,
     highlightedPiece,
@@ -574,6 +624,7 @@ export function useGearScoreCalculator() {
     disclaimerOpen,
     gearSheetOpen,
     clipboardTooltip,
+    gearPlanSaveSucceeded,
     snapshotOpen,
     snapshotImageUrl,
     snapshotIsGenerating,
@@ -598,6 +649,8 @@ export function useGearScoreCalculator() {
     totalProgress,
     potentialProgress,
     potentialGainText,
+    supportsGearPlan,
+    canSaveToGearPlan,
     getPieceNames,
     getItemImage,
     getAsset,
@@ -614,6 +667,7 @@ export function useGearScoreCalculator() {
     moveSssOddsLine,
     setValues,
     getFinalUpgrade,
+    saveCurrentGearToPlan,
     getSelectedRating,
     generateURL,
     acceptDisclaimer,

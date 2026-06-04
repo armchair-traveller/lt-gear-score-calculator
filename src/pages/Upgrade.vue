@@ -11,6 +11,7 @@ import {
   PackageIcon,
   SearchIcon,
   SparklesIcon,
+  TargetIcon,
   TriangleAlertIcon,
 } from '@lucide/vue'
 
@@ -59,6 +60,7 @@ const ownedMaterials = ref(0)
 const quantity = ref(1)
 const searchQuery = ref('')
 const homeHref = window.location.pathname.replace(/\/upgrade\/?$/, '/') || '/'
+const planHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}plan`
 
 const availableItems = computed(() => getAvailableItems())
 const selectedItem = computed(() =>
@@ -306,6 +308,18 @@ function trimDecimal(value) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Gear score calculator</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="outline" size="icon" as-child>
+                  <a :href="planHref">
+                    <TargetIcon />
+                    <span class="sr-only">Open gear upgrade finder</span>
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Gear upgrade finder</TooltipContent>
             </Tooltip>
           </div>
         </div>

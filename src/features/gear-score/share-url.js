@@ -11,7 +11,8 @@ export function encodeShareState({ gearType, pieceType, statType, statInput }) {
   })
 
   for (let i = 0; i < 5; i++) {
-    statNums[i] = statNums[i] + Math.min(statInput[i] * 10, 999999).toString().padStart(6, '0')
+    const encodedValue = Math.min(Math.round(Number(statInput[i]) * 10), 999999)
+    statNums[i] = statNums[i] + encodedValue.toString().padStart(6, '0')
   }
 
   return gearNum + pieceNum + statNums.join('')

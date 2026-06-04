@@ -3,8 +3,10 @@ import { computed } from 'vue'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  BookmarkPlusIcon,
   CalculatorIcon,
   CameraIcon,
+  CheckIcon,
   SparklesIcon,
   SwordsIcon,
   TablePropertiesIcon,
@@ -48,11 +50,15 @@ const {
   totalProgress,
   potentialProgress,
   potentialGainText,
+  supportsGearPlan,
+  canSaveToGearPlan,
+  gearPlanSaveSucceeded,
   hasRolledValue,
   getProjectionEnchantLevel,
   moveSssOddsLine,
   getFinalUpgrade,
   openSnapshot,
+  saveCurrentGearToPlan,
   clamp,
   getLineScoreText,
   getPotentialLineText,
@@ -97,6 +103,18 @@ const emptyLineSummary = computed(() =>
             <Button variant="outline" size="sm" @click="openSnapshot">
               <CameraIcon />
               Snapshot
+            </Button>
+
+            <Button
+              v-if="supportsGearPlan"
+              variant="outline"
+              size="sm"
+              :disabled="!canSaveToGearPlan"
+              @click="saveCurrentGearToPlan"
+            >
+              <CheckIcon v-if="gearPlanSaveSucceeded" class="text-emerald-600 dark:text-emerald-400" />
+              <BookmarkPlusIcon v-else />
+              {{ gearPlanSaveSucceeded ? 'Added' : 'Add to upgrade finder' }}
             </Button>
           </div>
         </div>

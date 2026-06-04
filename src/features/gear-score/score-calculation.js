@@ -196,6 +196,112 @@ export function calculateGearScore({
   }
 }
 
+export function getFinalStatValue(statInfo, upgradeCount) {
+  if (!statInfo) {
+    return 0
+  }
+
+  return statInfo.Value + (statInfo.Potential?.[1] ?? 0) * upgradeCount
+}
+
+export function getStatRatingForValue(statInfo, value) {
+  if (!statInfo || !Number.isFinite(Number(value))) {
+    return 0
+  }
+
+  return Number(value) / statInfo.Value * statInfo.DI
+}
+
+export function calculateGearPlanItem({
+  item,
+  statTypes,
+  statInputs,
+  upgradeCount,
+  lineWeights = [],
+}) {
+  if (!item) {
+    return createEmptyGearPlanResult()
+  }
+
+  const lines = statTypes.map((stat, index) => {
+    const statInfo = item.Stats[stat]
+    const rawValue = statInputs[index]
+    const value = Number(rawValue)
+    const weight = Number.isFinite(lineWeights[index]) ? lineWeights[index] : 1
+    const hasInput = rawValue !== '' && rawValue !== null && rawValue !== undefined && value !== 0
+    const filled = Number.isFinite(value) && value > 0
+    const finalMaxValue = getFinalStatValue(statInfo, upgradeCount)
+    const currentDI = getStatRatingForValue(statInfo, value) * weight
+    const ceilingDI = getStatRatingForValue(statInfo, finalMaxValue) * weight
+    const valid = filled && Boolean(statInfo) && value <= finalMaxValue
+
+    return {
+      index,
+      stat,
+      value,
+      weight,
+      filled,
+      currentDI,
+      ceilingDI,
+      gapDI: Math.max(ceilingDI - currentDI, 0),
+      finalMaxValue,
+      valid,
+      invalid: hasInput && !valid,
+    }
+  })
+
+  const benchmarkDI = item.Optimal.reduce((total, stat, index) => {
+    const statInfo = item.Stats[stat]
+    const weight = Number.isFinite(lineWeights[index]) ? lineWeights[index] : 1
+    return total + getStatRatingForValue(statInfo, getFinalStatValue(statInfo, upgradeCount)) * weight
+  }, 0)
+  const currentDI = lines.reduce((total, line) => total + line.currentDI, 0)
+  const selectedCeilingDI = lines.reduce((total, line) =>
+    total + (line.filled ? line.ceilingDI : 0), 0)
+  const opportunityDI = Math.max(benchmarkDI - currentDI, 0)
+  const rollGapDI = Math.min(Math.max(selectedCeilingDI - currentDI, 0), opportunityDI)
+  const pieceGapDI = Math.max(opportunityDI - rollGapDI, 0)
+  const filledLineCount = lines.filter((line) => line.filled).length
+  const eligible = lines.length === 5 && filledLineCount >= 3 && !lines.some((line) => line.invalid)
+  const lineStatus = filledLineCount < 3
+    ? 'needs-lines'
+    : filledLineCount < 5
+      ? 'partial'
+      : 'penta'
+
+  return {
+    filledLineCount,
+    eligible,
+    lineStatus,
+    currentDI,
+    benchmarkDI,
+    selectedCeilingDI,
+    opportunityDI,
+    rollGapDI,
+    pieceGapDI,
+    qualityPercent: benchmarkDI > 0 ? currentDI / benchmarkDI * 100 : 0,
+    aboveBenchmark: eligible && currentDI > benchmarkDI,
+    lines,
+  }
+}
+
+function createEmptyGearPlanResult() {
+  return {
+    filledLineCount: 0,
+    eligible: false,
+    lineStatus: 'needs-lines',
+    currentDI: 0,
+    benchmarkDI: 0,
+    selectedCeilingDI: 0,
+    opportunityDI: 0,
+    rollGapDI: 0,
+    pieceGapDI: 0,
+    qualityPercent: 0,
+    aboveBenchmark: false,
+    lines: [],
+  }
+}
+
 function calculateSssOdds({
   gearType,
   item,

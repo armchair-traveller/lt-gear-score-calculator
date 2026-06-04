@@ -5,6 +5,7 @@ import {
   ExternalLinkIcon,
   HammerIcon,
   InfoIcon,
+  TargetIcon,
   TablePropertiesIcon,
 } from '@lucide/vue'
 
@@ -20,6 +21,7 @@ import { useGearScoreCalculatorContext } from '@/features/gear-score/context.js'
 const {
   gears,
   upgradeHref,
+  planHref,
   gearType,
   pieceType,
   resultMode,
@@ -60,6 +62,18 @@ const {
             </Button>
           </TooltipTrigger>
           <TooltipContent>Upgrade calculator</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button variant="outline" size="icon" as-child>
+              <a :href="planHref">
+                <TargetIcon />
+                <span class="sr-only">Open gear upgrade finder</span>
+              </a>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Gear upgrade finder</TooltipContent>
         </Tooltip>
 
         <Tooltip>
