@@ -41,7 +41,7 @@ const {
         </div>
         <div class="min-w-0">
           <h1 class="truncate text-lg font-semibold tracking-normal md:text-xl">
-            LaTale Gear Score Calculator
+            LaTale Enchant Calculator
           </h1>
           <p class="truncate text-xs text-muted-foreground">
             {{ pieceType }} {{ gearType }} / {{ resultMode === 'rating' ? 'rating' : 'score' }}

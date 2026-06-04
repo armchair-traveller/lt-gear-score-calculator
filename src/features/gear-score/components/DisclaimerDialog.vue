@@ -22,7 +22,7 @@ const {
   <Dialog v-model:open="disclaimerOpen">
     <DialogContent class="max-h-[90vh] max-w-3xl overflow-y-auto rounded-lg">
       <DialogHeader>
-        <DialogTitle>LaTale Gear Score Calculator</DialogTitle>
+        <DialogTitle>LaTale Enchant Calculator</DialogTitle>
         <DialogDescription>
           Hypothetical single-item damage scoring.
         </DialogDescription>
