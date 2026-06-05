@@ -1,15 +1,6 @@
 <script setup>
-import { computed } from 'vue'
 import { CheckIcon, MonitorIcon, MoonIcon, SunIcon } from '@lucide/vue'
 import { useColorMode } from '@vueuse/core'
-
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 const mode = useColorMode({
   disableTransition: false,

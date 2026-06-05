@@ -9,15 +9,6 @@ import {
   TablePropertiesIcon,
 } from '@lucide/vue'
 
-import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import ModeToggle from '@/components/ModeToggle.vue'
-import { useGearScoreCalculatorContext } from '@/features/gear-score/context.js'
-
 const {
   gears,
   upgradeHref,

@@ -6,17 +6,6 @@ import {
   DownloadIcon,
 } from '@lucide/vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { useGearScoreCalculatorContext } from '@/features/gear-score/context.js'
-
 const {
   gearType,
   pieceType,

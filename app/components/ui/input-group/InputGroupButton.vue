@@ -1,6 +1,5 @@
 <script setup>
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { inputGroupButtonVariants } from ".";
 
 const props = defineProps({

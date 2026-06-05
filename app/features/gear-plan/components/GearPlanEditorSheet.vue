@@ -8,19 +8,6 @@ import {
   TrendingUpIcon,
 } from '@lucide/vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import GearStatLinesEditor from '@/features/gear-score/components/GearStatLinesEditor.vue'
-import { useGearPlanContext } from '@/features/gear-plan/context.js'
-
 const emit = defineEmits(['request-delete'])
 
 const {

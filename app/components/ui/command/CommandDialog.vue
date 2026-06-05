@@ -1,14 +1,6 @@
 <script setup>
 import { useForwardPropsEmits } from "reka-ui";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import Command from "./Command.vue";
 
 const props = defineProps({
   defaultOpen: { type: Boolean, required: false },

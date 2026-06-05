@@ -4,14 +4,6 @@ import {
   CheckCircle2Icon,
 } from '@lucide/vue'
 
-import { Badge } from '@/components/ui/badge'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { useGearPlanContext } from '@/features/gear-plan/context.js'
-
 const {
   rankedSlots,
   maxChartDI,

@@ -8,17 +8,6 @@ import {
   SparklesIcon,
 } from '@lucide/vue'
 
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { useGearPlanContext } from '@/features/gear-plan/context.js'
-
 const {
   plannerNotesOpen,
   acceptPlannerNotes,

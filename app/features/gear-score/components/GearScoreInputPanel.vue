@@ -7,33 +7,6 @@ import {
   SparklesIcon,
 } from '@lucide/vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import {
-  Label,
-} from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import GearStatLinesEditor from '@/features/gear-score/components/GearStatLinesEditor.vue'
-import { useGearScoreCalculatorContext } from '@/features/gear-score/context.js'
-
 const {
   gearType,
   pieceType,

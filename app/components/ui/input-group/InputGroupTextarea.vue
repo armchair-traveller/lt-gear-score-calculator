@@ -1,6 +1,5 @@
 <script setup>
 import { cn } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
 
 const props = defineProps({
   class: {

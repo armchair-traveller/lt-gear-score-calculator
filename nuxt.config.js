@@ -2,7 +2,17 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
   ssr: false,
-  components: false,
+  components: [
+    { path: '~/components', pathPrefix: false, extensions: ['.vue'] },
+    { path: '~/features/gear-score/components', pathPrefix: false, extensions: ['.vue'] },
+    { path: '~/features/gear-plan/components', pathPrefix: false, extensions: ['.vue'] },
+  ],
+  imports: {
+    dirs: [
+      '~/features/*/context.js',
+      '~/features/*/use*.js',
+    ],
+  },
   css: ['~/styles/main.css'],
   app: {
     head: {

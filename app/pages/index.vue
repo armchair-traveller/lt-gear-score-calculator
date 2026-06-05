@@ -1,14 +1,4 @@
 <script setup>
-import { TooltipProvider } from '@/components/ui/tooltip'
-import DisclaimerDialog from '@/features/gear-score/components/DisclaimerDialog.vue'
-import GearCatalogSheet from '@/features/gear-score/components/GearCatalogSheet.vue'
-import GearScoreHeader from '@/features/gear-score/components/GearScoreHeader.vue'
-import GearScoreInputPanel from '@/features/gear-score/components/GearScoreInputPanel.vue'
-import GearScoreResultsPanel from '@/features/gear-score/components/GearScoreResultsPanel.vue'
-import SnapshotDialog from '@/features/gear-score/components/SnapshotDialog.vue'
-import { provideGearScoreCalculator } from '@/features/gear-score/context.js'
-import { useGearScoreCalculator } from '@/features/gear-score/useGearScoreCalculator.js'
-
 const calculator = useGearScoreCalculator()
 provideGearScoreCalculator(calculator)
 </script>

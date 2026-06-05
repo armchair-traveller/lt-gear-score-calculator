@@ -1,5 +1,4 @@
 <script setup>
-import { computed } from 'vue'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -11,32 +10,6 @@ import {
   SwordsIcon,
   TablePropertiesIcon,
 } from '@lucide/vue'
-
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import { useGearScoreCalculatorContext } from '@/features/gear-score/context.js'
 
 const {
   gearType,

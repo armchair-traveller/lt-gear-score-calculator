@@ -1,6 +1,4 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useRouter } from '#app'
 import {
   ArrowLeftIcon,
   CalculatorIcon,
@@ -16,41 +14,6 @@ import {
   TriangleAlertIcon,
 } from '@lucide/vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import ModeToggle from '@/components/ModeToggle.vue'
 import materials from '@/data/item-enhancement-materials.en.json'
 
 const router = useRouter()

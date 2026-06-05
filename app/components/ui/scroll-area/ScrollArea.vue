@@ -2,7 +2,6 @@
 import { reactiveOmit } from "@vueuse/core";
 import { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaViewport } from "reka-ui";
 import { cn } from "@/lib/utils";
-import ScrollBar from "./ScrollBar.vue";
 
 const props = defineProps({
   type: { type: String, required: false },

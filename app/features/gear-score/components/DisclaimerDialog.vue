@@ -1,17 +1,6 @@
 <script setup>
 import { LinkIcon } from '@lucide/vue'
 
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { useGearScoreCalculatorContext } from '@/features/gear-score/context.js'
-
 const {
   disclaimerOpen,
   acceptDisclaimer,

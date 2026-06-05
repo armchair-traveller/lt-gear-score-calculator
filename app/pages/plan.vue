@@ -1,5 +1,4 @@
 <script setup>
-import { reactive, ref } from 'vue'
 import {
   ArrowLeftIcon,
   CalculatorIcon,
@@ -14,40 +13,6 @@ import {
   TargetIcon,
   TrendingUpIcon,
 } from '@lucide/vue'
-
-import ModeToggle from '@/components/ModeToggle.vue'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import GearPlanEditorSheet from '@/features/gear-plan/components/GearPlanEditorSheet.vue'
-import GearPlanNotesDialog from '@/features/gear-plan/components/GearPlanNotesDialog.vue'
-import GearPlanOpportunityChart from '@/features/gear-plan/components/GearPlanOpportunityChart.vue'
-import { provideGearPlan } from '@/features/gear-plan/context.js'
-import { useGearPlan } from '@/features/gear-plan/useGearPlan.js'
 
 const gearPlan = useGearPlan()
 provideGearPlan(gearPlan)

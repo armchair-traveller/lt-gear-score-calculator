@@ -1,5 +1,4 @@
 <script setup>
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 const props = defineProps({
