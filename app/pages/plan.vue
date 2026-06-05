@@ -4,7 +4,6 @@ import {
   CalculatorIcon,
   CheckIcon,
   ClipboardIcon,
-  HammerIcon,
   InfoIcon,
   MoreHorizontalIcon,
   PlusIcon,
@@ -67,7 +66,7 @@ function confirmDelete() {
               <TooltipTrigger as-child>
                 <Button variant="outline" size="icon" as-child>
                   <NuxtLink :to="planner.upgradeHref">
-                    <HammerIcon />
+                    <img class="size-5" src="/cool_priring.png" alt="">
                     <span class="sr-only">Open upgrade material calculator</span>
                   </NuxtLink>
                 </Button>

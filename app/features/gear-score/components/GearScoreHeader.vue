@@ -3,7 +3,6 @@ import {
   CheckIcon,
   ClipboardIcon,
   ExternalLinkIcon,
-  HammerIcon,
   InfoIcon,
   TablePropertiesIcon,
 } from '@lucide/vue'
@@ -45,7 +44,7 @@ const {
           <TooltipTrigger as-child>
             <Button variant="outline" size="icon" as-child>
               <NuxtLink :to="upgradeHref">
-                <HammerIcon />
+                <img class="size-5" src="/cool_priring.png" alt="">
                 <span class="sr-only">Open upgrade material calculator</span>
               </NuxtLink>
             </Button>
