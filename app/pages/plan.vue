@@ -90,10 +90,10 @@ function confirmDelete() {
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button variant="outline" size="icon" as-child>
-                  <a :href="planner.homeHref">
+                  <NuxtLink :to="planner.homeHref">
                     <CalculatorIcon />
                     <span class="sr-only">Open gear score calculator</span>
-                  </a>
+                  </NuxtLink>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Gear score calculator</TooltipContent>
@@ -102,10 +102,10 @@ function confirmDelete() {
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button variant="outline" size="icon" as-child>
-                  <a :href="planner.upgradeHref">
+                  <NuxtLink :to="planner.upgradeHref">
                     <HammerIcon />
                     <span class="sr-only">Open upgrade material calculator</span>
-                  </a>
+                  </NuxtLink>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Upgrade calculator</TooltipContent>

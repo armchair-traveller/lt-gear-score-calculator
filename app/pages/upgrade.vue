@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useRouter } from '#app'
 import {
   ArrowLeftIcon,
   CalculatorIcon,
@@ -52,6 +53,7 @@ import {
 import ModeToggle from '@/components/ModeToggle.vue'
 import materials from '@/data/item-enhancement-materials.en.json'
 
+const router = useRouter()
 const initialItem = getAvailableItems()[0]
 const itemValue = ref(initialItem?.value ?? '')
 const currentLevel = ref('0')
@@ -59,8 +61,8 @@ const targetLevel = ref(String(initialItem?.rows?.length ?? 1))
 const ownedMaterials = ref(0)
 const quantity = ref(1)
 const searchQuery = ref('')
-const homeHref = window.location.pathname.replace(/\/upgrade\/?$/, '/') || '/'
-const planHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}plan`
+const homeHref = computed(() => router.resolve('/').href)
+const planHref = computed(() => router.resolve('/plan').href)
 
 const availableItems = computed(() => getAvailableItems())
 const selectedItem = computed(() =>
@@ -301,10 +303,10 @@ function trimDecimal(value) {
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button variant="outline" size="icon" as-child>
-                  <a :href="homeHref">
+                  <NuxtLink :to="homeHref">
                     <ArrowLeftIcon />
                     <span class="sr-only">Open gear score calculator</span>
-                  </a>
+                  </NuxtLink>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Gear score calculator</TooltipContent>
@@ -313,10 +315,10 @@ function trimDecimal(value) {
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button variant="outline" size="icon" as-child>
-                  <a :href="planHref">
+                  <NuxtLink :to="planHref">
                     <TargetIcon />
                     <span class="sr-only">Open planner</span>
-                  </a>
+                  </NuxtLink>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Planner</TooltipContent>

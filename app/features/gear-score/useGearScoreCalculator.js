@@ -1,4 +1,5 @@
 import { computed, ref, unref, watch } from 'vue'
+import { useRoute, useRouter } from '#app'
 import gears from '@/utils/gear.js'
 import tiers from '@/utils/tiers.js'
 import {
@@ -37,8 +38,10 @@ import {
 } from '@/features/gear-plan/plan-state.js'
 
 export function useGearScoreCalculator() {
-  const upgradeHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}upgrade`
-  const planHref = `${window.location.pathname.replace(/\/upgrade\/?$/, '').replace(/\/?$/, '/')}plan`
+  const route = useRoute()
+  const router = useRouter()
+  const upgradeHref = computed(() => router.resolve('/upgrade').href)
+  const planHref = computed(() => router.resolve('/plan').href)
 
   const gearType = ref('[9999] Armor')
   const pieceType = ref('Helmet')
@@ -53,7 +56,7 @@ export function useGearScoreCalculator() {
   const sssOddsOrder = ref([0, 1, 2, 3, 4])
   const validStats = ref([])
 
-  const imgUrls = import.meta.glob('/src/assets/*.png', {
+  const imgUrls = import.meta.glob('../../assets/*.png', {
     import: 'default',
     eager: true,
   })
@@ -120,11 +123,11 @@ export function useGearScoreCalculator() {
   }
 
   function getItemImage(piece, category) {
-    return imgUrls[`/src/assets/${piece}_${category.slice(1, 5)}.png`] ?? ''
+    return getAsset(`${piece}_${category.slice(1, 5)}.png`)
   }
 
   function getAsset(name) {
-    return imgUrls[`/src/assets/${name}`] ?? ''
+    return imgUrls[`../../assets/${name}`] ?? ''
   }
 
   function getTierRows(category, piece) {
@@ -439,7 +442,10 @@ export function useGearScoreCalculator() {
     })
 
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?${params.toString()}`)
+      await navigator.clipboard.writeText(getAbsoluteHref({
+        path: route.path,
+        query: Object.fromEntries(params.entries()),
+      }))
       toggleClipboardTooltip()
     }
     catch (error) {
@@ -540,6 +546,14 @@ export function useGearScoreCalculator() {
       : `${row.potentialTierMin} ~ ${row.potentialTierMax}`
   }
 
+  function getAbsoluteHref(to) {
+    return new URL(router.resolve(to).href, window.location.origin).toString()
+  }
+
+  function getQueryValue(value) {
+    return Array.isArray(value) ? value[0] : value
+  }
+
   const {
     snapshotOpen,
     snapshotImageUrl,
@@ -578,11 +592,12 @@ export function useGearScoreCalculator() {
 
   changePiece()
 
-  const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.has('it')) {
-    readURL(urlParams.get('it'))
-    if (urlParams.has('el') && supportsInputEnchantLevel()) {
-      setInputEnchantLevel(urlParams.get('el'))
+  const sharedItem = getQueryValue(route.query.it)
+  if (sharedItem) {
+    readURL(sharedItem)
+    const sharedEnchantLevel = getQueryValue(route.query.el)
+    if (sharedEnchantLevel && supportsInputEnchantLevel()) {
+      setInputEnchantLevel(sharedEnchantLevel)
     }
     disclaimerOpen.value = false
   }

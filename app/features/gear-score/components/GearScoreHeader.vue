@@ -55,10 +55,10 @@ const {
         <Tooltip>
           <TooltipTrigger as-child>
             <Button variant="outline" size="icon" as-child>
-              <a :href="upgradeHref">
+              <NuxtLink :to="upgradeHref">
                 <HammerIcon />
                 <span class="sr-only">Open upgrade material calculator</span>
-              </a>
+              </NuxtLink>
             </Button>
           </TooltipTrigger>
           <TooltipContent>Upgrade calculator</TooltipContent>
@@ -67,10 +67,10 @@ const {
         <Tooltip>
           <TooltipTrigger as-child>
             <Button variant="outline" size="icon" as-child>
-              <a :href="planHref">
+              <NuxtLink :to="planHref">
                 <TargetIcon />
                 <span class="sr-only">Open planner</span>
-              </a>
+              </NuxtLink>
             </Button>
           </TooltipTrigger>
           <TooltipContent>Planner</TooltipContent>

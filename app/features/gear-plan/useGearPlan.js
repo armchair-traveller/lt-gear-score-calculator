@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from '#app'
 import gears from '@/utils/gear.js'
 import {
   gearPlanSlots,
@@ -19,10 +20,11 @@ import {
 import { formatStatValue } from '@/features/gear-score/helpers.js'
 
 export function useGearPlan() {
-  const basePath = window.location.pathname.replace(/\/plan\/?$/, '').replace(/\/?$/, '/')
-  const homeHref = basePath || '/'
-  const planHref = `${basePath}plan`
-  const upgradeHref = `${basePath}upgrade`
+  const route = useRoute()
+  const router = useRouter()
+  const homeHref = computed(() => router.resolve('/').href)
+  const planHref = computed(() => router.resolve('/plan').href)
+  const upgradeHref = computed(() => router.resolve('/upgrade').href)
   const localPlan = ref(readStoredGearPlan())
   const sortMode = ref('impact')
   const shareCopied = ref(false)
@@ -35,14 +37,14 @@ export function useGearPlan() {
   const editorStatInput = ref([])
   const editorPickerOpen = ref([])
 
-  const shareParam = new URLSearchParams(window.location.search).get('gp')
+  const shareParam = getQueryValue(route.query.gp)
   const parsedShare = shareParam ? parseGearPlanShare(shareParam) : { plan: null, error: '' }
   const sharedPlan = ref(parsedShare.plan)
   const shareError = ref(parsedShare.error)
   const isSharedPreview = computed(() => Boolean(sharedPlan.value))
   const displayedPlan = computed(() => sharedPlan.value ?? localPlan.value)
 
-  const imgUrls = import.meta.glob('/src/assets/*.png', {
+  const imgUrls = import.meta.glob('../../assets/*.png', {
     import: 'default',
     eager: true,
   })
@@ -137,7 +139,7 @@ export function useGearPlan() {
   }))
 
   function getItemImage(piece, category) {
-    return imgUrls[`/src/assets/${piece}_${category.slice(1, 5)}.png`] ?? ''
+    return imgUrls[`../../assets/${piece}_${category.slice(1, 5)}.png`] ?? ''
   }
 
   function openEditor(slotId) {
@@ -257,7 +259,10 @@ export function useGearPlan() {
     }
 
     const value = encodeGearPlanShare(displayedPlan.value)
-    const url = `${window.location.origin}${planHref}?gp=${encodeURIComponent(value)}`
+    const url = getAbsoluteHref({
+      path: '/plan',
+      query: { gp: value },
+    })
 
     try {
       await navigator.clipboard.writeText(url)
@@ -278,11 +283,11 @@ export function useGearPlan() {
     }
 
     localPlan.value = writeStoredGearPlan(sharedPlan.value)
-    window.location.href = planHref
+    void router.push('/plan')
   }
 
   function returnToMyPlan() {
-    window.location.href = planHref
+    void router.push('/plan')
   }
 
   function acceptPlannerNotes() {
@@ -304,6 +309,14 @@ export function useGearPlan() {
       return 'Roll values are the larger gap'
     }
     return 'Close to the curated benchmark'
+  }
+
+  function getAbsoluteHref(to) {
+    return new URL(router.resolve(to).href, window.location.origin).toString()
+  }
+
+  function getQueryValue(value) {
+    return Array.isArray(value) ? value[0] : value
   }
 
   function getLineStatusLabel(result) {
