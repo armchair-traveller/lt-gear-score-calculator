@@ -266,11 +266,11 @@ function trimDecimal(value) {
                 <Button variant="outline" size="icon" as-child>
                   <NuxtLink :to="homeHref">
                     <ArrowLeftIcon />
-                    <span class="sr-only">Open gear score calculator</span>
+                    <span class="sr-only">Open enchant calculator</span>
                   </NuxtLink>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Gear score calculator</TooltipContent>
+              <TooltipContent>Enchant calculator</TooltipContent>
             </Tooltip>
 
             <Tooltip>

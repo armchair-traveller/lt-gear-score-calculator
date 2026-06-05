@@ -1,7 +1,6 @@
 <script setup>
 import {
   ArrowLeftIcon,
-  CalculatorIcon,
   CheckIcon,
   ClipboardIcon,
   InfoIcon,
@@ -54,12 +53,12 @@ function confirmDelete() {
               <TooltipTrigger as-child>
                 <Button variant="outline" size="icon" as-child>
                   <NuxtLink :to="planner.homeHref">
-                    <CalculatorIcon />
-                    <span class="sr-only">Open gear score calculator</span>
+                    <ArrowLeftIcon />
+                    <span class="sr-only">Open enchant calculator</span>
                   </NuxtLink>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Gear score calculator</TooltipContent>
+              <TooltipContent>Enchant calculator</TooltipContent>
             </Tooltip>
 
             <Tooltip>
