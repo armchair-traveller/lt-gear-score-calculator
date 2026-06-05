@@ -5,7 +5,6 @@ import {
   ExternalLinkIcon,
   HammerIcon,
   InfoIcon,
-  TargetIcon,
   TablePropertiesIcon,
 } from '@lucide/vue'
 
@@ -58,7 +57,7 @@ const {
           <TooltipTrigger as-child>
             <Button variant="outline" size="icon" as-child>
               <NuxtLink :to="planHref">
-                <TargetIcon />
+                <img class="size-5" src="/smart_priring.png" alt="">
                 <span class="sr-only">Open planner</span>
               </NuxtLink>
             </Button>

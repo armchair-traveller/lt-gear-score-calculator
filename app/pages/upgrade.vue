@@ -10,7 +10,6 @@ import {
   PackageIcon,
   SearchIcon,
   SparklesIcon,
-  TargetIcon,
   TriangleAlertIcon,
 } from '@lucide/vue'
 
@@ -279,7 +278,7 @@ function trimDecimal(value) {
               <TooltipTrigger as-child>
                 <Button variant="outline" size="icon" as-child>
                   <NuxtLink :to="planHref">
-                    <TargetIcon />
+                    <img class="size-5" src="/smart_priring.png" alt="">
                     <span class="sr-only">Open planner</span>
                   </NuxtLink>
                 </Button>
