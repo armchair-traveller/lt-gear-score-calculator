@@ -23,7 +23,6 @@ export function useGearPlan() {
   const route = useRoute()
   const router = useRouter()
   const homeHref = computed(() => router.resolve('/').href)
-  const planHref = computed(() => router.resolve('/plan').href)
   const upgradeHref = computed(() => router.resolve('/upgrade').href)
   const localPlan = ref(readStoredGearPlan())
   const sortMode = ref('impact')
@@ -286,10 +285,6 @@ export function useGearPlan() {
     void router.push('/plan')
   }
 
-  function returnToMyPlan() {
-    void router.push('/plan')
-  }
-
   function acceptPlannerNotes() {
     localStorage.setItem('ltGearPlanNotesAccepted', 'true')
     plannerNotesOpen.value = false
@@ -331,7 +326,6 @@ export function useGearPlan() {
 
   return {
     homeHref,
-    planHref,
     upgradeHref,
     sortMode,
     shareCopied,
@@ -369,7 +363,6 @@ export function useGearPlan() {
     resetPlan,
     copyShareLink,
     useSharedPlan,
-    returnToMyPlan,
     acceptPlannerNotes,
     getPrimaryReason,
     getLineStatusLabel,

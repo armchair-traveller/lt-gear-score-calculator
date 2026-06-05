@@ -135,9 +135,11 @@ function confirmDelete() {
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
-            <Button variant="outline" @click="planner.returnToMyPlan">
-              <ArrowLeftIcon />
-              My planner
+            <Button variant="outline" as-child>
+              <NuxtLink to="/plan">
+                <ArrowLeftIcon />
+                My planner
+              </NuxtLink>
             </Button>
             <Button @click="planner.useSharedPlan">Use these entries</Button>
           </div>
@@ -154,9 +156,11 @@ function confirmDelete() {
               <div class="text-sm opacity-80">{{ planner.shareError }}</div>
             </div>
           </div>
-          <Button variant="outline" class="self-start sm:self-auto" @click="planner.returnToMyPlan">
-            <ArrowLeftIcon />
-            My planner
+          <Button variant="outline" class="self-start sm:self-auto" as-child>
+            <NuxtLink to="/plan">
+              <ArrowLeftIcon />
+              My planner
+            </NuxtLink>
           </Button>
         </section>
 
