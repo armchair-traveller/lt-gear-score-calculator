@@ -27,7 +27,7 @@ const {
     <div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
       <div class="flex min-w-0 items-center gap-3">
         <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/55">
-          <img class="size-7" src="/favicon.ico" alt="">
+          <img class="size-11" src="/favicon.ico" alt="">
         </div>
         <div class="min-w-0">
           <h1 class="truncate text-lg font-semibold tracking-normal md:text-xl">
