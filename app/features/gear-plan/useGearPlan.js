@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from '#app'
 import gears from '@/utils/gear.js'
 import {
@@ -36,12 +36,16 @@ export function useGearPlan() {
   const editorStatInput = ref([])
   const editorPickerOpen = ref([])
 
-  const shareParam = getQueryValue(route.query.gp)
-  const parsedShare = shareParam ? parseGearPlanShare(shareParam) : { plan: null, error: '' }
-  const sharedPlan = ref(parsedShare.plan)
-  const shareError = ref(parsedShare.error)
+  const sharedPlan = ref(null)
+  const shareError = ref('')
   const isSharedPreview = computed(() => Boolean(sharedPlan.value))
   const displayedPlan = computed(() => sharedPlan.value ?? localPlan.value)
+
+  watch(
+    () => route.query.gp,
+    syncSharedPreview,
+    { immediate: true },
+  )
 
   const imgUrls = import.meta.glob('../../assets/*.png', {
     import: 'default',
@@ -136,6 +140,20 @@ export function useGearPlan() {
     upgradeCount: selectedSlot.value?.upgradeCount ?? 0,
     lineWeights: selectedSlot.value?.lineWeights,
   }))
+
+  function syncSharedPreview(value) {
+    const shareParam = getQueryValue(value)
+    if (!shareParam) {
+      sharedPlan.value = null
+      shareError.value = ''
+      localPlan.value = readStoredGearPlan()
+      return
+    }
+
+    const parsedShare = parseGearPlanShare(shareParam)
+    sharedPlan.value = parsedShare.plan
+    shareError.value = parsedShare.error
+  }
 
   function getItemImage(piece, category) {
     return imgUrls[`../../assets/${piece}_${category.slice(1, 5)}.png`] ?? ''
