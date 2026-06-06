@@ -304,14 +304,26 @@ function trimDecimal(value) {
                 <Select v-model="itemValue">
                   <SelectTrigger
                     id="upgrade-item"
-                    class="w-full justify-start *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
+                    class="min-h-9 w-full justify-start data-[size=default]:h-auto *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left *:data-[slot=select-value]:line-clamp-none"
                   >
                     <SparklesIcon class="size-3.5 shrink-0 text-muted-foreground" />
-                    <SelectValue placeholder="Select item" />
+                    <SelectValue as-child placeholder="Select item">
+                      <span class="min-w-0 whitespace-normal break-words text-left leading-snug">
+                        {{ selectedItem?.name ?? 'Select item' }}
+                      </span>
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem v-for="item in availableItems" :key="item.value" :value="item.value">
-                      {{ item.name }}
+                    <SelectItem
+                      v-for="item in availableItems"
+                      :key="item.value"
+                      :value="item.value"
+                      :text-value="item.name"
+                      class="items-start whitespace-normal"
+                    >
+                      <span class="min-w-0 whitespace-normal break-words leading-snug">
+                        {{ item.name }}
+                      </span>
                     </SelectItem>
                   </SelectContent>
                 </Select>
