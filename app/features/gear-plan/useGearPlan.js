@@ -225,7 +225,7 @@ export function useGearPlan() {
       return ''
     }
 
-    return `${line.maxPercent.toFixed(0)}%`
+    return `${Math.floor(line.maxPercent)}%`
   }
 
   function getEditorLineMaxPercentClass(index) {
