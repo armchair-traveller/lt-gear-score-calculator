@@ -4,7 +4,7 @@ import {
   ChevronDownIcon,
 } from '@lucide/vue'
 
-defineProps({
+const props = defineProps({
   statTypes: { type: Array, required: true },
   statInputs: { type: Array, required: true },
   statOptions: { type: Array, required: true },
@@ -12,6 +12,8 @@ defineProps({
   getStatStep: { type: Function, required: true },
   getMaxValue: { type: Function, required: true },
   getLineMaxSummaryText: { type: Function, required: true },
+  getLineMaxPercentText: { type: Function, default: null },
+  getLineMaxPercentClass: { type: Function, default: null },
   isInputOverMax: { type: Function, required: true },
   isStatSelectedOnOtherLine: { type: Function, required: true },
   disabled: { type: Boolean, default: false },
@@ -23,6 +25,14 @@ const emit = defineEmits([
   'update-input',
   'update-picker-open',
 ])
+
+function getOptionalLineMaxPercentText(index) {
+  return props.getLineMaxPercentText?.(index) ?? ''
+}
+
+function getOptionalLineMaxPercentClass(index) {
+  return props.getLineMaxPercentClass?.(index) ?? ''
+}
 </script>
 
 <template>
@@ -35,7 +45,12 @@ const emit = defineEmits([
       <div
         role="group"
         :aria-label="`Line ${index + 1}`"
-        class="grid gap-1 sm:grid-cols-[minmax(0,1fr)_minmax(190px,220px)]"
+        :class="[
+          'grid gap-1',
+          getLineMaxPercentText
+            ? 'sm:grid-cols-[minmax(0,1fr)_minmax(230px,270px)]'
+            : 'sm:grid-cols-[minmax(0,1fr)_minmax(190px,220px)]',
+        ]"
       >
         <Popover
           :open="pickerOpen[index] || false"
@@ -126,7 +141,13 @@ const emit = defineEmits([
                 class="whitespace-nowrap text-xs font-medium"
                 :class="isInputOverMax(index) ? 'text-destructive' : 'text-muted-foreground'"
               >
-                {{ getLineMaxSummaryText(index) }}
+                <span>{{ getLineMaxSummaryText(index) }}</span>
+                <span
+                  v-if="getOptionalLineMaxPercentText(index)"
+                  :class="getOptionalLineMaxPercentClass(index)"
+                >
+                  [{{ getOptionalLineMaxPercentText(index) }}]
+                </span>
               </InputGroupText>
             </InputGroupAddon>
           </InputGroup>

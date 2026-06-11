@@ -219,6 +219,33 @@ export function useGearPlan() {
     return `Max ${formatStatValue(maxValue, stat)} / ${maxDI.toFixed(2)}%`
   }
 
+  function getEditorLineMaxPercentText(index) {
+    const line = editorResult.value.lines[index]
+    if (!line?.filled || !Number.isFinite(line.maxPercent)) {
+      return ''
+    }
+
+    return `${line.maxPercent.toFixed(0)}%`
+  }
+
+  function getEditorLineMaxPercentClass(index) {
+    const line = editorResult.value.lines[index]
+    if (!line?.filled || !Number.isFinite(line.maxPercent)) {
+      return ''
+    }
+    if (line.maxPercent > 100) {
+      return 'text-destructive'
+    }
+    if (line.maxPercent < 70) {
+      return 'text-muted-foreground'
+    }
+    if (line.maxPercent < 90) {
+      return 'text-amber-600 dark:text-amber-300'
+    }
+
+    return 'text-red-600 dark:text-red-400'
+  }
+
   function isEditorInputOverMax(index) {
     const max = getEditorMaxValue(editorStatType.value[index])
     const value = Number(editorStatInput.value[index])
@@ -375,6 +402,8 @@ export function useGearPlan() {
     setEditorInput,
     getEditorMaxValue,
     getEditorLineMaxSummaryText,
+    getEditorLineMaxPercentText,
+    getEditorLineMaxPercentClass,
     isEditorInputOverMax,
     saveEditor,
     deleteSelectedSlot,

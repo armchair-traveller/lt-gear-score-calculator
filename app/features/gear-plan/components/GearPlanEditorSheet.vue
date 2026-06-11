@@ -25,6 +25,8 @@ const {
   setEditorInput,
   getEditorMaxValue,
   getEditorLineMaxSummaryText,
+  getEditorLineMaxPercentText,
+  getEditorLineMaxPercentClass,
   isEditorInputOverMax,
   saveEditor,
   getLineStatusLabel,
@@ -124,6 +126,8 @@ function getLineStatusClass(status) {
                 :get-stat-step="getStatStep"
                 :get-max-value="getEditorMaxValue"
                 :get-line-max-summary-text="getEditorLineMaxSummaryText"
+                :get-line-max-percent-text="getEditorLineMaxPercentText"
+                :get-line-max-percent-class="getEditorLineMaxPercentClass"
                 :is-input-over-max="isEditorInputOverMax"
                 :is-stat-selected-on-other-line="isEditorStatSelectedOnOtherLine"
                 @select-stat="selectEditorStat"

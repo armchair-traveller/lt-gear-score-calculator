@@ -234,6 +234,7 @@ export function calculateGearPlanItem({
     const currentDI = getStatRatingForValue(statInfo, value) * weight
     const ceilingDI = getStatRatingForValue(statInfo, finalMaxValue) * weight
     const valid = filled && Boolean(statInfo) && value <= finalMaxValue
+    const maxPercent = filled && finalMaxValue > 0 ? value / finalMaxValue * 100 : null
 
     return {
       index,
@@ -245,6 +246,7 @@ export function calculateGearPlanItem({
       ceilingDI,
       gapDI: Math.max(ceilingDI - currentDI, 0),
       finalMaxValue,
+      maxPercent,
       valid,
       invalid: hasInput && !valid,
     }
