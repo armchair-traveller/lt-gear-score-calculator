@@ -315,10 +315,12 @@ function normalizeExtraction(extracted, fallbackGearType, fallbackPieceType) {
 }
 
 function normalizeLine(line, item, index) {
+  const rawText = String(line?.rawText || '').trim()
+  const detectedStat = String(line?.statText || '').trim()
   const value = normalizeNumber(line?.value)
   const rollPercent = normalizeNumber(line?.rollPercent)
   const level = Math.max(0, Math.min(5, parseInt(line?.level) || 0))
-  const stat = normalizeStat(line?.statText || line?.rawText || '', item)
+  const stat = normalizeStat(detectedStat || rawText, item, rawText)
   const unenchantedPlaceholder = level <= 1 && (value <= 1 || rollPercent === 1)
   const ignored = Boolean(line?.ignored) || unenchantedPlaceholder
   const validStat = stat && item?.Stats?.[stat]
@@ -333,9 +335,9 @@ function normalizeLine(line, item, index) {
 
   return {
     id: `line-${index}`,
-    rawText: String(line?.rawText || '').trim(),
+    rawText,
     level,
-    detectedStat: String(line?.statText || '').trim(),
+    detectedStat,
     stat: validStat ? stat : '',
     value: validStat ? finalValue : 0,
     rollPercent,
@@ -351,29 +353,36 @@ function normalizeLine(line, item, index) {
   }
 }
 
-function normalizeStat(statText, item) {
+function normalizeStat(statText, item, rawText = '') {
   const options = Object.keys(item?.Stats || {})
   const key = canonicalizeStat(statText)
+  const rawKey = canonicalizeStat(rawText)
+  const statValueIsPercent = hasPercentStatValue(statText) || hasPercentStatValue(rawText)
 
   if (!key) {
     return ''
   }
 
-  if (isHealthStat(key)) {
-    const healthStat = healthStats.find((stat) => options.includes(stat) && key === canonicalizeStat(stat))
+  if (isHealthStat(key) || isHealthStat(rawKey)) {
+    const healthStat = healthStats.find((stat) =>
+      options.includes(stat) &&
+      key === canonicalizeStat(getPreferredPercentStat(stat, options, statValueIsPercent)),
+    )
     if (healthStat) {
-      return healthStat
+      return getPreferredPercentStat(healthStat, options, statValueIsPercent)
     }
   }
 
   const aliasedStat = statAliases.get(key)
-  if (aliasedStat && options.includes(aliasedStat) && !isNonOffensiveStat(key, aliasedStat)) {
-    return aliasedStat
+  const preferredAliasedStat = getPreferredPercentStat(aliasedStat, options, statValueIsPercent)
+  if (preferredAliasedStat && options.includes(preferredAliasedStat) && !isNonOffensiveStat(key, preferredAliasedStat)) {
+    return preferredAliasedStat
   }
 
   const exactStat = options.find((stat) => canonicalizeStat(stat) === key)
-  if (exactStat && !isNonOffensiveStat(key, exactStat)) {
-    return exactStat
+  const preferredExactStat = getPreferredPercentStat(exactStat, options, statValueIsPercent)
+  if (preferredExactStat && !isNonOffensiveStat(key, preferredExactStat)) {
+    return preferredExactStat
   }
 
   const containsStat = options.find((stat) => {
@@ -381,11 +390,25 @@ function normalizeStat(statText, item) {
     return key.includes(optionKey) || optionKey.includes(key)
   })
 
-  if (containsStat && !isNonOffensiveStat(key, containsStat)) {
-    return containsStat
+  const preferredContainsStat = getPreferredPercentStat(containsStat, options, statValueIsPercent)
+  if (preferredContainsStat && !isNonOffensiveStat(key, preferredContainsStat)) {
+    return preferredContainsStat
   }
 
   return options.includes(otherStat) ? otherStat : ''
+}
+
+function getPreferredPercentStat(stat, options, statValueIsPercent) {
+  if (!stat || !statValueIsPercent || stat.endsWith('%')) {
+    return stat
+  }
+
+  const candidates = [`${stat} %`]
+  if (stat.endsWith(' Damage')) {
+    candidates.push(`${stat.replace(/ Damage$/, '')} %`)
+  }
+
+  return candidates.find((candidate) => options.includes(candidate)) || stat
 }
 
 function canonicalizeStat(value) {
@@ -398,6 +421,11 @@ function canonicalizeStat(value) {
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function hasPercentStatValue(value) {
+  const textWithoutRoll = String(value || '').replace(/\[[^\]]*]/g, ' ')
+  return /(?:^|[^\w])\+?\s*\d+(?:[.,]\d+)?\s*(?:%|\bpercent\b)/i.test(textWithoutRoll)
 }
 
 function isHealthStat(key) {
