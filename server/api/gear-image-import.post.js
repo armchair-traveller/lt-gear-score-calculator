@@ -200,6 +200,7 @@ function getExtractorPrompt() {
     'If the full equipment tooltip is visible, infer the gear category and piece from title, required level, and piece wording.',
     'Use the provided fallback gear category and piece only when the screenshot does not show the equipment identity.',
     'Use exactly one of the allowed gear categories and piece names from the request context.',
+    'If a visible "Class:" line appears in the equipment details, classify the item as [8000] Weapons / Weapon.',
     'Keep the raw visible stat wording in statText even when translated differently.',
     'For unenchanted placeholder lines like "Lv. 1 Strength / Magic +1", set ignored true with ignoreReason "Unenchanted placeholder".',
     'For all other enchant lines, set ignored false.',
@@ -336,9 +337,8 @@ function resolveExtractionEquipment(extracted, fallbackGearType, fallbackPieceTy
 
   return {
     gearType: extractedGearType,
-    pieceType: extractedGearType === fallbackGearType
-      ? fallbackPieceForFallbackGear
-      : getPieceNames(extractedGearType)[0],
+    pieceType:
+      extractedGearType === fallbackGearType ? fallbackPieceForFallbackGear : getPieceNames(extractedGearType)[0],
   }
 }
 
@@ -392,9 +392,9 @@ function normalizeStat(statText, item, rawText = '') {
   }
 
   if (isHealthStat(key) || isHealthStat(rawKey)) {
-    const healthStat = healthStats.find((stat) =>
-      options.includes(stat) &&
-      key === canonicalizeStat(getPreferredPercentStat(stat, options, statValueIsPercent)),
+    const healthStat = healthStats.find(
+      (stat) =>
+        options.includes(stat) && key === canonicalizeStat(getPreferredPercentStat(stat, options, statValueIsPercent)),
     )
     if (healthStat) {
       return getPreferredPercentStat(healthStat, options, statValueIsPercent)
@@ -403,7 +403,11 @@ function normalizeStat(statText, item, rawText = '') {
 
   const aliasedStat = statAliases.get(key)
   const preferredAliasedStat = getPreferredPercentStat(aliasedStat, options, statValueIsPercent)
-  if (preferredAliasedStat && options.includes(preferredAliasedStat) && !isNonOffensiveStat(key, preferredAliasedStat)) {
+  if (
+    preferredAliasedStat &&
+    options.includes(preferredAliasedStat) &&
+    !isNonOffensiveStat(key, preferredAliasedStat)
+  ) {
     return preferredAliasedStat
   }
 
