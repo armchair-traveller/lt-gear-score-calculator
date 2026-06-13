@@ -196,8 +196,8 @@ function getExtractorPrompt() {
     'Extract LaTale gear enchant option lines from the image.',
     'Return only visible enchant option lines, usually formatted like "Lv. 5 Stat Name +123 [74%]".',
     'Ignore base item stats, durability, enchant limit, seals, awakening lines, titles, and unrelated UI text.',
-    'If the screenshot only shows enchant lines, use the provided fallback gear category and piece.',
     'If the full equipment tooltip is visible, infer the gear category and piece from title, required level, and piece wording.',
+    'Use the provided fallback gear category and piece only when the screenshot does not show the equipment identity.',
     'Use exactly one of the allowed gear categories and piece names from the request context.',
     'Keep the raw visible stat wording in statText even when translated differently.',
     'For unenchanted placeholder lines like "Lv. 1 Strength / Magic +1", set ignored true with ignoreReason "Unenchanted placeholder".',
@@ -298,8 +298,7 @@ function parseOutput(payload) {
 }
 
 function normalizeExtraction(extracted, fallbackGearType, fallbackPieceType) {
-  const gearType = getValidGearType(extracted.gearType) || fallbackGearType
-  const pieceType = getValidPieceType(gearType, extracted.pieceType) || fallbackPieceType
+  const { gearType, pieceType } = resolveExtractionEquipment(extracted, fallbackGearType, fallbackPieceType)
   const item = gears[gearType]?.[pieceType]
   const lines = (Array.isArray(extracted.lines) ? extracted.lines : [])
     .slice(0, 5)
@@ -311,6 +310,34 @@ function normalizeExtraction(extracted, fallbackGearType, fallbackPieceType) {
     confidence: clampNumber(extracted.confidence, 0, 1),
     inputEnchantLevel: getImportEnchantLevel(lines),
     lines,
+  }
+}
+
+function resolveExtractionEquipment(extracted, fallbackGearType, fallbackPieceType) {
+  const extractedGearType = getValidGearType(extracted?.gearType)
+  const fallbackPieceForFallbackGear =
+    getValidPieceType(fallbackGearType, fallbackPieceType) || getPieceNames(fallbackGearType)[0]
+
+  if (!extractedGearType) {
+    return {
+      gearType: fallbackGearType,
+      pieceType: fallbackPieceForFallbackGear,
+    }
+  }
+
+  const extractedPieceType = getValidPieceType(extractedGearType, extracted?.pieceType)
+  if (extractedPieceType) {
+    return {
+      gearType: extractedGearType,
+      pieceType: extractedPieceType,
+    }
+  }
+
+  return {
+    gearType: extractedGearType,
+    pieceType: extractedGearType === fallbackGearType
+      ? fallbackPieceForFallbackGear
+      : getPieceNames(extractedGearType)[0],
   }
 }
 
