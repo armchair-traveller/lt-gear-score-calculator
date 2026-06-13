@@ -144,7 +144,7 @@ export default defineEventHandler(async (event) => {
             {
               type: 'input_image',
               image_url: imageUrl,
-              detail: 'auto',
+              detail: 'high',
             },
           ],
         },
