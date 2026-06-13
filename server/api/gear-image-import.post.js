@@ -1,7 +1,7 @@
 import { createError, defineEventHandler, readMultipartFormData } from 'h3'
 import gears from '@/utils/gear.js'
 
-const imageImportModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.5'
+const imageImportModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.4-nano'
 const maxImageBytes = 8 * 1024 * 1024
 const allowedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
 const otherStat = 'Other (Non-damaging)'
@@ -143,7 +143,7 @@ export default defineEventHandler(async (event) => {
             {
               type: 'input_image',
               image_url: imageUrl,
-              detail: 'auto',
+              detail: 'high',
             },
           ],
         },
