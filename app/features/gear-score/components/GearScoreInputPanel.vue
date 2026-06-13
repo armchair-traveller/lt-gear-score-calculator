@@ -2,10 +2,12 @@
 import {
   ChevronRightIcon,
   RefreshCcwIcon,
+  ScanTextIcon,
   SearchIcon,
   ShieldCheckIcon,
   SparklesIcon,
 } from '@lucide/vue'
+import { ref } from 'vue'
 
 const {
   gearType,
@@ -36,6 +38,8 @@ const {
   isInputOverMax,
   getLineMaxSummaryText,
 } = useGearScoreCalculatorContext()
+
+const imageImportOpen = ref(false)
 
 function setStatInput(index, value) {
   statInput.value[index] = value
@@ -162,6 +166,10 @@ function setStatPickerOpen(index, value) {
 
         <div class="grid gap-3 rounded-lg bg-muted/15 p-3">
           <div class="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" @click="imageImportOpen = true">
+              <ScanTextIcon />
+              Import
+            </Button>
             <Button variant="outline" size="sm" @click="setValues(0, 0)">
               <RefreshCcwIcon />
               Clear
@@ -235,6 +243,8 @@ function setStatPickerOpen(index, value) {
         </Collapsible>
       </CardContent>
     </Card>
+
+    <GearImageImportDialog v-model:open="imageImportOpen" />
 
     <Card class="rounded-lg">
       <CardHeader>

@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
   ssr: false,
+  compatibilityDate: '2026-06-13',
   components: [
     { path: '~/components', pathPrefix: false, extensions: ['.vue'] },
     { path: '~/features/gear-score/components', pathPrefix: false, extensions: ['.vue'] },

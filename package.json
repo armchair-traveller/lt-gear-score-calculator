@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nuxt dev",
-    "build": "nuxt generate",
-    "preview": "nuxt preview"
+    "dev": "TMPDIR=/tmp nuxt dev --dotenv .env.local",
+    "build": "nuxt build --dotenv .env.local",
+    "generate": "nuxt generate --dotenv .env.local",
+    "preview": "nuxt preview --dotenv .env.local"
   },
   "dependencies": {
     "@lucide/vue": "^1.16.0",

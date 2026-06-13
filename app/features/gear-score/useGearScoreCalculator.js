@@ -371,6 +371,73 @@ export function useGearScoreCalculator() {
     }
   }
 
+  function applyGearImageImport(importResult) {
+    if (!importResult) {
+      return
+    }
+
+    const nextGear = gears[importResult.gearType]?.[importResult.pieceType]
+      ? importResult.gearType
+      : gearType.value
+    const nextPiece = gears[nextGear]?.[importResult.pieceType]
+      ? importResult.pieceType
+      : pieceType.value
+    const item = gears[nextGear]?.[nextPiece]
+    if (!item) {
+      return
+    }
+
+    gearType.value = nextGear
+    pieceType.value = nextPiece
+    highlightedPiece.value = [nextGear, nextPiece]
+
+    const options = Object.keys(item.Stats ?? {})
+    const usedStats = new Set()
+    const importLines = Array.isArray(importResult.lines) ? importResult.lines.slice(0, 5) : []
+    const nextStatType = []
+    const nextStatInput = []
+
+    for (let index = 0; index < 5; index++) {
+      const line = importLines[index]
+      const lineStat = item.Stats?.[line?.stat] ? line.stat : ''
+      const selectedStat = getAvailableImportStat(lineStat, options, usedStats)
+        || getAvailableImportStat('', options, usedStats)
+
+      nextStatType[index] = selectedStat
+      nextStatInput[index] = line && !line.ignored && lineStat && selectedStat === lineStat && Number(line.value) > 0
+        ? formatImportInputValue(lineStat, line.value)
+        : ''
+
+      if (selectedStat && !canRepeatStat(selectedStat)) {
+        usedStats.add(selectedStat)
+      }
+    }
+
+    statType.value = nextStatType
+    statInput.value = nextStatInput
+    resetSssOddsOrder()
+    setInputEnchantLevel(importResult.inputEnchantLevel || 2)
+  }
+
+  function getAvailableImportStat(stat, options, usedStats) {
+    if (stat && options.includes(stat) && (canRepeatStat(stat) || !usedStats.has(stat))) {
+      return stat
+    }
+
+    return options.find((option) => canRepeatStat(option) || !usedStats.has(option)) ?? ''
+  }
+
+  function formatImportInputValue(stat, value) {
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue)) {
+      return ''
+    }
+
+    return isDecimalStat(stat)
+      ? Number(numericValue.toFixed(1))
+      : parseInt(numericValue)
+  }
+
   function getFinalUpgrade(item) {
     switch (item) {
       case '[3500] Badge 6':
@@ -681,6 +748,7 @@ export function useGearScoreCalculator() {
     setInputEnchantLevel,
     moveSssOddsLine,
     setValues,
+    applyGearImageImport,
     getFinalUpgrade,
     saveCurrentGearToPlan,
     getSelectedRating,
