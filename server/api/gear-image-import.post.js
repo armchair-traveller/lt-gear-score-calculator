@@ -64,6 +64,7 @@ const nonOffensivePatterns = [
   'static defense',
   'physical defense',
   'magic defense',
+  'mitigation',
   'resistance',
   'evasion',
   'guard',
