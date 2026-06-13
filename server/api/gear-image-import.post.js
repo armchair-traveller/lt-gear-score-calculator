@@ -4,6 +4,7 @@ import gears from '@/utils/gear.js'
 const imageImportModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.4-mini'
 const maxImageBytes = 8 * 1024 * 1024
 const allowedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
+const excludedGearCategories = new Set(['[5000] Accessories', '[4000] Weapon'])
 const otherStat = 'Other (Non-damaging)'
 const healthStats = ['Stamina', 'Maximum HP %', 'Maximum HP']
 
@@ -124,7 +125,7 @@ export default defineEventHandler(async (event) => {
     body: JSON.stringify({
       model: imageImportModel,
       store: false,
-      reasoning: { effort: 'low' },
+      reasoning: { effort: 'none' },
       input: [
         {
           role: 'developer',
@@ -211,7 +212,7 @@ function getRequestContext(fallbackGearType, fallbackPieceType) {
   return JSON.stringify({
     fallbackGearType,
     fallbackPieceType,
-    allowedGear: Object.entries(gears).map(([gearType, pieces]) => ({
+    allowedGear: getGearCategories().map((gearType) => ({
       gearType,
       pieces: getPieceNames(gearType),
     })),
@@ -226,7 +227,7 @@ function getExtractorSchema() {
     properties: {
       gearType: {
         type: 'string',
-        enum: Object.keys(gears),
+        enum: getGearCategories(),
       },
       pieceType: {
         type: 'string',
@@ -502,7 +503,7 @@ function getImportEnchantLevel(lines) {
 }
 
 function getValidGearType(gearType) {
-  return Object.keys(gears).includes(gearType) ? gearType : ''
+  return getGearCategories().includes(gearType) ? gearType : ''
 }
 
 function getValidPieceType(gearType, pieceType) {
@@ -513,8 +514,12 @@ function getPieceNames(gearType) {
   return Object.keys(gears[gearType] || {}).filter((key) => !['Sheet Link', 'Potential'].includes(key))
 }
 
+function getGearCategories() {
+  return Object.keys(gears).filter((category) => !excludedGearCategories.has(category))
+}
+
 function getAllPieceNames() {
-  return Array.from(new Set(Object.keys(gears).flatMap(getPieceNames)))
+  return Array.from(new Set(getGearCategories().flatMap(getPieceNames)))
 }
 
 function normalizeNumber(value) {
