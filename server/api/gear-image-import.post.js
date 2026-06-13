@@ -1,7 +1,7 @@
 import { createError, defineEventHandler, readMultipartFormData } from 'h3'
 import gears from '@/utils/gear.js'
 
-const imageImportModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.4-nano'
+const imageImportModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.4-mini'
 const maxImageBytes = 8 * 1024 * 1024
 const allowedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
 const otherStat = 'Other (Non-damaging)'
@@ -111,7 +111,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const fallbackGearType = getValidGearType(fields.gearType?.value) || '[9999] Armor'
-  const fallbackPieceType = getValidPieceType(fallbackGearType, fields.pieceType?.value) || getPieceNames(fallbackGearType)[0]
+  const fallbackPieceType =
+    getValidPieceType(fallbackGearType, fields.pieceType?.value) || getPieceNames(fallbackGearType)[0]
   const imageUrl = `data:${image.type};base64,${Buffer.from(image.data).toString('base64')}`
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -143,7 +144,7 @@ export default defineEventHandler(async (event) => {
             {
               type: 'input_image',
               image_url: imageUrl,
-              detail: 'high',
+              detail: 'auto',
             },
           ],
         },
@@ -275,10 +276,9 @@ function getExtractorSchema() {
 }
 
 function parseOutput(payload) {
-  const outputText = payload?.output_text || payload?.output
-    ?.flatMap((item) => item.content || [])
-    ?.find((content) => content.type === 'output_text')
-    ?.text
+  const outputText =
+    payload?.output_text ||
+    payload?.output?.flatMap((item) => item.content || [])?.find((content) => content.type === 'output_text')?.text
 
   if (!outputText) {
     throw createError({
@@ -289,8 +289,7 @@ function parseOutput(payload) {
 
   try {
     return JSON.parse(outputText)
-  }
-  catch {
+  } catch {
     throw createError({
       statusCode: 502,
       statusMessage: 'The image parser returned invalid results.',
@@ -327,7 +326,9 @@ function normalizeLine(line, item, index) {
   const status = ignored
     ? 'ignored'
     : validStat && finalValue > 0
-      ? (stat === otherStat ? 'other' : 'matched')
+      ? stat === otherStat
+        ? 'other'
+        : 'matched'
       : 'needs_review'
 
   return {
