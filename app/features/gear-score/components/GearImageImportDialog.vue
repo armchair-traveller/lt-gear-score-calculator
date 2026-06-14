@@ -2,6 +2,7 @@
 import {
   AlertCircleIcon,
   CheckIcon,
+  EyeIcon,
   EyeOffIcon,
   ImagePlusIcon,
   Loader2Icon,
@@ -17,12 +18,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:open'])
 
-const {
-  gears,
-  gearType,
-  pieceType,
-  applyGearImageImport,
-} = useGearScoreCalculatorContext()
+const { gears, gearType, pieceType, applyGearImageImport } = useGearScoreCalculatorContext()
 
 const otherStat = 'Other (Non-damaging)'
 const openProxy = computed({
@@ -47,6 +43,7 @@ const previewItem = computed(() => {
 const previewStatOptions = computed(() => Object.keys(previewItem.value?.Stats ?? {}))
 const activeLines = computed(() => importResult.value?.lines?.filter((line) => !line.ignored) ?? [])
 const invalidLineCount = computed(() => activeLines.value.filter((line) => !isLineValid(line)).length)
+const ignoredLineCount = computed(() => importResult.value?.lines?.filter((line) => line.ignored).length ?? 0)
 const duplicateStats = computed(() => {
   const seen = new Set()
   const duplicates = new Set()
@@ -66,11 +63,40 @@ const duplicateStats = computed(() => {
 
   return Array.from(duplicates)
 })
-const canApplyImport = computed(() =>
-  Boolean(importResult.value)
-  && activeLines.value.length > 0
-  && invalidLineCount.value === 0
-  && duplicateStats.value.length === 0,
+const readyLineCount = computed(
+  () => activeLines.value.filter((line) => isLineValid(line) && !isLineDuplicate(line)).length,
+)
+const importConfidenceText = computed(() =>
+  importResult.value ? `${Math.round((importResult.value.confidence || 0) * 100)}%` : '',
+)
+const reviewSummary = computed(() => {
+  if (isLoading.value) {
+    return 'Reading'
+  }
+  if (!importResult.value) {
+    return selectedFile.value ? 'Ready to parse' : 'Waiting for image'
+  }
+  if (canApplyImport.value) {
+    return `${readyLineCount.value} ready`
+  }
+  if (!activeLines.value.length) {
+    return 'No usable rows'
+  }
+  if (duplicateStats.value.length) {
+    return `${duplicateStats.value.length} duplicate`
+  }
+  if (invalidLineCount.value) {
+    return `${invalidLineCount.value} needs review`
+  }
+
+  return 'Review rows'
+})
+const canApplyImport = computed(
+  () =>
+    Boolean(importResult.value) &&
+    activeLines.value.length > 0 &&
+    invalidLineCount.value === 0 &&
+    duplicateStats.value.length === 0,
 )
 const applyIssue = computed(() => {
   if (!importResult.value) {
@@ -174,18 +200,19 @@ async function parseImage() {
     body.append('gearType', gearType.value)
     body.append('pieceType', pieceType.value)
 
-    importResult.value = normalizeClientResult(await $fetch('/api/gear-image-import', {
-      method: 'POST',
-      body,
-    }))
-  }
-  catch (requestError) {
-    error.value = requestError?.data?.message
-      || requestError?.statusMessage
-      || requestError?.message
-      || 'Could not read the uploaded image.'
-  }
-  finally {
+    importResult.value = normalizeClientResult(
+      await $fetch('/api/gear-image-import', {
+        method: 'POST',
+        body,
+      }),
+    )
+  } catch (requestError) {
+    error.value =
+      requestError?.data?.message ||
+      requestError?.statusMessage ||
+      requestError?.message ||
+      'Could not read the uploaded image.'
+  } finally {
     isLoading.value = false
   }
 }
@@ -240,9 +267,16 @@ function isLineValid(line) {
   return previewStatOptions.value.includes(line.stat) && Number(line.value) > 0
 }
 
+function isLineDuplicate(line) {
+  return !line.ignored && Boolean(line.stat) && duplicateStats.value.includes(line.stat)
+}
+
 function getLineStatusLabel(line) {
   if (line.ignored) {
     return 'Ignored'
+  }
+  if (isLineDuplicate(line)) {
+    return 'Duplicate'
   }
   if (!isLineValid(line)) {
     return 'Review'
@@ -258,6 +292,9 @@ function getLineStatusClass(line) {
   if (line.ignored) {
     return 'bg-muted text-muted-foreground'
   }
+  if (isLineDuplicate(line)) {
+    return 'bg-destructive/10 text-destructive dark:bg-destructive/20'
+  }
   if (!isLineValid(line)) {
     return 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
   }
@@ -266,6 +303,23 @@ function getLineStatusClass(line) {
   }
 
   return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+}
+
+function getLineShellClass(line) {
+  if (line.ignored) {
+    return 'border-border/60 bg-muted/15 text-muted-foreground'
+  }
+  if (isLineDuplicate(line)) {
+    return 'border-destructive/30 bg-destructive/5'
+  }
+  if (!isLineValid(line)) {
+    return 'border-amber-500/35 bg-amber-50/60 dark:bg-amber-950/20'
+  }
+  if (line.stat === otherStat) {
+    return 'border-sky-500/30 bg-sky-50/60 dark:bg-sky-950/20'
+  }
+
+  return 'border-border bg-background/70'
 }
 
 function getRollText(line) {
@@ -300,19 +354,33 @@ function revokePreviewUrl() {
 
 <template>
   <Dialog v-model:open="openProxy">
-    <DialogContent class="max-h-[92vh] overflow-y-auto rounded-lg p-0 sm:!max-w-5xl">
-      <DialogHeader class="px-5 py-4 pr-14">
-        <DialogTitle class="flex items-center gap-2 text-base">
-          <ScanTextIcon class="size-4" />
-          Import Screenshot
-        </DialogTitle>
-        <DialogDescription>
-          {{ pieceType }} {{ gearType }}
-        </DialogDescription>
+    <DialogContent
+      class="max-h-[92vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-lg p-0 sm:!max-w-6xl"
+    >
+      <DialogHeader class="border-b px-5 py-4 pr-14">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div class="min-w-0">
+            <DialogTitle class="flex items-center gap-2 text-base">
+              <ScanTextIcon class="size-4" />
+              Import Screenshot
+            </DialogTitle>
+            <DialogDescription class="mt-1">
+              {{ importResult ? `${importResult.pieceType} ${importResult.gearType}` : `${pieceType} ${gearType}` }}
+            </DialogDescription>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{{ reviewSummary }}</Badge>
+            <template v-if="importResult">
+              <Badge variant="outline">Lv.{{ importResult.inputEnchantLevel }}</Badge>
+              <Badge variant="outline">{{ importConfidenceText }}</Badge>
+            </template>
+          </div>
+        </div>
       </DialogHeader>
 
-      <div class="grid gap-4 px-5 pb-5 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)]">
-        <div class="grid content-start gap-3">
+      <div class="grid min-h-0 overflow-y-auto lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] lg:overflow-hidden">
+        <div class="grid content-start gap-3 border-b p-4 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
           <input
             ref="fileInput"
             type="file"
@@ -321,42 +389,41 @@ function revokePreviewUrl() {
             tabindex="-1"
             aria-hidden="true"
             @change="handleFileSelect"
-          >
+          />
           <button
             type="button"
-            class="relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-dashed bg-muted/20 p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+            class="relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-dashed bg-muted/20 p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 lg:min-h-[320px]"
             :class="isDragging ? 'border-ring bg-muted/40' : 'border-border'"
             @click="openFilePicker"
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
             @drop.prevent="handleDrop"
           >
-            <img
-              v-if="previewUrl"
-              :src="previewUrl"
-              alt=""
-              class="max-h-[360px] w-full rounded-md object-contain"
-            >
+            <img v-if="previewUrl" :src="previewUrl" alt="" class="max-h-[46vh] w-full rounded-md object-contain" />
             <span v-else class="grid justify-items-center gap-3 text-center">
-              <span class="flex size-12 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm">
+              <span
+                class="flex size-12 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm"
+              >
                 <UploadCloudIcon class="size-5" />
               </span>
               <span class="text-sm font-medium">Upload screenshot</span>
             </span>
           </button>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <Button
-              class="min-w-24"
-              :disabled="!selectedFile || isLoading"
-              @click="parseImage"
-            >
+          <div v-if="selectedFile" class="min-w-0 rounded-lg bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            <div class="truncate font-medium text-foreground">{{ selectedFile.name }}</div>
+            <div>{{ Math.ceil(selectedFile.size / 1024) }} KB</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <Button class="w-full" :disabled="!selectedFile || isLoading" @click="parseImage">
               <Loader2Icon v-if="isLoading" class="animate-spin" />
               <ImagePlusIcon v-else />
               {{ importResult ? 'Retry' : 'Parse' }}
             </Button>
             <Button
               variant="outline"
+              class="w-full"
               :disabled="isLoading || (!selectedFile && !importResult)"
               @click="resetImport"
             >
@@ -366,7 +433,7 @@ function revokePreviewUrl() {
           </div>
         </div>
 
-        <div class="grid min-w-0 content-start gap-3">
+        <div class="grid min-h-0 min-w-0 gap-3 p-4 lg:grid-rows-[auto_minmax(0,1fr)]">
           <div
             v-if="error"
             class="flex gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
@@ -377,7 +444,7 @@ function revokePreviewUrl() {
 
           <div
             v-if="isLoading"
-            class="grid min-h-[260px] place-items-center rounded-lg bg-muted/15 p-6 text-center text-sm text-muted-foreground"
+            class="grid min-h-[260px] place-items-center rounded-lg bg-muted/15 p-6 text-center text-sm text-muted-foreground lg:min-h-0"
           >
             <span class="grid justify-items-center gap-3">
               <Loader2Icon class="size-6 animate-spin" />
@@ -385,118 +452,130 @@ function revokePreviewUrl() {
             </span>
           </div>
 
-          <div v-else-if="importResult" class="grid min-w-0 gap-3">
+          <div v-else-if="importResult" class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
             <div class="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{{ importResult.pieceType }} {{ importResult.gearType }}</Badge>
-              <Badge variant="secondary">Lv.{{ importResult.inputEnchantLevel }}</Badge>
-              <Badge variant="outline">{{ Math.round((importResult.confidence || 0) * 100) }}%</Badge>
+              <Badge variant="outline">{{ activeLines.length }} active</Badge>
+              <Badge variant="outline">{{ readyLineCount }} ready</Badge>
+              <Badge
+                v-if="invalidLineCount"
+                variant="outline"
+                class="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              >
+                {{ invalidLineCount }} review
+              </Badge>
+              <Badge
+                v-if="duplicateStats.length"
+                variant="outline"
+                class="bg-destructive/10 text-destructive dark:bg-destructive/20"
+              >
+                {{ duplicateStats.length }} duplicate
+              </Badge>
+              <Badge v-if="ignoredLineCount" variant="outline"> {{ ignoredLineCount }} ignored </Badge>
             </div>
 
-            <div class="overflow-x-auto rounded-lg border">
-              <table class="min-w-[760px] text-sm">
-                <thead class="bg-muted/40 text-xs text-muted-foreground">
-                  <tr>
-                    <th class="w-12 px-3 py-2 text-left font-medium">#</th>
-                    <th class="px-3 py-2 text-left font-medium">Detected</th>
-                    <th class="w-[260px] px-3 py-2 text-left font-medium">Stat</th>
-                    <th class="w-28 px-3 py-2 text-left font-medium">Value</th>
-                    <th class="w-20 px-3 py-2 text-left font-medium">Roll</th>
-                    <th class="w-28 px-3 py-2 text-left font-medium">Status</th>
-                    <th class="w-12 px-3 py-2 text-right font-medium">
-                      <span class="sr-only">Ignore</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y">
-                  <tr
-                    v-for="(line, index) in importResult.lines"
-                    :key="line.id"
-                    :class="line.ignored ? 'bg-muted/15 text-muted-foreground' : ''"
-                  >
-                    <td class="px-3 py-2 align-top text-xs font-medium text-muted-foreground">
+            <ScrollArea type="always" class="h-[52vh] min-h-[280px] rounded-lg lg:h-full lg:min-h-0">
+              <div class="grid gap-2 pr-3">
+                <article
+                  v-for="(line, index) in importResult.lines"
+                  :key="line.id"
+                  :class="['grid gap-3 rounded-lg border p-3 text-sm transition-colors', getLineShellClass(line)]"
+                >
+                  <div class="flex min-w-0 items-start gap-3">
+                    <div
+                      class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground"
+                    >
                       {{ index + 1 }}
-                    </td>
-                    <td class="max-w-[220px] px-3 py-2 align-top">
-                      <div class="truncate font-medium">{{ line.detectedStat || 'Unknown' }}</div>
-                      <div class="truncate text-xs text-muted-foreground">{{ line.rawText || line.reason }}</div>
-                    </td>
-                    <td class="px-3 py-2 align-top">
-                      <Select
-                        :model-value="line.stat"
-                        :disabled="line.ignored"
-                        @update:model-value="updateLineStat(index, $event)"
-                      >
-                        <SelectTrigger class="h-8 w-full">
-                          <SelectValue placeholder="Select stat" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem
-                            v-for="stat in previewStatOptions"
-                            :key="stat"
-                            :value="stat"
-                          >
-                            {{ stat }}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td class="px-3 py-2 align-top">
-                      <Input
-                        :model-value="line.value"
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        :disabled="line.ignored"
-                        class="h-8"
-                        @update:model-value="setLineValue(index, $event)"
-                      />
-                    </td>
-                    <td class="px-3 py-2 align-top text-xs text-muted-foreground">
-                      {{ getRollText(line) }}
-                    </td>
-                    <td class="px-3 py-2 align-top">
-                      <Badge variant="outline" :class="getLineStatusClass(line)">
-                        {{ getLineStatusLabel(line) }}
-                      </Badge>
-                    </td>
-                    <td class="px-3 py-2 text-right align-top">
-                      <Tooltip>
-                        <TooltipTrigger as-child>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            :aria-pressed="line.ignored"
-                            @click="toggleIgnored(index)"
-                          >
-                            <EyeOffIcon />
-                            <span class="sr-only">{{ line.ignored ? 'Use line' : 'Ignore line' }}</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{{ line.ignored ? 'Use line' : 'Ignore line' }}</TooltipContent>
-                      </Tooltip>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    </div>
 
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p class="min-h-5 text-sm text-muted-foreground">
-                {{ applyIssue }}
-              </p>
-              <Button :disabled="!canApplyImport" @click="applyImport">
-                <CheckIcon />
-                Apply
-              </Button>
-            </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex min-w-0 flex-wrap items-center gap-2">
+                        <div class="min-w-0 max-w-full truncate font-medium">
+                          {{ line.detectedStat || 'Unknown' }}
+                        </div>
+                        <Badge variant="outline" :class="getLineStatusClass(line)">
+                          {{ getLineStatusLabel(line) }}
+                        </Badge>
+                        <Badge v-if="getRollText(line) !== '-'" variant="outline"> Roll {{ getRollText(line) }} </Badge>
+                      </div>
+                      <div class="mt-1 truncate text-xs text-muted-foreground">
+                        {{ line.rawText || line.reason || 'No source text' }}
+                      </div>
+                    </div>
+
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          class="shrink-0"
+                          :aria-pressed="line.ignored"
+                          @click="toggleIgnored(index)"
+                        >
+                          <EyeIcon v-if="line.ignored" />
+                          <EyeOffIcon v-else />
+                          <span class="sr-only">{{ line.ignored ? 'Use line' : 'Ignore line' }}</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{{ line.ignored ? 'Use line' : 'Ignore line' }}</TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_112px]">
+                    <Select
+                      :model-value="line.stat"
+                      :disabled="line.ignored"
+                      @update:model-value="updateLineStat(index, $event)"
+                    >
+                      <SelectTrigger class="h-9 w-full" :aria-label="`Line ${index + 1} stat`">
+                        <SelectValue placeholder="Select stat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="stat in previewStatOptions" :key="stat" :value="stat">
+                          {{ stat }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Input
+                      :model-value="line.value"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      :disabled="line.ignored"
+                      class="h-9"
+                      :aria-label="`Line ${index + 1} value`"
+                      @update:model-value="setLineValue(index, $event)"
+                    />
+                  </div>
+                </article>
+              </div>
+            </ScrollArea>
           </div>
 
           <div
             v-else
-            class="grid min-h-[260px] place-items-center rounded-lg bg-muted/15 p-6 text-center text-sm text-muted-foreground"
+            class="grid min-h-[260px] place-items-center rounded-lg bg-muted/15 p-6 text-center text-sm text-muted-foreground lg:min-h-0"
           >
-            <span>Ready for an equipment or enchant screenshot.</span>
+            <span class="grid justify-items-center gap-3">
+              <ScanTextIcon class="size-6" />
+              {{ selectedFile ? 'Ready to parse' : 'No equip/enchant screenshot selected' }}
+            </span>
           </div>
+        </div>
+      </div>
+
+      <div class="border-t bg-popover/95 px-5 py-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p class="min-h-5 text-sm" :class="applyIssue ? 'text-destructive' : 'text-muted-foreground'">
+            {{
+              applyIssue ||
+              (importResult ? `${readyLineCount} rows ready to apply.` : 'Parse a screenshot to review rows.')
+            }}
+          </p>
+          <Button :disabled="!canApplyImport" @click="applyImport">
+            <CheckIcon />
+            Apply
+          </Button>
         </div>
       </div>
     </DialogContent>
