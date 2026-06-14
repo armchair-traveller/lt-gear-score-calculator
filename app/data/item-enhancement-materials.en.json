@@ -221,7 +221,7 @@
     "disabled": false,
     "summary": {
       "type": "Relic (Mirror)",
-      "farm": "Likimo Felke",
+      "farm": "Rikimo Pelke",
       "max": "+5",
       "total": "16,250",
       "fee": "-",
@@ -389,7 +389,7 @@
     "disabled": false,
     "summary": {
       "type": "Accessory 2 (Mirror)",
-      "farm": "Likimo Felke",
+      "farm": "Rikimo Pelke",
       "max": "+6",
       "total": "2,495",
       "fee": "100M (600M total)",
@@ -440,7 +440,7 @@
     "disabled": false,
     "summary": {
       "type": "Accessory 2 (Belial)",
-      "farm": "Likimo Felke",
+      "farm": "Rikimo Pelke",
       "max": "+6",
       "total": "4,990",
       "fee": "100M (600M total)",
@@ -491,7 +491,7 @@
     "disabled": false,
     "summary": {
       "type": "Accessory 2 [Combined] (Mirror) + Belial Ascension Stone x250",
-      "farm": "Likimo Felke [Stage 5]",
+      "farm": "Rikimo Pelke [Stage 5]",
       "max": "+1",
       "total": "650",
       "fee": "-",
@@ -512,7 +512,7 @@
     "disabled": false,
     "summary": {
       "type": "Accessory 2 [Combined] (Belial) + Belial Ascension Stone x500",
-      "farm": "Likimo Felke [Stage 5]",
+      "farm": "Rikimo Pelke [Stage 5]",
       "max": "+1",
       "total": "1,300",
       "fee": "-",
