@@ -203,6 +203,7 @@ function getExtractorPrompt() {
     'Use exactly one of the allowed gear categories and piece names from the request context.',
     'If a visible "Class:" line appears in the equipment details, classify the item as [8000] Weapons / Weapon.',
     'Keep the raw visible stat wording in statText even when translated differently.',
+    'Put only the stat name in statText; do not include the level, +value, or [roll%].',
     'For unenchanted placeholder lines like "Lv. 1 Strength / Magic +1", set ignored true with ignoreReason "Unenchanted placeholder".',
     'For all other enchant lines, set ignored false.',
   ].join('\n')
@@ -384,8 +385,8 @@ function normalizeLine(line, item, index) {
 
 function normalizeStat(statText, item, rawText = '') {
   const options = Object.keys(item?.Stats || {})
-  const key = canonicalizeStat(statText)
-  const rawKey = canonicalizeStat(rawText)
+  const key = canonicalizeStat(getStatNameText(statText))
+  const rawKey = canonicalizeStat(getStatNameText(rawText))
   const statValueIsPercent = hasPercentStatValue(statText) || hasPercentStatValue(rawText)
 
   if (!key) {
@@ -453,6 +454,14 @@ function canonicalizeStat(value) {
     .replace(/\bonly\b/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function getStatNameText(value) {
+  return String(value || '')
+    .replace(/\[[^\]]*]/g, ' ')
+    .replace(/\blv\.?\s*\d+\b/gi, ' ')
+    .replace(/[+＋]\s*\d+(?:[.,]\d+)?\s*%?\s*$/u, ' ')
     .trim()
 }
 
