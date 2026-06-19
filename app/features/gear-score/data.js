@@ -102,15 +102,15 @@ export const recommendedOptionGuide = {
   '[sLv5] Accessories': {
     Cloak: {
       main: ['Critical Damage', 'Basic Stats %', 'Attack/Intensity'],
-      secondary: ['Basic Stats', 'Strength/Magic', 'Minimum Damage', 'Back Attack Damage'],
+      secondary: ['Minimum Damage', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
     },
     Earrings: {
       main: ['Critical Damage', 'Maximum Damage'],
-      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Minimum Damage', 'Back Attack Damage'],
+      secondary: ['Minimum Damage', 'Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
     },
     Ring: {
-      main: ['Maximum Damage', 'Attack/Intensity %', 'Cooldown Reduction'],
-      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Minimum Damage', 'Back Attack Damage'],
+      main: ['Maximum Damage', 'Attack/Intensity %'],
+      secondary: ['Minimum Damage', 'Attack/Intensity', 'Cooldown Reduction', 'Basic Stats', 'Strength/Magic', 'Back Attack Damage'],
     },
   },
   '[8000] Weapons': {
