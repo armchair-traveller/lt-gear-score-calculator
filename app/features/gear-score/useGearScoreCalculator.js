@@ -225,7 +225,7 @@ export function useGearScoreCalculator() {
   }
 
   function getPotentialMultiplier(item = gearType.value) {
-    return parseInt(item.slice(1, 5)) < 9999 ? 2 : 3
+    return getProjectionEnchantLevel(item) - 2
   }
 
   function supportsInputEnchantLevel(item = gearType.value) {
@@ -292,7 +292,8 @@ export function useGearScoreCalculator() {
   }
 
   function getProjectionEnchantLevel(item = gearType.value) {
-    return parseInt(item.slice(1, 5)) < 9999 ? 4 : 5
+    const gearLevel = parseInt(item.slice(1, 5))
+    return item === '[sLv5] Accessories' || gearLevel >= 9999 ? 5 : 4
   }
 
   function setInputEnchantLevel(value) {

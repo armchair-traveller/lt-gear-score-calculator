@@ -2,9 +2,9 @@ export const decimalStats = ['Normal Amplification', 'Boss Amplification', 'Cool
 
 export const repeatableStats = ['Other (Non-damaging)']
 
-export const sssOddsGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
+export const sssOddsGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 
-export const inputEnchantGearTypes = ['[9999] Armor', '[9000] Accessories', '[8000] Weapons']
+export const inputEnchantGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 
 export const enchantSuccessRate = 0.6
 
@@ -99,6 +99,20 @@ export const traitCatalog = [
 ]
 
 export const recommendedOptionGuide = {
+  '[sLv5] Accessories': {
+    Cloak: {
+      main: ['Critical Damage', 'Basic Stats %', 'Attack/Intensity'],
+      secondary: ['Basic Stats', 'Strength/Magic', 'Minimum Damage', 'Back Attack Damage'],
+    },
+    Earrings: {
+      main: ['Critical Damage', 'Maximum Damage'],
+      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Minimum Damage', 'Back Attack Damage'],
+    },
+    Ring: {
+      main: ['Maximum Damage', 'Attack/Intensity %', 'Cooldown Reduction'],
+      secondary: ['Attack/Intensity', 'Basic Stats', 'Strength/Magic', 'Minimum Damage', 'Back Attack Damage'],
+    },
+  },
   '[8000] Weapons': {
     Weapon: {
       main: ['Critical Damage', 'Maximum Damage', 'Minimum Damage', 'Attack/Intensity %', 'Basic Stats %'],

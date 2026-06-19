@@ -10,9 +10,9 @@ export const gearPlanSlots = [
   { gearType: '[9000] Accessories', pieceType: 'Stockings', upgradeCount: 2 },
   { gearType: '[8000] Weapons', pieceType: 'Weapon', upgradeCount: 2 },
   { gearType: '[8000] Weapons', pieceType: 'Stone', upgradeCount: 2 },
-  { gearType: '[7000] Accessories', pieceType: 'Cloak', upgradeCount: 2, lineWeights: [1, 1, 1, 1, 0.8] },
-  { gearType: '[7000] Accessories', pieceType: 'Earrings', upgradeCount: 2, lineWeights: [1, 1, 1, 1, 0.8] },
-  { gearType: '[7000] Accessories', pieceType: 'Ring', upgradeCount: 2, lineWeights: [1, 1, 1, 1, 0.8] },
+  { gearType: '[sLv5] Accessories', pieceType: 'Cloak', upgradeCount: 3 },
+  { gearType: '[sLv5] Accessories', pieceType: 'Earrings', upgradeCount: 3 },
+  { gearType: '[sLv5] Accessories', pieceType: 'Ring', upgradeCount: 3 },
 ]
 
 export const gearPlanStorageKey = 'ltGearPlanV1'
