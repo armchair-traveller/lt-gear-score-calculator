@@ -43,9 +43,9 @@ export function useGearScoreCalculator() {
   const upgradeHref = computed(() => router.resolve('/upgrade').href)
   const planHref = computed(() => router.resolve('/plan').href)
 
-  const gearType = ref('[9999] Armor')
-  const pieceType = ref('Helmet')
-  const highlightedPiece = ref(['[9999] Armor', 'Helmet'])
+  const gearType = ref('[sLv5] Accessories')
+  const pieceType = ref('Cloak')
+  const highlightedPiece = ref(['[sLv5] Accessories', 'Cloak'])
   const valueButton = ref('90')
   const resultMode = ref('score')
   const inputEnchantLevel = ref('2')
