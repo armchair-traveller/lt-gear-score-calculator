@@ -68,12 +68,25 @@ export function formatProbability(probability) {
   return percent.toFixed(4) + '%'
 }
 
-export function formatBaseRollSummary(count, alreadyComplete = false) {
+export function formatBaseRollSummary(methods, alreadyComplete = false) {
   if (alreadyComplete) {
     return 'None needed'
   }
 
-  return count === 0 ? 'None' : `Up to ${count} @ 60%`
+  if (!methods.length) {
+    return 'None'
+  }
+
+  const counts = new Map()
+  methods.forEach((method) => {
+    counts.set(method.successRate, (counts.get(method.successRate) || 0) + 1)
+  })
+
+  const groups = Array.from(counts, ([successRate, count]) =>
+    `${count} at ${successRate * 100}%`,
+  )
+
+  return `Up to ${groups.join(' · ')}`
 }
 
 export function getRollDistribution(minRoll, maxRoll, step, maxValue, maxDI) {

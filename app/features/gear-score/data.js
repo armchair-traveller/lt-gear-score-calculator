@@ -6,7 +6,42 @@ export const sssOddsGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] A
 
 export const inputEnchantGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 
-export const enchantSuccessRate = 0.6
+export const defaultSssEnchantMethod = 'standard'
+
+export const sssEnchantMethods = {
+  standard: {
+    value: 'standard',
+    label: 'Standard',
+    successRate: 0.6,
+    costMultiplier: 1,
+  },
+  special: {
+    value: 'special',
+    label: 'Special',
+    successRate: 1,
+    costMultiplier: 10,
+  },
+}
+
+export function supportsSpecialSssEnchant(gearType) {
+  return /^\[sLv\d+\]/i.test(gearType)
+}
+
+export function getSssEnchantMethodOptions(gearType) {
+  return supportsSpecialSssEnchant(gearType)
+    ? Object.values(sssEnchantMethods)
+    : [sssEnchantMethods.standard]
+}
+
+export function getSssEnchantMethod(gearType, method) {
+  const selected = sssEnchantMethods[method]
+
+  if (!selected || (selected.value === 'special' && !supportsSpecialSssEnchant(gearType))) {
+    return sssEnchantMethods[defaultSssEnchantMethod]
+  }
+
+  return selected
+}
 
 export const ratingScale = 1000
 

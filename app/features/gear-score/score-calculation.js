@@ -1,6 +1,6 @@
 import {
   decimalStats,
-  enchantSuccessRate,
+  getSssEnchantMethod,
   ratingScale,
   sssOddsGearTypes,
 } from '@/features/gear-score/data.js'
@@ -77,6 +77,7 @@ export function calculateGearScore({
   statTypes,
   statInputs,
   sssOrder,
+  sssLineEnchantMethods,
   remainingPotentialMultiplier,
   futurePotentialMultiplier,
 }) {
@@ -186,6 +187,7 @@ export function calculateGearScore({
     statTypes,
     statInputs,
     sssOrder,
+    sssLineEnchantMethods,
     remainingPotentialMultiplier,
     futurePotentialMultiplier,
   })
@@ -311,6 +313,7 @@ function calculateSssOdds({
   statTypes,
   statInputs,
   sssOrder,
+  sssLineEnchantMethods,
   remainingPotentialMultiplier,
   futurePotentialMultiplier,
 }) {
@@ -362,8 +365,10 @@ function calculateSssOdds({
     }
     else {
       futureBaseLines += 1
+      const enchantMethod = getSssEnchantMethod(gearType, sssLineEnchantMethods?.[lineIndex])
       rollableFutureLines.push({
         upgradeScore,
+        enchantMethod,
         distribution: getRollDistribution(step, maxValue, step, maxValue, maxDI),
       })
     }
@@ -374,7 +379,7 @@ function calculateSssOdds({
       index: lineIndex,
       stat,
       range: shouldRollLine ? formatRange(lineMinValue, lineMaxValue, stat) : 'Ignored',
-      rollText: !shouldRollLine ? 'not rolled' : hasValue ? linePotentialMultiplier > 0 ? 'already rolled' : 'complete' : '60% base roll',
+      rollText: !shouldRollLine ? 'not rolled' : hasValue ? linePotentialMultiplier > 0 ? 'already rolled' : 'complete' : 'needs base roll',
       status: !shouldRollLine ? 'ignored' : hasValue ? 'upgrade' : 'new',
     })
   }
@@ -390,7 +395,7 @@ function calculateSssOdds({
     const nextOutcomes = new Map()
 
     activeOutcomes.forEach((currentProbability, currentScore) => {
-      const survivedProbability = currentProbability * enchantSuccessRate
+      const survivedProbability = currentProbability * line.enchantMethod.successRate
 
       line.distribution.forEach((roll) => {
         const nextScore = currentScore + line.upgradeScore + roll.score
@@ -409,7 +414,12 @@ function calculateSssOdds({
   }
 
   const isAlreadyComplete = fixedScore >= targetScore
-  const survivalChance = isAlreadyComplete ? 1 : Math.pow(enchantSuccessRate, futureBaseLines)
+  const survivalChance = isAlreadyComplete
+    ? 1
+    : rollableFutureLines.reduce(
+        (probability, line) => probability * line.enchantMethod.successRate,
+        1,
+      )
   const rollValueChance = totalChance
   const plannedMinPercent = parseInt(plannedMinRating / item.DI * 100)
   const plannedMaxPercent = parseInt(plannedMaxRating / item.DI * 100)
@@ -430,7 +440,10 @@ function calculateSssOdds({
     rollValueChanceText: formatProbability(rollValueChance),
     futureRolls: futureBaseLines,
     futureBaseLines,
-    baseRollText: formatBaseRollSummary(futureBaseLines, isAlreadyComplete),
+    baseRollText: formatBaseRollSummary(
+      rollableFutureLines.map((line) => line.enchantMethod),
+      isAlreadyComplete,
+    ),
     upgradeRolls: 0,
     targetScore: targetPercent + '%',
     plannedScoreText,

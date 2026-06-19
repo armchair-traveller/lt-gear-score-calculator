@@ -4,6 +4,8 @@ import gears from '@/utils/gear.js'
 import tiers from '@/utils/tiers.js'
 import {
   decimalStats,
+  defaultSssEnchantMethod,
+  getSssEnchantMethodOptions,
   repeatableStats,
   inputEnchantGearTypes,
   tierGuideRows,
@@ -54,6 +56,7 @@ export function useGearScoreCalculator() {
   const statInput = ref(['', '', '', '', ''])
   const statPickerOpen = ref([])
   const sssOddsOrder = ref([0, 1, 2, 3, 4])
+  const sssLineEnchantMethods = ref(Array(5).fill(defaultSssEnchantMethod))
   const validStats = ref([])
 
   const imgUrls = import.meta.glob('../../assets/*.png', {
@@ -90,6 +93,7 @@ export function useGearScoreCalculator() {
   const highlightedTraitRows = computed(() => getTraitMatches(highlightedStats.value))
   const currentRecommendations = computed(() => recommendedOptionGuide[gearType.value]?.[pieceType.value] ?? null)
   const currentInputEnchantLevelOptions = computed(() => getInputEnchantLevelOptions())
+  const currentSssEnchantMethodOptions = computed(() => getSssEnchantMethodOptions(gearType.value))
   const totalProgress = computed(() => clamp(Number(results.value.percent), 0, 100))
   const potentialProgress = computed(() => clamp(getFirstPercent(results.value.potentialScore), 0, 100))
   const potentialGainText = computed(() => {
@@ -205,6 +209,7 @@ export function useGearScoreCalculator() {
     const options = statOptions.value
     statType.value = options.slice(0, 5)
     resetSssOddsOrder()
+    resetSssEnchantMethods()
     setValues(0, 0)
   }
 
@@ -320,6 +325,21 @@ export function useGearScoreCalculator() {
     sssOddsOrder.value = statType.value.map((_, index) => index)
   }
 
+  function resetSssEnchantMethods() {
+    sssLineEnchantMethods.value = statType.value.map(() => defaultSssEnchantMethod)
+  }
+
+  function setSssLineEnchantMethod(lineIndex, method) {
+    if (!Number.isInteger(lineIndex) || lineIndex < 0 || lineIndex >= statType.value.length) {
+      return
+    }
+
+    const validMethods = currentSssEnchantMethodOptions.value.map((option) => option.value)
+    sssLineEnchantMethods.value[lineIndex] = validMethods.includes(method)
+      ? method
+      : defaultSssEnchantMethod
+  }
+
   function moveSssOddsLine(position, direction) {
     const order = getSssOddsOrder()
     const nextPosition = position + direction
@@ -350,6 +370,7 @@ export function useGearScoreCalculator() {
       statTypes: statType.value,
       statInputs: statInput.value,
       sssOrder: getSssOddsOrder(),
+      sssLineEnchantMethods: sssLineEnchantMethods.value,
       remainingPotentialMultiplier,
       futurePotentialMultiplier,
     })
@@ -417,6 +438,7 @@ export function useGearScoreCalculator() {
     statType.value = nextStatType
     statInput.value = nextStatInput
     resetSssOddsOrder()
+    resetSssEnchantMethods()
     setInputEnchantLevel(importResult.inputEnchantLevel || 2)
   }
 
@@ -533,6 +555,7 @@ export function useGearScoreCalculator() {
       statType.value = getUniqueStatTypes(statNames.slice())
       statInput.value = statValues.slice()
       resetSssOddsOrder()
+      resetSssEnchantMethods()
     }
     catch (error) {
       console.error(error)
@@ -684,7 +707,7 @@ export function useGearScoreCalculator() {
     setInputEnchantLevel(inputEnchantLevel.value)
   }, { flush: 'sync' })
 
-  watch([statType, statInput, inputEnchantLevel], () => {
+  watch([statType, statInput, inputEnchantLevel, sssLineEnchantMethods], () => {
     updateValues()
   }, {
     deep: true,
@@ -701,6 +724,7 @@ export function useGearScoreCalculator() {
     valueButton,
     resultMode,
     inputEnchantLevel,
+    sssLineEnchantMethods,
     statType,
     statInput,
     statPickerOpen,
@@ -729,6 +753,7 @@ export function useGearScoreCalculator() {
     highlightedTraitRows,
     currentRecommendations,
     currentInputEnchantLevelOptions,
+    currentSssEnchantMethodOptions,
     totalProgress,
     potentialProgress,
     potentialGainText,
@@ -747,6 +772,7 @@ export function useGearScoreCalculator() {
     getInputMaxValueText,
     getProjectionEnchantLevel,
     setInputEnchantLevel,
+    setSssLineEnchantMethod,
     moveSssOddsLine,
     setValues,
     applyGearImageImport,

@@ -17,18 +17,21 @@ const {
   resultMode,
   statType,
   statInput,
+  sssLineEnchantMethods,
   results,
   tierGuideRows,
   selectedTierRows,
   totalProgress,
   potentialProgress,
   potentialGainText,
+  currentSssEnchantMethodOptions,
   supportsGearPlan,
   canSaveToGearPlan,
   gearPlanSaveSucceeded,
   hasRolledValue,
   getProjectionEnchantLevel,
   moveSssOddsLine,
+  setSssLineEnchantMethod,
   getFinalUpgrade,
   openSnapshot,
   saveCurrentGearToPlan,
@@ -288,8 +291,10 @@ const emptyLineSummary = computed(() =>
                 <TableRow>
                   <TableHead class="w-[88px]">Order</TableHead>
                   <TableHead>Stat</TableHead>
+                  <TableHead class="w-[210px]">
+                    {{ currentSssEnchantMethodOptions.length > 1 ? 'Enchant / state' : 'Roll state' }}
+                  </TableHead>
                   <TableHead>Max upgrade value</TableHead>
-                  <TableHead>Roll state</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -321,8 +326,28 @@ const emptyLineSummary = computed(() =>
                     </div>
                   </TableCell>
                   <TableCell class="font-medium">{{ line.stat }}</TableCell>
+                  <TableCell>
+                    <Select
+                      v-if="currentSssEnchantMethodOptions.length > 1 && line.status === 'new'"
+                      :model-value="sssLineEnchantMethods[line.index]"
+                      @update:model-value="setSssLineEnchantMethod(line.index, $event)"
+                    >
+                      <SelectTrigger class="h-8 w-[190px]" :aria-label="`${line.stat} enchant method`">
+                        <SelectValue placeholder="Enchant method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          v-for="method in currentSssEnchantMethodOptions"
+                          :key="method.value"
+                          :value="method.value"
+                        >
+                          {{ method.label }} · {{ method.successRate * 100 }}% · {{ method.costMultiplier }}×
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span v-else :class="getRollStatusClass(line.status)">{{ line.rollText }}</span>
+                  </TableCell>
                   <TableCell>{{ line.range }}</TableCell>
-                  <TableCell :class="getRollStatusClass(line.status)">{{ line.rollText }}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
