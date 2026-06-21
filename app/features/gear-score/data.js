@@ -2,42 +2,40 @@ export const decimalStats = ['Normal Amplification', 'Boss Amplification', 'Cool
 
 export const repeatableStats = ['Other (Non-damaging)']
 
-export const sssOddsGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] Accessories', '[8000] Weapons']
+export const qualityOddsGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 
 export const inputEnchantGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 
-export const defaultSssEnchantMethod = 'standard'
+export const defaultOddsEnchantMethod = 'standard'
 
-export const sssEnchantMethods = {
+export const oddsEnchantMethods = {
   standard: {
     value: 'standard',
-    label: 'Standard',
+    label: 'Super',
     successRate: 0.6,
-    costMultiplier: 1,
   },
   special: {
     value: 'special',
     label: 'Special',
     successRate: 1,
-    costMultiplier: 10,
   },
 }
 
-export function supportsSpecialSssEnchant(gearType) {
+export function supportsSpecialOddsEnchant(gearType) {
   return /^\[sLv\d+\]/i.test(gearType)
 }
 
-export function getSssEnchantMethodOptions(gearType) {
-  return supportsSpecialSssEnchant(gearType)
-    ? Object.values(sssEnchantMethods)
-    : [sssEnchantMethods.standard]
+export function getOddsEnchantMethodOptions(gearType) {
+  return supportsSpecialOddsEnchant(gearType)
+    ? Object.values(oddsEnchantMethods)
+    : [oddsEnchantMethods.standard]
 }
 
-export function getSssEnchantMethod(gearType, method) {
-  const selected = sssEnchantMethods[method]
+export function getOddsEnchantMethod(gearType, method) {
+  const selected = oddsEnchantMethods[method]
 
-  if (!selected || (selected.value === 'special' && !supportsSpecialSssEnchant(gearType))) {
-    return sssEnchantMethods[defaultSssEnchantMethod]
+  if (!selected || (selected.value === 'special' && !supportsSpecialOddsEnchant(gearType))) {
+    return oddsEnchantMethods[defaultOddsEnchantMethod]
   }
 
   return selected

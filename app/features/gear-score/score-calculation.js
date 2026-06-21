@@ -1,8 +1,8 @@
 import {
   decimalStats,
-  getSssEnchantMethod,
+  getOddsEnchantMethod,
+  qualityOddsGearTypes,
   ratingScale,
-  sssOddsGearTypes,
 } from '@/features/gear-score/data.js'
 import {
   createEmptyIndividualResult,
@@ -29,25 +29,26 @@ export function createEmptyGearScoreResult() {
     potentialScore: '',
     potentialDI: '',
     potentialTier: '',
-    sssOdds: getEmptySssOdds(),
+    qualityOdds: getEmptyQualityOdds(),
   }
 }
 
-export function getEmptySssOdds() {
+export function getEmptyQualityOdds() {
   return {
     available: false,
     totalChance: 0,
     totalChanceText: '',
     survivalChance: 0,
     survivalChanceText: '',
-    rollValueChance: 0,
-    rollValueChanceText: '',
     futureRolls: 0,
     futureBaseLines: 0,
     upgradeRolls: 0,
-    targetScore: '',
-    plannedScoreText: '',
-    plannedDIText: '',
+    targetQuality: 0,
+    targetQualityText: '',
+    currentQuality: 0,
+    currentQualityText: '—',
+    plannedQualityText: '',
+    benchmarkDI: 0,
     baseRollText: '',
     lines: [],
   }
@@ -76,8 +77,9 @@ export function calculateGearScore({
   tierEquivalence,
   statTypes,
   statInputs,
-  sssOrder,
-  sssLineEnchantMethods,
+  qualityOddsOrder,
+  qualityLineEnchantMethods,
+  qualityTargetPercent,
   remainingPotentialMultiplier,
   futurePotentialMultiplier,
 }) {
@@ -180,14 +182,14 @@ export function calculateGearScore({
   result.potentialScore = potentialText
   result.potentialDI = potentialDIText
   result.potentialTier = potentialTierText
-  result.sssOdds = calculateSssOdds({
+  result.qualityOdds = calculateQualityOdds({
     gearType,
     item,
-    tierEquivalence,
     statTypes,
     statInputs,
-    sssOrder,
-    sssLineEnchantMethods,
+    lineOrder: qualityOddsOrder,
+    lineEnchantMethods: qualityLineEnchantMethods,
+    qualityTargetPercent,
     remainingPotentialMultiplier,
     futurePotentialMultiplier,
   })
@@ -212,6 +214,28 @@ export function getStatRatingForValue(statInfo, value) {
   }
 
   return Number(value) / statInfo.Value * statInfo.DI
+}
+
+export function getGearQualityBenchmark(item, upgradeCount, lineWeights = []) {
+  if (!item) {
+    return 0
+  }
+
+  return item.Optimal.reduce((total, stat, index) => {
+    const statInfo = item.Stats[stat]
+    const weight = Number.isFinite(lineWeights[index]) ? lineWeights[index] : 1
+    return total + getStatRatingForValue(statInfo, getFinalStatValue(statInfo, upgradeCount)) * weight
+  }, 0)
+}
+
+export function getDefaultQualityTargetPercent({ item, tierEquivalence, upgradeCount }) {
+  const legacyTargetPercent = parseFloat(tierEquivalence?.SSS?.Penta)
+  const benchmarkDI = getGearQualityBenchmark(item, upgradeCount)
+  if (!item || !Number.isFinite(legacyTargetPercent) || benchmarkDI <= 0) {
+    return 0
+  }
+
+  return item.DI * legacyTargetPercent / benchmarkDI
 }
 
 export function calculateGearPlanItem({
@@ -254,11 +278,7 @@ export function calculateGearPlanItem({
     }
   })
 
-  const benchmarkDI = item.Optimal.reduce((total, stat, index) => {
-    const statInfo = item.Stats[stat]
-    const weight = Number.isFinite(lineWeights[index]) ? lineWeights[index] : 1
-    return total + getStatRatingForValue(statInfo, getFinalStatValue(statInfo, upgradeCount)) * weight
-  }, 0)
+  const benchmarkDI = getGearQualityBenchmark(item, upgradeCount, lineWeights)
   const currentDI = lines.reduce((total, line) => total + line.currentDI, 0)
   const selectedCeilingDI = lines.reduce((total, line) =>
     total + (line.filled ? line.ceilingDI : 0), 0)
@@ -306,33 +326,36 @@ function createEmptyGearPlanResult() {
   }
 }
 
-function calculateSssOdds({
+function calculateQualityOdds({
   gearType,
   item,
-  tierEquivalence,
   statTypes,
   statInputs,
-  sssOrder,
-  sssLineEnchantMethods,
+  lineOrder,
+  lineEnchantMethods,
+  qualityTargetPercent,
   remainingPotentialMultiplier,
   futurePotentialMultiplier,
 }) {
-  if (!sssOddsGearTypes.includes(gearType) || !tierEquivalence.SSS) {
-    return getEmptySssOdds()
+  if (!qualityOddsGearTypes.includes(gearType)) {
+    return getEmptyQualityOdds()
   }
 
-  const targetPercent = parseInt(tierEquivalence.SSS.Penta)
-  const targetRating = item.DI * targetPercent / 100
+  const targetQuality = Math.min(Math.max(Number(qualityTargetPercent) || 0, 0), 100)
+  const benchmarkDI = getGearQualityBenchmark(item, futurePotentialMultiplier)
+  const targetRating = benchmarkDI * targetQuality / 100
   const targetScore = Math.ceil(targetRating * ratingScale)
 
   let fixedScore = 0
   let futureBaseLines = 0
+  let filledLineCount = 0
+  let currentRating = 0
   let plannedMinRating = 0
   let plannedMaxRating = 0
   const lines = []
   const rollableFutureLines = []
 
-  for (const lineIndex of sssOrder) {
+  for (const lineIndex of lineOrder) {
     const stat = statTypes[lineIndex]
     const statInfo = item.Stats[stat]
     if (!statInfo) {
@@ -350,6 +373,12 @@ function calculateSssOdds({
     const upgradeMinValue = potential[0] * linePotentialMultiplier
     const upgradeMaxValue = potential[1] * linePotentialMultiplier
     const upgradeScore = Math.round(upgradeMinValue / maxValue * maxDI * ratingScale)
+    const finalMaxValue = getFinalStatValue(statInfo, futurePotentialMultiplier)
+
+    if (hasValue) {
+      filledLineCount += 1
+      currentRating += currentValue / maxValue * maxDI
+    }
 
     let lineMinValue = hasValue ? currentValue : step
     let lineMaxValue = hasValue ? currentValue : maxValue
@@ -365,7 +394,7 @@ function calculateSssOdds({
     }
     else {
       futureBaseLines += 1
-      const enchantMethod = getSssEnchantMethod(gearType, sssLineEnchantMethods?.[lineIndex])
+      const enchantMethod = getOddsEnchantMethod(gearType, lineEnchantMethods?.[lineIndex])
       rollableFutureLines.push({
         upgradeScore,
         enchantMethod,
@@ -375,12 +404,14 @@ function calculateSssOdds({
 
     plannedMinRating += lineMinValue / maxValue * maxDI
     plannedMaxRating += lineMaxValue / maxValue * maxDI
+    const projectedValue = hasValue ? currentValue + upgradeMaxValue : null
     lines.push({
       index: lineIndex,
       stat,
       range: shouldRollLine ? formatRange(lineMinValue, lineMaxValue, stat) : 'Ignored',
       rollText: !shouldRollLine ? 'not rolled' : hasValue ? linePotentialMultiplier > 0 ? 'already rolled' : 'complete' : 'needs base roll',
       status: !shouldRollLine ? 'ignored' : hasValue ? 'upgrade' : 'new',
+      maxRollPercent: hasValue && finalMaxValue > 0 ? projectedValue / finalMaxValue * 100 : null,
     })
   }
 
@@ -420,15 +451,13 @@ function calculateSssOdds({
         (probability, line) => probability * line.enchantMethod.successRate,
         1,
       )
-  const rollValueChance = totalChance
-  const plannedMinPercent = parseInt(plannedMinRating / item.DI * 100)
-  const plannedMaxPercent = parseInt(plannedMaxRating / item.DI * 100)
-  const plannedScoreText = plannedMinPercent === plannedMaxPercent
-    ? plannedMinPercent + '%'
-    : plannedMinPercent + '% ~ ' + plannedMaxPercent + '%'
-  const plannedDIText = plannedMinRating.toFixed(2) === plannedMaxRating.toFixed(2)
-    ? plannedMinRating.toFixed(2) + '%'
-    : plannedMinRating.toFixed(2) + '% ~ ' + plannedMaxRating.toFixed(2) + '%'
+  const plannedMinQuality = benchmarkDI > 0 ? plannedMinRating / benchmarkDI * 100 : 0
+  const plannedMaxQuality = benchmarkDI > 0 ? plannedMaxRating / benchmarkDI * 100 : 0
+  const currentQuality = benchmarkDI > 0 ? currentRating / benchmarkDI * 100 : 0
+  const currentQualityText = filledLineCount > 0 ? currentQuality.toFixed(2) + '%' : '—'
+  const plannedQualityText = plannedMinQuality.toFixed(2) === plannedMaxQuality.toFixed(2)
+    ? plannedMinQuality.toFixed(2) + '%'
+    : plannedMinQuality.toFixed(2) + '% ~ ' + plannedMaxQuality.toFixed(2) + '%'
 
   return {
     available: true,
@@ -436,8 +465,6 @@ function calculateSssOdds({
     totalChanceText: formatProbability(totalChance),
     survivalChance,
     survivalChanceText: formatProbability(survivalChance),
-    rollValueChance,
-    rollValueChanceText: formatProbability(rollValueChance),
     futureRolls: futureBaseLines,
     futureBaseLines,
     baseRollText: formatBaseRollSummary(
@@ -445,9 +472,12 @@ function calculateSssOdds({
       isAlreadyComplete,
     ),
     upgradeRolls: 0,
-    targetScore: targetPercent + '%',
-    plannedScoreText,
-    plannedDIText,
+    targetQuality,
+    targetQualityText: targetQuality.toFixed(2) + '%',
+    currentQuality,
+    currentQualityText,
+    plannedQualityText,
+    benchmarkDI,
     lines,
   }
 }

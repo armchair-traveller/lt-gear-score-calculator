@@ -161,3 +161,24 @@ export function getRollStatusClass(status) {
 
   return classes[status] ?? ''
 }
+
+export function formatMaxRollPercent(percent) {
+  return Number.isFinite(percent) ? `${Math.floor(percent)}%` : ''
+}
+
+export function getMaxRollPercentClass(percent) {
+  if (!Number.isFinite(percent)) {
+    return ''
+  }
+  if (percent > 100) {
+    return 'text-destructive'
+  }
+  if (percent < 70) {
+    return 'text-muted-foreground'
+  }
+  if (percent < 90) {
+    return 'text-amber-600 dark:text-amber-300'
+  }
+
+  return 'text-red-600 dark:text-red-400'
+}

@@ -6,10 +6,15 @@ import {
   CalculatorIcon,
   CameraIcon,
   CheckIcon,
+  RotateCcwIcon,
   SparklesIcon,
   SwordsIcon,
   TablePropertiesIcon,
 } from '@lucide/vue'
+import {
+  formatMaxRollPercent,
+  getMaxRollPercentClass,
+} from '@/features/gear-score/helpers.js'
 
 const {
   gearType,
@@ -17,21 +22,24 @@ const {
   resultMode,
   statType,
   statInput,
-  sssLineEnchantMethods,
+  qualityLineEnchantMethods,
   results,
   tierGuideRows,
   selectedTierRows,
   totalProgress,
   potentialProgress,
   potentialGainText,
-  currentSssEnchantMethodOptions,
+  currentOddsEnchantMethodOptions,
+  qualityTargetPercent,
   supportsGearPlan,
   canSaveToGearPlan,
   gearPlanSaveSucceeded,
   hasRolledValue,
   getProjectionEnchantLevel,
-  moveSssOddsLine,
-  setSssLineEnchantMethod,
+  moveQualityOddsLine,
+  setQualityLineEnchantMethod,
+  setQualityTargetPercent,
+  resetQualityTarget,
   getFinalUpgrade,
   openSnapshot,
   saveCurrentGearToPlan,
@@ -53,6 +61,36 @@ const emptyLineCount = computed(() => statType.value.length - rolledLineIndexes.
 const emptyLineSummary = computed(() =>
   emptyLineCount.value === 1 ? '1 unfilled line' : `${emptyLineCount.value} unfilled lines`,
 )
+
+const qualityTargetDraft = ref('')
+
+watch(qualityTargetPercent, (value) => {
+  qualityTargetDraft.value = Number(value).toFixed(2)
+}, { immediate: true })
+
+function restoreQualityTargetDraft() {
+  qualityTargetDraft.value = Number(qualityTargetPercent.value).toFixed(2)
+}
+
+function commitQualityTarget() {
+  if (!setQualityTargetPercent(qualityTargetDraft.value)) {
+    restoreQualityTargetDraft()
+  }
+  else {
+    qualityTargetDraft.value = Number(qualityTargetPercent.value).toFixed(2)
+  }
+}
+
+function cancelQualityTargetEdit(event) {
+  restoreQualityTargetDraft()
+  event?.currentTarget?.blur()
+}
+
+function updateQualityLineEnchantMethod(lineIndex, method) {
+  if (typeof method === 'string') {
+    setQualityLineEnchantMethod(lineIndex, method)
+  }
+}
 </script>
 
 <template>
@@ -166,7 +204,7 @@ const emptyLineSummary = computed(() =>
             <TabsList class="w-fit max-w-full">
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="lines">Lines</TabsTrigger>
-              <TabsTrigger v-if="results.sssOdds.available" value="sss">SSS odds</TabsTrigger>
+              <TabsTrigger v-if="results.qualityOdds.available" value="quality">Quality odds</TabsTrigger>
             </TabsList>
           </div>
         </CardHeader>
@@ -260,45 +298,83 @@ const emptyLineSummary = computed(() =>
             </Table>
           </TabsContent>
 
-          <TabsContent v-if="results.sssOdds.available" value="sss" class="m-0 grid min-w-0 gap-3">
-            <div class="grid gap-3 md:grid-cols-5">
-              <div class="rounded-lg bg-muted/20 p-3">
-                <div class="text-xs text-muted-foreground">Total odds</div>
-                <div class="text-lg font-semibold">{{ results.sssOdds.totalChanceText }}</div>
+          <TabsContent v-if="results.qualityOdds.available" value="quality" class="m-0 grid min-w-0 gap-4">
+            <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] sm:items-end">
+              <div class="min-w-0">
+                <div class="text-sm text-muted-foreground">Chance to reach target</div>
+                <div class="mt-1 text-3xl font-semibold tracking-normal">{{ results.qualityOdds.totalChanceText }}</div>
               </div>
-              <div class="rounded-lg bg-muted/20 p-3">
-                <div class="text-xs text-muted-foreground">Target</div>
-                <div class="text-lg font-semibold">{{ results.sssOdds.targetScore }}</div>
-              </div>
-              <div class="rounded-lg bg-muted/20 p-3">
-                <div class="text-xs text-muted-foreground">Planned</div>
-                <div class="text-lg font-semibold">
-                  {{ resultMode === 'rating' ? results.sssOdds.plannedDIText : results.sssOdds.plannedScoreText }}
+
+              <div class="min-w-0">
+                <div class="text-xs text-muted-foreground">Target quality</div>
+                <div class="mt-1 flex items-center gap-1.5">
+                  <InputGroup class="h-9 min-w-0">
+                    <InputGroupInput
+                      v-model="qualityTargetDraft"
+                      type="number"
+                      inputmode="decimal"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      aria-label="Quality target percentage"
+                      @blur="commitQualityTarget"
+                      @keydown.enter.prevent="$event.currentTarget.blur()"
+                      @keydown.esc.prevent="cancelQualityTargetEdit"
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>%</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="size-9 shrink-0"
+                        aria-label="Reset to SSS-equivalent target"
+                        @click="resetQualityTarget"
+                      >
+                        <RotateCcwIcon class="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Reset to SSS equivalent</TooltipContent>
+                  </Tooltip>
                 </div>
-              </div>
-              <div class="rounded-lg bg-muted/20 p-3">
-                <div class="text-xs text-muted-foreground">Base rolls</div>
-                <div class="text-lg font-semibold">{{ results.sssOdds.baseRollText }}</div>
-              </div>
-              <div class="rounded-lg bg-muted/20 p-3">
-                <div class="text-xs text-muted-foreground">Full survival</div>
-                <div class="text-lg font-semibold">{{ results.sssOdds.survivalChanceText }}</div>
               </div>
             </div>
 
-            <Table container-class="max-h-[320px] min-w-0 rounded-lg border" class="min-w-[620px]">
+            <dl class="grid divide-y divide-border/60 border-y border-border/60 md:grid-cols-[1fr_1.4fr_1fr_1fr] md:divide-x md:divide-y-0">
+              <div class="px-3 py-3 md:first:pl-0">
+                <dt class="text-xs text-muted-foreground">Quality</dt>
+                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.currentQualityText }}</dd>
+              </div>
+              <div class="px-3 py-3">
+                <dt class="text-xs text-muted-foreground">Projected quality</dt>
+                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.plannedQualityText }}</dd>
+              </div>
+              <div class="px-3 py-3">
+                <dt class="text-xs text-muted-foreground">Base rolls</dt>
+                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.baseRollText }}</dd>
+              </div>
+              <div class="px-3 py-3 md:last:pr-0">
+                <dt class="text-xs text-muted-foreground">Full survival</dt>
+                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.survivalChanceText }}</dd>
+              </div>
+            </dl>
+
+            <Table container-class="max-h-[320px] min-w-0 rounded-lg border" class="min-w-[660px]">
               <TableHeader>
                 <TableRow>
                   <TableHead class="w-[88px]">Order</TableHead>
                   <TableHead>Stat</TableHead>
                   <TableHead class="w-[210px]">
-                    {{ currentSssEnchantMethodOptions.length > 1 ? 'Enchant / state' : 'Roll state' }}
+                    {{ currentOddsEnchantMethodOptions.length > 1 ? 'Roll method / state' : 'Roll state' }}
                   </TableHead>
-                  <TableHead>Max upgrade value</TableHead>
+                  <TableHead>Fully upgraded value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="(line, position) in results.sssOdds.lines" :key="`${line.index}-${line.stat}`">
+                <TableRow v-for="(line, position) in results.qualityOdds.lines" :key="`${line.index}-${line.stat}`">
                   <TableCell>
                     <div class="flex items-center gap-1">
                       <Button
@@ -308,7 +384,7 @@ const emptyLineSummary = computed(() =>
                         :disabled="position === 0"
                         title="Move earlier"
                         aria-label="Move earlier"
-                        @click="moveSssOddsLine(position, -1)"
+                        @click="moveQualityOddsLine(position, -1)"
                       >
                         <ArrowUpIcon class="size-4" />
                       </Button>
@@ -316,10 +392,10 @@ const emptyLineSummary = computed(() =>
                         variant="ghost"
                         size="icon"
                         class="size-7"
-                        :disabled="position === results.sssOdds.lines.length - 1"
+                        :disabled="position === results.qualityOdds.lines.length - 1"
                         title="Move later"
                         aria-label="Move later"
-                        @click="moveSssOddsLine(position, 1)"
+                        @click="moveQualityOddsLine(position, 1)"
                       >
                         <ArrowDownIcon class="size-4" />
                       </Button>
@@ -327,27 +403,39 @@ const emptyLineSummary = computed(() =>
                   </TableCell>
                   <TableCell class="font-medium">{{ line.stat }}</TableCell>
                   <TableCell>
-                    <Select
-                      v-if="currentSssEnchantMethodOptions.length > 1 && line.status === 'new'"
-                      :model-value="sssLineEnchantMethods[line.index]"
-                      @update:model-value="setSssLineEnchantMethod(line.index, $event)"
+                    <ToggleGroup
+                      v-if="currentOddsEnchantMethodOptions.length > 1 && line.status === 'new'"
+                      type="single"
+                      orientation="horizontal"
+                      :spacing="1"
+                      :model-value="qualityLineEnchantMethods[line.index]"
+                      class="grid h-11 w-[190px] grid-cols-2 gap-1 rounded-md bg-muted/70 p-1"
+                      :aria-label="`${line.stat} roll method`"
+                      @update:model-value="updateQualityLineEnchantMethod(line.index, $event)"
                     >
-                      <SelectTrigger class="h-8 w-[190px]" :aria-label="`${line.stat} enchant method`">
-                        <SelectValue placeholder="Enchant method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem
-                          v-for="method in currentSssEnchantMethodOptions"
-                          :key="method.value"
-                          :value="method.value"
-                        >
-                          {{ method.label }} · {{ method.successRate * 100 }}% · {{ method.costMultiplier }}×
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <ToggleGroupItem
+                        v-for="method in currentOddsEnchantMethodOptions"
+                        :key="method.value"
+                        :value="method.value"
+                        class="h-9 min-w-0 flex-1 flex-col gap-0 rounded-sm px-1 text-xs leading-none text-muted-foreground shadow-none hover:bg-background/60 hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                        :aria-label="`${method.label}: ${method.successRate * 100}% success rate for ${line.stat}`"
+                      >
+                        <span class="font-medium">{{ method.label }}</span>
+                        <span class="mt-1 text-[11px] text-muted-foreground">{{ method.successRate * 100 }}%</span>
+                      </ToggleGroupItem>
+                    </ToggleGroup>
                     <span v-else :class="getRollStatusClass(line.status)">{{ line.rollText }}</span>
                   </TableCell>
-                  <TableCell>{{ line.range }}</TableCell>
+                  <TableCell>
+                    <span>{{ line.range }}</span>
+                    <span
+                      v-if="Number.isFinite(line.maxRollPercent)"
+                      class="ml-1 font-medium"
+                      :class="getMaxRollPercentClass(line.maxRollPercent)"
+                    >
+                      [{{ formatMaxRollPercent(line.maxRollPercent) }}]
+                    </span>
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>

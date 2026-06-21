@@ -4,8 +4,8 @@ import gears from '@/utils/gear.js'
 import tiers from '@/utils/tiers.js'
 import {
   decimalStats,
-  defaultSssEnchantMethod,
-  getSssEnchantMethodOptions,
+  defaultOddsEnchantMethod,
+  getOddsEnchantMethodOptions,
   repeatableStats,
   inputEnchantGearTypes,
   tierGuideRows,
@@ -23,10 +23,16 @@ import {
 import {
   calculateGearScore,
   createEmptyGearScoreResult,
+  getDefaultQualityTargetPercent,
   getInputValue as getScoreInputValue,
   getStatStep as getScoreStatStep,
   hasRolledValue as hasScoreRolledValue,
 } from '@/features/gear-score/score-calculation.js'
+import {
+  getQualityTargetKey,
+  readStoredQualityTargets,
+  writeStoredQualityTargets,
+} from '@/features/gear-score/quality-target-storage.js'
 import {
   encodeShareState,
   getShareParams,
@@ -55,8 +61,9 @@ export function useGearScoreCalculator() {
   const statType = ref([])
   const statInput = ref(['', '', '', '', ''])
   const statPickerOpen = ref([])
-  const sssOddsOrder = ref([0, 1, 2, 3, 4])
-  const sssLineEnchantMethods = ref(Array(5).fill(defaultSssEnchantMethod))
+  const qualityOddsOrder = ref([0, 1, 2, 3, 4])
+  const qualityLineEnchantMethods = ref(Array(5).fill(defaultOddsEnchantMethod))
+  const qualityTargets = ref(readStoredQualityTargets())
   const validStats = ref([])
 
   const imgUrls = import.meta.glob('../../assets/*.png', {
@@ -93,7 +100,25 @@ export function useGearScoreCalculator() {
   const highlightedTraitRows = computed(() => getTraitMatches(highlightedStats.value))
   const currentRecommendations = computed(() => recommendedOptionGuide[gearType.value]?.[pieceType.value] ?? null)
   const currentInputEnchantLevelOptions = computed(() => getInputEnchantLevelOptions())
-  const currentSssEnchantMethodOptions = computed(() => getSssEnchantMethodOptions(gearType.value))
+  const currentOddsEnchantMethodOptions = computed(() => getOddsEnchantMethodOptions(gearType.value))
+  const qualityTargetKey = computed(() => getQualityTargetKey(gearType.value, pieceType.value))
+  const defaultQualityTargetPercent = computed(() => {
+    const item = currentItem.value
+    const tierEquivalence = item ? tiers[gearType.value]?.[item.Type] : null
+    return getDefaultQualityTargetPercent({
+      item,
+      tierEquivalence,
+      upgradeCount: getPotentialMultiplier(),
+    })
+  })
+  const hasCustomQualityTarget = computed(() =>
+    Object.prototype.hasOwnProperty.call(qualityTargets.value, qualityTargetKey.value),
+  )
+  const qualityTargetPercent = computed(() =>
+    hasCustomQualityTarget.value
+      ? qualityTargets.value[qualityTargetKey.value]
+      : defaultQualityTargetPercent.value,
+  )
   const totalProgress = computed(() => clamp(Number(results.value.percent), 0, 100))
   const potentialProgress = computed(() => clamp(getFirstPercent(results.value.potentialScore), 0, 100))
   const potentialGainText = computed(() => {
@@ -208,8 +233,8 @@ export function useGearScoreCalculator() {
   function changePiece() {
     const options = statOptions.value
     statType.value = options.slice(0, 5)
-    resetSssOddsOrder()
-    resetSssEnchantMethods()
+    resetQualityOddsOrder()
+    resetOddsEnchantMethods()
     setValues(0, 0)
   }
 
@@ -308,9 +333,9 @@ export function useGearScoreCalculator() {
     }
   }
 
-  function getSssOddsOrder() {
+  function getQualityOddsOrder() {
     const maxLines = statType.value.length
-    const ordered = sssOddsOrder.value.filter((index) => Number.isInteger(index) && index >= 0 && index < maxLines)
+    const ordered = qualityOddsOrder.value.filter((index) => Number.isInteger(index) && index >= 0 && index < maxLines)
 
     for (let i = 0; i < maxLines; i++) {
       if (!ordered.includes(i)) {
@@ -321,27 +346,27 @@ export function useGearScoreCalculator() {
     return ordered
   }
 
-  function resetSssOddsOrder() {
-    sssOddsOrder.value = statType.value.map((_, index) => index)
+  function resetQualityOddsOrder() {
+    qualityOddsOrder.value = statType.value.map((_, index) => index)
   }
 
-  function resetSssEnchantMethods() {
-    sssLineEnchantMethods.value = statType.value.map(() => defaultSssEnchantMethod)
+  function resetOddsEnchantMethods() {
+    qualityLineEnchantMethods.value = statType.value.map(() => defaultOddsEnchantMethod)
   }
 
-  function setSssLineEnchantMethod(lineIndex, method) {
+  function setQualityLineEnchantMethod(lineIndex, method) {
     if (!Number.isInteger(lineIndex) || lineIndex < 0 || lineIndex >= statType.value.length) {
       return
     }
 
-    const validMethods = currentSssEnchantMethodOptions.value.map((option) => option.value)
-    sssLineEnchantMethods.value[lineIndex] = validMethods.includes(method)
+    const validMethods = currentOddsEnchantMethodOptions.value.map((option) => option.value)
+    qualityLineEnchantMethods.value[lineIndex] = validMethods.includes(method)
       ? method
-      : defaultSssEnchantMethod
+      : defaultOddsEnchantMethod
   }
 
-  function moveSssOddsLine(position, direction) {
-    const order = getSssOddsOrder()
+  function moveQualityOddsLine(position, direction) {
+    const order = getQualityOddsOrder()
     const nextPosition = position + direction
 
     if (nextPosition < 0 || nextPosition >= order.length) {
@@ -350,8 +375,36 @@ export function useGearScoreCalculator() {
 
     const nextOrder = order.slice()
     ;[nextOrder[position], nextOrder[nextPosition]] = [nextOrder[nextPosition], nextOrder[position]]
-    sssOddsOrder.value = nextOrder
+    qualityOddsOrder.value = nextOrder
     updateValues()
+  }
+
+  function setQualityTargetPercent(value) {
+    if (value === null || value === undefined || String(value).trim() === '') {
+      return false
+    }
+
+    const target = Number(value)
+    if (!Number.isFinite(target) || target < 0 || target > 100) {
+      return false
+    }
+
+    if (target.toFixed(2) === defaultQualityTargetPercent.value.toFixed(2)) {
+      resetQualityTarget()
+      return true
+    }
+
+    qualityTargets.value = writeStoredQualityTargets({
+      ...qualityTargets.value,
+      [qualityTargetKey.value]: target,
+    })
+    return true
+  }
+
+  function resetQualityTarget() {
+    const nextTargets = { ...qualityTargets.value }
+    delete nextTargets[qualityTargetKey.value]
+    qualityTargets.value = writeStoredQualityTargets(nextTargets)
   }
 
   function updateValues() {
@@ -369,8 +422,9 @@ export function useGearScoreCalculator() {
       tierEquivalence,
       statTypes: statType.value,
       statInputs: statInput.value,
-      sssOrder: getSssOddsOrder(),
-      sssLineEnchantMethods: sssLineEnchantMethods.value,
+      qualityOddsOrder: getQualityOddsOrder(),
+      qualityLineEnchantMethods: qualityLineEnchantMethods.value,
+      qualityTargetPercent: qualityTargetPercent.value,
       remainingPotentialMultiplier,
       futurePotentialMultiplier,
     })
@@ -437,8 +491,8 @@ export function useGearScoreCalculator() {
 
     statType.value = nextStatType
     statInput.value = nextStatInput
-    resetSssOddsOrder()
-    resetSssEnchantMethods()
+    resetQualityOddsOrder()
+    resetOddsEnchantMethods()
     setInputEnchantLevel(importResult.inputEnchantLevel || 2)
   }
 
@@ -554,8 +608,8 @@ export function useGearScoreCalculator() {
       highlightedPiece.value = [gearName, pieceName]
       statType.value = getUniqueStatTypes(statNames.slice())
       statInput.value = statValues.slice()
-      resetSssOddsOrder()
-      resetSssEnchantMethods()
+      resetQualityOddsOrder()
+      resetOddsEnchantMethods()
     }
     catch (error) {
       console.error(error)
@@ -707,7 +761,7 @@ export function useGearScoreCalculator() {
     setInputEnchantLevel(inputEnchantLevel.value)
   }, { flush: 'sync' })
 
-  watch([statType, statInput, inputEnchantLevel, sssLineEnchantMethods], () => {
+  watch([statType, statInput, inputEnchantLevel, qualityLineEnchantMethods, qualityTargetPercent], () => {
     updateValues()
   }, {
     deep: true,
@@ -724,7 +778,7 @@ export function useGearScoreCalculator() {
     valueButton,
     resultMode,
     inputEnchantLevel,
-    sssLineEnchantMethods,
+    qualityLineEnchantMethods,
     statType,
     statInput,
     statPickerOpen,
@@ -753,7 +807,10 @@ export function useGearScoreCalculator() {
     highlightedTraitRows,
     currentRecommendations,
     currentInputEnchantLevelOptions,
-    currentSssEnchantMethodOptions,
+    currentOddsEnchantMethodOptions,
+    defaultQualityTargetPercent,
+    hasCustomQualityTarget,
+    qualityTargetPercent,
     totalProgress,
     potentialProgress,
     potentialGainText,
@@ -772,8 +829,10 @@ export function useGearScoreCalculator() {
     getInputMaxValueText,
     getProjectionEnchantLevel,
     setInputEnchantLevel,
-    setSssLineEnchantMethod,
-    moveSssOddsLine,
+    setQualityLineEnchantMethod,
+    moveQualityOddsLine,
+    setQualityTargetPercent,
+    resetQualityTarget,
     setValues,
     applyGearImageImport,
     getFinalUpgrade,

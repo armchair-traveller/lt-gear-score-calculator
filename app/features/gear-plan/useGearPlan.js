@@ -17,7 +17,11 @@ import {
   getFinalStatValue,
   getStatStep,
 } from '@/features/gear-score/score-calculation.js'
-import { formatStatValue } from '@/features/gear-score/helpers.js'
+import {
+  formatMaxRollPercent,
+  formatStatValue,
+  getMaxRollPercentClass,
+} from '@/features/gear-score/helpers.js'
 
 export function useGearPlan() {
   const route = useRoute()
@@ -225,7 +229,7 @@ export function useGearPlan() {
       return ''
     }
 
-    return `${Math.floor(line.maxPercent)}%`
+    return formatMaxRollPercent(line.maxPercent)
   }
 
   function getEditorLineMaxPercentClass(index) {
@@ -233,17 +237,7 @@ export function useGearPlan() {
     if (!line?.filled || !Number.isFinite(line.maxPercent)) {
       return ''
     }
-    if (line.maxPercent > 100) {
-      return 'text-destructive'
-    }
-    if (line.maxPercent < 70) {
-      return 'text-muted-foreground'
-    }
-    if (line.maxPercent < 90) {
-      return 'text-amber-600 dark:text-amber-300'
-    }
-
-    return 'text-red-600 dark:text-red-400'
+    return getMaxRollPercentClass(line.maxPercent)
   }
 
   function isEditorInputOverMax(index) {
