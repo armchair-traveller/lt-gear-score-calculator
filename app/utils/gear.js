@@ -31,7 +31,7 @@ const gears = {
         "Minimum Damage":{
           "Value": 101,
           "DI": 0.91,
-          "Potential": [12,12]
+          "Potential": [8,8]
         },
         "Boss Added %":{
           "Value": 16,
@@ -128,7 +128,7 @@ const gears = {
         "Minimum Damage":{
           "Value": 101,
           "DI": 0.91,
-          "Potential": [12,12]
+          "Potential": [8,8]
         },
         "Back Attack Damage":{
           "Value": 101,
@@ -205,7 +205,7 @@ const gears = {
         "Minimum Damage":{
           "Value": 101,
           "DI": 0.91,
-          "Potential": [12,12]
+          "Potential": [8,8]
         },
         "Back Attack Damage":{
           "Value": 101,
