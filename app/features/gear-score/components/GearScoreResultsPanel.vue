@@ -343,12 +343,17 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
               </div>
             </div>
 
-            <dl class="grid divide-y divide-border/60 border-y border-border/60 md:grid-cols-[1fr_1.4fr_1fr_1fr] md:divide-x md:divide-y-0">
+            <dl
+              class="grid divide-y divide-border/60 border-y border-border/60 md:divide-x md:divide-y-0"
+              :class="results.qualityOdds.showProjectedQuality
+                ? 'md:grid-cols-[1fr_1.4fr_1fr_1fr]'
+                : 'md:grid-cols-3'"
+            >
               <div class="px-3 py-3 md:first:pl-0">
                 <dt class="text-xs text-muted-foreground">Quality</dt>
-                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.currentQualityText }}</dd>
+                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.qualityText }}</dd>
               </div>
-              <div class="px-3 py-3">
+              <div v-if="results.qualityOdds.showProjectedQuality" class="px-3 py-3">
                 <dt class="text-xs text-muted-foreground">Projected quality</dt>
                 <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.plannedQualityText }}</dd>
               </div>

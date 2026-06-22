@@ -45,13 +45,21 @@ export function getEmptyQualityOdds() {
     upgradeRolls: 0,
     targetQuality: 0,
     targetQualityText: '',
-    currentQuality: 0,
-    currentQualityText: '—',
+    qualityMin: 0,
+    qualityMax: 0,
+    qualityText: '—',
     plannedQualityText: '',
+    showProjectedQuality: true,
     benchmarkDI: 0,
     baseRollText: '',
     lines: [],
   }
+}
+
+function formatQualityRange(minQuality, maxQuality) {
+  const minText = minQuality.toFixed(2)
+  const maxText = maxQuality.toFixed(2)
+  return minText === maxText ? minText + '%' : minText + '% ~ ' + maxText + '%'
 }
 
 export function isDecimalStat(stat) {
@@ -348,8 +356,9 @@ function calculateQualityOdds({
 
   let fixedScore = 0
   let futureBaseLines = 0
-  let filledLineCount = 0
-  let currentRating = 0
+  let hasRolledLines = false
+  let rolledMinRating = 0
+  let rolledMaxRating = 0
   let plannedMinRating = 0
   let plannedMaxRating = 0
   const lines = []
@@ -375,15 +384,16 @@ function calculateQualityOdds({
     const upgradeScore = Math.round(upgradeMinValue / maxValue * maxDI * ratingScale)
     const finalMaxValue = getFinalStatValue(statInfo, futurePotentialMultiplier)
 
-    if (hasValue) {
-      filledLineCount += 1
-      currentRating += currentValue / maxValue * maxDI
-    }
-
     let lineMinValue = hasValue ? currentValue : step
     let lineMaxValue = hasValue ? currentValue : maxValue
     lineMinValue += upgradeMinValue
     lineMaxValue += upgradeMaxValue
+
+    if (hasValue) {
+      hasRolledLines = true
+      rolledMinRating += lineMinValue / maxValue * maxDI
+      rolledMaxRating += lineMaxValue / maxValue * maxDI
+    }
 
     if (!shouldRollLine) {
       // Non-damaging lines are ignored for SSS attempts, so they add no survival risk.
@@ -453,11 +463,11 @@ function calculateQualityOdds({
       )
   const plannedMinQuality = benchmarkDI > 0 ? plannedMinRating / benchmarkDI * 100 : 0
   const plannedMaxQuality = benchmarkDI > 0 ? plannedMaxRating / benchmarkDI * 100 : 0
-  const currentQuality = benchmarkDI > 0 ? currentRating / benchmarkDI * 100 : 0
-  const currentQualityText = filledLineCount > 0 ? currentQuality.toFixed(2) + '%' : '—'
-  const plannedQualityText = plannedMinQuality.toFixed(2) === plannedMaxQuality.toFixed(2)
-    ? plannedMinQuality.toFixed(2) + '%'
-    : plannedMinQuality.toFixed(2) + '% ~ ' + plannedMaxQuality.toFixed(2) + '%'
+  const qualityMin = benchmarkDI > 0 ? rolledMinRating / benchmarkDI * 100 : 0
+  const qualityMax = benchmarkDI > 0 ? rolledMaxRating / benchmarkDI * 100 : 0
+  const qualityText = hasRolledLines ? formatQualityRange(qualityMin, qualityMax) : '—'
+  const plannedQualityText = formatQualityRange(plannedMinQuality, plannedMaxQuality)
+  const showProjectedQuality = qualityText !== plannedQualityText
 
   return {
     available: true,
@@ -474,9 +484,11 @@ function calculateQualityOdds({
     upgradeRolls: 0,
     targetQuality,
     targetQualityText: targetQuality.toFixed(2) + '%',
-    currentQuality,
-    currentQualityText,
+    qualityMin,
+    qualityMax,
+    qualityText,
     plannedQualityText,
+    showProjectedQuality,
     benchmarkDI,
     lines,
   }
