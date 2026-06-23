@@ -520,6 +520,7 @@ export function useGearScoreCalculator() {
       case '[3500] Badge 6':
       case '[9999] Badge 6':
         return ''
+      case '[sLv5] Accessories':
       case '[9999] Armor':
         return 'Ascended'
       default:
