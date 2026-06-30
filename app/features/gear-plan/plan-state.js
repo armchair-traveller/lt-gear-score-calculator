@@ -10,7 +10,11 @@ import {
   encodeShareState,
   parseShareState,
 } from '@/features/gear-score/share-url.js'
-import { getFinalStatValue } from '@/features/gear-score/score-calculation.js'
+import {
+  getFinalStatValue,
+  isStatValueOverMax,
+  normalizeStatValue,
+} from '@/features/gear-score/score-calculation.js'
 
 export function createEmptyGearPlan() {
   return {
@@ -70,7 +74,7 @@ export function projectGearPlanEntry({
       const statInfo = item.Stats[stat]
       const value = Number(statInput[index])
       return Number.isFinite(value) && value > 0
-        ? value + (statInfo?.Potential?.[1] ?? 0) * remainingUpgrades
+        ? normalizeStatValue(statInfo, value + (statInfo?.Potential?.[1] ?? 0) * remainingUpgrades)
         : 0
     }),
   })
@@ -114,23 +118,28 @@ export function sanitizeGearPlanEntry(entry) {
 
   const usedStats = new Set()
   let filledLineCount = 0
+  const normalizedStatInput = []
   for (let index = 0; index < 5; index++) {
     const stat = statType[index]
     const statInfo = item.Stats[stat]
     const value = statInput[index]
     const canRepeat = stat === 'Other (Non-damaging)'
+    const maxValue = getFinalStatValue(statInfo, slot.upgradeCount)
 
     if (
       !statInfo ||
       (!canRepeat && usedStats.has(stat)) ||
       !Number.isFinite(value) ||
       value < 0 ||
-      value > getFinalStatValue(statInfo, slot.upgradeCount)
+      isStatValueOverMax(statInfo, value, maxValue)
     ) {
       return null
     }
 
-    if (value > 0) {
+    const normalizedValue = normalizeStatValue(statInfo, value)
+    normalizedStatInput[index] = normalizedValue
+
+    if (normalizedValue > 0) {
       filledLineCount += 1
     }
 
@@ -147,7 +156,7 @@ export function sanitizeGearPlanEntry(entry) {
     gearType: entry.gearType,
     pieceType: entry.pieceType,
     statType,
-    statInput,
+    statInput: normalizedStatInput,
   }
 }
 

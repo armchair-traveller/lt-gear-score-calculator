@@ -79,6 +79,67 @@ export function hasRolledValue(statInputs, index) {
   return statInputs[index] !== '' && getInputValue(statInputs, index) > 0
 }
 
+function getDecimalPlaces(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) {
+    return 0
+  }
+
+  const text = number.toString().toLowerCase()
+  if (!text.includes('e')) {
+    return (text.split('.')[1] ?? '').length
+  }
+
+  const [coefficient, exponentText] = text.split('e')
+  const exponent = Number(exponentText)
+  const coefficientDecimalPlaces = (coefficient.split('.')[1] ?? '').length
+  return Math.max(0, coefficientDecimalPlaces - exponent)
+}
+
+function getStatValuePrecision(statInfo) {
+  if (!statInfo) {
+    return 0
+  }
+
+  const values = [
+    statInfo.Value,
+    ...(Array.isArray(statInfo.Potential) ? statInfo.Potential : []),
+  ]
+
+  return values.reduce((precision, value) => Math.max(precision, getDecimalPlaces(value)), 0)
+}
+
+export function normalizeStatValue(statInfo, value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) {
+    return number
+  }
+
+  const precision = getStatValuePrecision(statInfo)
+  if (precision <= 0) {
+    return number
+  }
+
+  const factor = 10 ** precision
+  return Math.round((number + Number.EPSILON) * factor) / factor
+}
+
+export function isStatValueOverMax(statInfo, value, maxValue) {
+  const number = Number(value)
+  const max = Number(maxValue)
+  if (!Number.isFinite(number) || !Number.isFinite(max)) {
+    return false
+  }
+
+  const precision = getStatValuePrecision(statInfo)
+  const normalizedMax = normalizeStatValue(statInfo, max)
+  const floatingTolerance = Number.EPSILON * Math.max(1, Math.abs(normalizedMax))
+  const decimalTolerance = precision > 0 ? 1 / (10 ** (precision + 6)) : 0
+  const tolerance = Math.max(floatingTolerance, decimalTolerance)
+
+  return number - normalizedMax > tolerance
+}
+
 export function calculateGearScore({
   gearType,
   item,
@@ -113,8 +174,8 @@ export function calculateGearScore({
     totalDI += res
 
     const pot = statInfo.Potential
-    const potentialValueMin = currentValue + pot[0] * remainingPotentialMultiplier
-    const potentialValueMax = currentValue + pot[1] * remainingPotentialMultiplier
+    const potentialValueMin = normalizeStatValue(statInfo, currentValue + pot[0] * remainingPotentialMultiplier)
+    const potentialValueMax = normalizeStatValue(statInfo, currentValue + pot[1] * remainingPotentialMultiplier)
 
     if (hasValue) {
       potentialGainMin += pot[0] / maxValue * maxDI
@@ -213,7 +274,14 @@ export function getFinalStatValue(statInfo, upgradeCount) {
     return 0
   }
 
-  return statInfo.Value + (statInfo.Potential?.[1] ?? 0) * upgradeCount
+  const baseValue = Number(statInfo.Value)
+  const potentialMax = Number(statInfo.Potential?.[1] ?? 0)
+  const upgrades = Number(upgradeCount)
+  const value = (Number.isFinite(baseValue) ? baseValue : 0)
+    + (Number.isFinite(potentialMax) ? potentialMax : 0)
+    * (Number.isFinite(upgrades) ? upgrades : 0)
+
+  return normalizeStatValue(statInfo, value)
 }
 
 export function getStatRatingForValue(statInfo, value) {
@@ -260,14 +328,15 @@ export function calculateGearPlanItem({
   const lines = statTypes.map((stat, index) => {
     const statInfo = item.Stats[stat]
     const rawValue = statInputs[index]
-    const value = Number(rawValue)
+    const numericValue = Number(rawValue)
+    const value = normalizeStatValue(statInfo, numericValue)
     const weight = Number.isFinite(lineWeights[index]) ? lineWeights[index] : 1
-    const hasInput = rawValue !== '' && rawValue !== null && rawValue !== undefined && value !== 0
-    const filled = Number.isFinite(value) && value > 0
+    const hasInput = rawValue !== '' && rawValue !== null && rawValue !== undefined && numericValue !== 0
+    const filled = Number.isFinite(numericValue) && numericValue > 0
     const finalMaxValue = getFinalStatValue(statInfo, upgradeCount)
     const currentDI = getStatRatingForValue(statInfo, value) * weight
     const ceilingDI = getStatRatingForValue(statInfo, finalMaxValue) * weight
-    const valid = filled && Boolean(statInfo) && value <= finalMaxValue
+    const valid = filled && Boolean(statInfo) && !isStatValueOverMax(statInfo, numericValue, finalMaxValue)
     const maxPercent = filled && finalMaxValue > 0 ? value / finalMaxValue * 100 : null
 
     return {
@@ -379,15 +448,15 @@ function calculateQualityOdds({
     const step = getStatStep(stat)
     const hasValue = hasRolledValue(statInputs, lineIndex)
     const linePotentialMultiplier = hasValue ? remainingPotentialMultiplier : futurePotentialMultiplier
-    const upgradeMinValue = potential[0] * linePotentialMultiplier
-    const upgradeMaxValue = potential[1] * linePotentialMultiplier
+    const upgradeMinValue = normalizeStatValue(statInfo, potential[0] * linePotentialMultiplier)
+    const upgradeMaxValue = normalizeStatValue(statInfo, potential[1] * linePotentialMultiplier)
     const upgradeScore = Math.round(upgradeMinValue / maxValue * maxDI * ratingScale)
     const finalMaxValue = getFinalStatValue(statInfo, futurePotentialMultiplier)
 
     let lineMinValue = hasValue ? currentValue : step
     let lineMaxValue = hasValue ? currentValue : maxValue
-    lineMinValue += upgradeMinValue
-    lineMaxValue += upgradeMaxValue
+    lineMinValue = normalizeStatValue(statInfo, lineMinValue + upgradeMinValue)
+    lineMaxValue = normalizeStatValue(statInfo, lineMaxValue + upgradeMaxValue)
 
     if (hasValue) {
       hasRolledLines = true
@@ -414,7 +483,7 @@ function calculateQualityOdds({
 
     plannedMinRating += lineMinValue / maxValue * maxDI
     plannedMaxRating += lineMaxValue / maxValue * maxDI
-    const projectedValue = hasValue ? currentValue + upgradeMaxValue : null
+    const projectedValue = hasValue ? normalizeStatValue(statInfo, currentValue + upgradeMaxValue) : null
     lines.push({
       index: lineIndex,
       stat,

@@ -24,9 +24,11 @@ import {
   calculateGearScore,
   createEmptyGearScoreResult,
   getDefaultQualityTargetPercent,
+  getFinalStatValue,
   getInputValue as getScoreInputValue,
   getStatStep as getScoreStatStep,
   hasRolledValue as hasScoreRolledValue,
+  isStatValueOverMax,
 } from '@/features/gear-score/score-calculation.js'
 import {
   getQualityTargetKey,
@@ -313,7 +315,7 @@ export function useGearScoreCalculator() {
       return null
     }
 
-    return statInfo.Value + (statInfo.Potential?.[1] ?? 0) * getInputEnchantUpgradeCount()
+    return getFinalStatValue(statInfo, getInputEnchantUpgradeCount())
   }
 
   function getInputMaxValueText(stat) {
@@ -659,8 +661,10 @@ export function useGearScoreCalculator() {
   }
 
   function isInputOverMax(index) {
-    const maxValue = getInputMaxValue(statType.value[index])
-    return maxValue !== null && hasRolledValue(index) && getInputValue(index) > maxValue
+    const stat = statType.value[index]
+    const statInfo = currentItem.value?.Stats?.[stat]
+    const maxValue = getInputMaxValue(stat)
+    return maxValue !== null && hasRolledValue(index) && isStatValueOverMax(statInfo, getInputValue(index), maxValue)
   }
 
   function getLineMaxRatingText(index) {

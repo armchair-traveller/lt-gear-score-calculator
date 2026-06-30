@@ -15,6 +15,7 @@ import {
 import {
   calculateGearPlanItem,
   getFinalStatValue,
+  isStatValueOverMax,
   getStatStep,
 } from '@/features/gear-score/score-calculation.js'
 import {
@@ -241,9 +242,11 @@ export function useGearPlan() {
   }
 
   function isEditorInputOverMax(index) {
-    const max = getEditorMaxValue(editorStatType.value[index])
+    const stat = editorStatType.value[index]
+    const statInfo = selectedItem.value?.Stats?.[stat]
+    const max = getEditorMaxValue(stat)
     const value = Number(editorStatInput.value[index])
-    return max !== null && Number.isFinite(value) && value > max
+    return max !== null && Number.isFinite(value) && isStatValueOverMax(statInfo, value, max)
   }
 
   function saveEditor() {
