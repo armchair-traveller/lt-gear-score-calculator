@@ -36,6 +36,7 @@ const {
   gearPlanSaveSucceeded,
   hasRolledValue,
   getProjectionEnchantLevel,
+  setResultMode,
   moveQualityOddsLine,
   setQualityLineEnchantMethod,
   setQualityTargetPercent,
@@ -107,12 +108,18 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
           </div>
 
           <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Tabs v-model="resultMode" class="w-auto sm:order-last">
-              <TabsList>
-                <TabsTrigger value="score">Score</TabsTrigger>
-                <TabsTrigger value="rating">Rating</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <ToggleGroup
+              :model-value="resultMode"
+              type="single"
+              variant="outline"
+              size="sm"
+              class="sm:order-last"
+              aria-label="Result display mode"
+              @update:model-value="setResultMode"
+            >
+              <ToggleGroupItem value="score">Score</ToggleGroupItem>
+              <ToggleGroupItem value="rating">Rating</ToggleGroupItem>
+            </ToggleGroup>
 
             <Button variant="outline" size="sm" @click="openSnapshot">
               <CameraIcon />

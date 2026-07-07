@@ -1,4 +1,4 @@
-import { computed, ref, unref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from '#app'
 import gears from '@/utils/gear.js'
 import tiers from '@/utils/tiers.js'
@@ -56,7 +56,7 @@ export function useGearScoreCalculator() {
   const gearType = ref('[sLv5] Accessories')
   const pieceType = ref('Cloak')
   const highlightedPiece = ref(['[sLv5] Accessories', 'Cloak'])
-  const valueButton = ref('90')
+  const inputValueMode = ref('value')
   const resultMode = ref('score')
   const inputEnchantLevel = ref('2')
 
@@ -237,7 +237,7 @@ export function useGearScoreCalculator() {
     statType.value = options.slice(0, 5)
     resetQualityOddsOrder()
     resetOddsEnchantMethods()
-    setValues(0, 0)
+    clearStatInputs()
   }
 
   function isDecimalStat(stat) {
@@ -434,18 +434,21 @@ export function useGearScoreCalculator() {
     validStats.value = calculated.validStats
   }
 
-  function setValues(enchants, value) {
-    const percent = Number(unref(value))
-    for (let i = 0; i < 5; i++) {
-      const stat = statType.value[i]
-      const maxValue = getInputMaxValue(stat) ?? 0
+  function setInputValueMode(value) {
+    if (['value', 'percent'].includes(value)) {
+      inputValueMode.value = value
+    }
+  }
 
-      if (enchants > i) {
-        statInput.value[i] = isDecimalStat(stat) ? +(percent * maxValue / 100).toFixed(1) : parseInt(percent * maxValue / 100)
-      }
-      else {
-        statInput.value[i] = ''
-      }
+  function setResultMode(value) {
+    if (['score', 'rating'].includes(value)) {
+      resultMode.value = value
+    }
+  }
+
+  function clearStatInputs() {
+    for (let i = 0; i < 5; i++) {
+      statInput.value[i] = ''
     }
   }
 
@@ -780,7 +783,7 @@ export function useGearScoreCalculator() {
     gearType,
     pieceType,
     highlightedPiece,
-    valueButton,
+    inputValueMode,
     resultMode,
     inputEnchantLevel,
     qualityLineEnchantMethods,
@@ -834,11 +837,13 @@ export function useGearScoreCalculator() {
     getInputMaxValueText,
     getProjectionEnchantLevel,
     setInputEnchantLevel,
+    setInputValueMode,
+    setResultMode,
     setQualityLineEnchantMethod,
     moveQualityOddsLine,
     setQualityTargetPercent,
     resetQualityTarget,
-    setValues,
+    clearStatInputs,
     applyGearImageImport,
     getFinalUpgrade,
     saveCurrentGearToPlan,

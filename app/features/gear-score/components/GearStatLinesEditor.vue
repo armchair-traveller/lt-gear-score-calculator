@@ -4,6 +4,7 @@ import {
   ChevronDownIcon,
   XIcon,
 } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   statTypes: { type: Array, required: true },
@@ -19,6 +20,7 @@ const props = defineProps({
   isStatSelectedOnOtherLine: { type: Function, required: true },
   disabled: { type: Boolean, default: false },
   valuePlaceholder: { type: String, default: 'Value' },
+  valueMode: { type: String, default: 'value' },
 })
 
 const emit = defineEmits([
@@ -26,6 +28,10 @@ const emit = defineEmits([
   'update-input',
   'update-picker-open',
 ])
+
+const percentInputs = ref([])
+const focusedInputIndex = ref(null)
+const isPercentMode = computed(() => props.valueMode === 'percent')
 
 function getOptionalLineMaxPercentText(index) {
   return props.getLineMaxPercentText?.(index) ?? ''
@@ -39,6 +45,140 @@ function hasInputValue(index) {
   const value = props.statInputs[index]
   return value !== '' && value !== null && value !== undefined
 }
+
+function getStepPrecision(step) {
+  const number = Number(step)
+  if (!Number.isFinite(number) || number <= 0) {
+    return 0
+  }
+
+  const text = number.toString().toLowerCase()
+  if (!text.includes('e')) {
+    return (text.split('.')[1] ?? '').length
+  }
+
+  const [coefficient, exponentText] = text.split('e')
+  return Math.max(0, (coefficient.split('.')[1] ?? '').length - Number(exponentText))
+}
+
+function formatPercent(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) {
+    return ''
+  }
+
+  const rounded = Math.round((number + Number.EPSILON) * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+}
+
+function getPercentFromValue(index) {
+  const value = Number(props.statInputs[index])
+  const maxValue = Number(props.getMaxValue(props.statTypes[index]))
+  if (!Number.isFinite(value) || !Number.isFinite(maxValue) || maxValue <= 0 || !hasInputValue(index)) {
+    return ''
+  }
+
+  return formatPercent(value / maxValue * 100)
+}
+
+function getValueFromPercent(index, value) {
+  if (value === '' || value === null || value === undefined || String(value).trim() === '') {
+    return ''
+  }
+
+  const percent = Number(value)
+  const maxValue = Number(props.getMaxValue(props.statTypes[index]))
+  if (!Number.isFinite(percent) || !Number.isFinite(maxValue) || maxValue <= 0) {
+    return ''
+  }
+
+  const step = Number(props.getStatStep(props.statTypes[index])) || 1
+  const precision = getStepPrecision(step)
+  const rawValue = Math.round((percent * maxValue / 100) / step) * step
+
+  return precision > 0
+    ? Number(rawValue.toFixed(precision))
+    : Math.round(rawValue)
+}
+
+function syncPercentInputs(force = false) {
+  const nextInputs = percentInputs.value.slice()
+
+  for (let index = 0; index < props.statTypes.length; index++) {
+    if (force || focusedInputIndex.value !== index) {
+      nextInputs[index] = getPercentFromValue(index)
+    }
+  }
+
+  percentInputs.value = nextInputs
+}
+
+function getInputModelValue(index) {
+  return isPercentMode.value ? (percentInputs.value[index] ?? '') : props.statInputs[index]
+}
+
+function getInputStep(index) {
+  return isPercentMode.value ? 0.1 : props.getStatStep(props.statTypes[index])
+}
+
+function getInputMax(index) {
+  return isPercentMode.value ? 100 : props.getMaxValue(props.statTypes[index]) ?? undefined
+}
+
+function updateInput(index, value) {
+  if (!isPercentMode.value) {
+    emit('update-input', index, value)
+    return
+  }
+
+  percentInputs.value[index] = value
+  emit('update-input', index, getValueFromPercent(index, value))
+}
+
+function clearInput(index) {
+  if (isPercentMode.value) {
+    percentInputs.value[index] = ''
+  }
+
+  emit('update-input', index, '')
+}
+
+function focusInput(index) {
+  focusedInputIndex.value = index
+}
+
+function blurInput(index) {
+  if (focusedInputIndex.value === index) {
+    focusedInputIndex.value = null
+  }
+
+  if (isPercentMode.value) {
+    syncPercentInputs()
+  }
+}
+
+watch(
+  () => props.valueMode,
+  (mode) => {
+    if (mode === 'percent') {
+      syncPercentInputs(true)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => [
+    ...props.statTypes,
+    ...props.statInputs,
+    ...props.statTypes.map((stat) => props.getMaxValue(stat)),
+  ],
+  () => {
+    if (isPercentMode.value) {
+      syncPercentInputs()
+    }
+  },
+)
 </script>
 
 <template>
@@ -129,18 +269,20 @@ function hasInputValue(index) {
           >
             <InputGroupInput
               :id="`line-${index}-value`"
-              :model-value="statInputs[index]"
+              :model-value="getInputModelValue(index)"
               type="number"
               :disabled="disabled"
-              :step="getStatStep(statTypes[index])"
+              :step="getInputStep(index)"
               min="0"
-              :max="getMaxValue(statTypes[index]) ?? undefined"
+              :max="getInputMax(index)"
               inputmode="decimal"
               :placeholder="valuePlaceholder"
               :aria-label="`Line ${index + 1} value`"
               :aria-invalid="isInputOverMax(index)"
               class="min-w-[4.5rem]"
-              @update:model-value="emit('update-input', index, $event)"
+              @focus="focusInput(index)"
+              @blur="blurInput(index)"
+              @update:model-value="updateInput(index, $event)"
             />
             <InputGroupAddon align="inline-end" class="pr-3 text-xs">
               <Tooltip v-if="hasInputValue(index)">
@@ -150,13 +292,19 @@ function hasInputValue(index) {
                     variant="ghost"
                     :aria-label="`Clear line ${index + 1} value`"
                     class="shrink-0 opacity-80 transition-opacity hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-focus-within/line:opacity-100 sm:group-hover/line:opacity-100"
-                    @click="emit('update-input', index, '')"
+                    @click="clearInput(index)"
                   >
                     <XIcon />
                   </InputGroupButton>
                 </TooltipTrigger>
                 <TooltipContent>Clear value</TooltipContent>
               </Tooltip>
+              <InputGroupText
+                v-if="isPercentMode"
+                class="text-xs font-semibold"
+              >
+                %
+              </InputGroupText>
               <InputGroupText
                 class="whitespace-nowrap text-xs font-medium"
                 :class="isInputOverMax(index) ? 'text-destructive' : 'text-muted-foreground'"

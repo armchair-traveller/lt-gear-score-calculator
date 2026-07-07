@@ -1,6 +1,8 @@
 <script setup>
 import {
   ChevronRightIcon,
+  HashIcon,
+  PercentIcon,
   RefreshCcwIcon,
   ScanTextIcon,
   SearchIcon,
@@ -12,7 +14,7 @@ import { ref } from 'vue'
 const {
   gearType,
   pieceType,
-  valueButton,
+  inputValueMode,
   inputEnchantLevel,
   statType,
   statInput,
@@ -31,16 +33,16 @@ const {
   selectStatType,
   supportsInputEnchantLevel,
   setInputEnchantLevel,
+  setInputValueMode,
   getStatStep,
   getInputMaxValue,
-  setValues,
+  clearStatInputs,
   getSelectedRating,
   isInputOverMax,
   getLineMaxSummaryText,
 } = useGearScoreCalculatorContext()
 
 const imageImportOpen = ref(false)
-const quickFillPercentOptions = Array.from({ length: 9 }, (_, index) => String(60 + index * 5))
 
 function setStatInput(index, value) {
   statInput.value[index] = value
@@ -150,6 +152,37 @@ function setStatPickerOpen(index, value) {
           </div>
         </div>
 
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <Label id="input-value-mode-label" class="text-xs font-medium text-muted-foreground">
+            Input mode
+          </Label>
+          <ToggleGroup
+            :model-value="inputValueMode"
+            type="single"
+            variant="outline"
+            size="sm"
+            aria-labelledby="input-value-mode-label"
+            @update:model-value="setInputValueMode"
+          >
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <ToggleGroupItem value="value" aria-label="Actual values">
+                  <HashIcon aria-hidden="true" />
+                </ToggleGroupItem>
+              </TooltipTrigger>
+              <TooltipContent>Actual values</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <ToggleGroupItem value="percent" aria-label="Percent of max">
+                  <PercentIcon aria-hidden="true" />
+                </ToggleGroupItem>
+              </TooltipTrigger>
+              <TooltipContent>Percent of max</TooltipContent>
+            </Tooltip>
+          </ToggleGroup>
+        </div>
+
         <GearStatLinesEditor
           :stat-types="statType"
           :stat-inputs="statInput"
@@ -157,6 +190,8 @@ function setStatPickerOpen(index, value) {
           :picker-open="statPickerOpen"
           :get-stat-step="getStatStep"
           :get-max-value="getInputMaxValue"
+          :value-mode="inputValueMode"
+          :value-placeholder="inputValueMode === 'percent' ? 'Percent' : 'Value'"
           :get-line-max-summary-text="getLineMaxSummaryText"
           :is-input-over-max="isInputOverMax"
           :is-stat-selected-on-other-line="isStatSelectedOnOtherLine"
@@ -168,29 +203,13 @@ function setStatPickerOpen(index, value) {
         <div class="grid gap-3 rounded-lg bg-muted/15 p-3">
           <div class="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" @click="imageImportOpen = true">
-              <ScanTextIcon />
+              <ScanTextIcon data-icon="inline-start" />
               Import
             </Button>
-            <Button variant="outline" size="sm" @click="setValues(0, 0)">
-              <RefreshCcwIcon />
+            <Button variant="outline" size="sm" @click="clearStatInputs">
+              <RefreshCcwIcon data-icon="inline-start" />
               Clear
             </Button>
-            <Button variant="secondary" size="sm" @click="setValues(3, valueButton)">Trio</Button>
-            <Button variant="secondary" size="sm" @click="setValues(4, valueButton)">Quad</Button>
-            <Button variant="secondary" size="sm" @click="setValues(5, valueButton)">Penta</Button>
-
-            <Select v-model="valueButton">
-              <SelectTrigger class="ml-auto w-[110px]">
-                <SelectValue placeholder="Value" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem v-for="percent in quickFillPercentOptions" :key="percent" :value="percent">
-                    {{ percent }}%
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
