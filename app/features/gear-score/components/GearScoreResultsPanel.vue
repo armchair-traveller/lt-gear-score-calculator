@@ -121,22 +121,24 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
               <ToggleGroupItem value="rating">Rating</ToggleGroupItem>
             </ToggleGroup>
 
-            <Button variant="outline" size="sm" @click="openSnapshot">
-              <CameraIcon />
-              Snapshot
-            </Button>
+            <ButtonGroup aria-label="Result actions">
+              <Button variant="outline" size="sm" @click="openSnapshot">
+                <CameraIcon data-icon="inline-start" />
+                Snapshot
+              </Button>
 
-            <Button
-              v-if="supportsGearPlan"
-              variant="outline"
-              size="sm"
-              :disabled="!canSaveToGearPlan"
-              @click="saveCurrentGearToPlan"
-            >
-              <CheckIcon v-if="gearPlanSaveSucceeded" class="text-emerald-600 dark:text-emerald-400" />
-              <BookmarkPlusIcon v-else />
-              {{ gearPlanSaveSucceeded ? 'Added' : 'Add to plan' }}
-            </Button>
+              <Button
+                v-if="supportsGearPlan"
+                variant="outline"
+                size="sm"
+                :disabled="!canSaveToGearPlan"
+                @click="saveCurrentGearToPlan"
+              >
+                <CheckIcon v-if="gearPlanSaveSucceeded" data-icon="inline-start" />
+                <BookmarkPlusIcon v-else data-icon="inline-start" />
+                {{ gearPlanSaveSucceeded ? 'Added' : 'Add to plan' }}
+              </Button>
+            </ButtonGroup>
           </div>
         </div>
       </CardHeader>
