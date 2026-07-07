@@ -673,7 +673,7 @@ export function useGearScoreCalculator() {
   }
 
   function getLineMaxSummaryText(index) {
-    return `Max ${getInputMaxValueText(statType.value[index])} / ${getLineMaxRatingText(index)}`
+    return `Max ${getInputMaxValueText(statType.value[index])} · ${getLineMaxRatingText(index)}`
   }
 
   function getPotentialLineText(index) {
