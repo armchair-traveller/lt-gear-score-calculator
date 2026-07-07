@@ -40,6 +40,7 @@ const {
 } = useGearScoreCalculatorContext()
 
 const imageImportOpen = ref(false)
+const quickFillPercentOptions = Array.from({ length: 9 }, (_, index) => String(60 + index * 5))
 
 function setStatInput(index, value) {
   statInput.value[index] = value
@@ -174,7 +175,6 @@ function setStatPickerOpen(index, value) {
               <RefreshCcwIcon />
               Clear
             </Button>
-            <Button variant="secondary" size="sm" @click="setValues(2, valueButton)">Duo</Button>
             <Button variant="secondary" size="sm" @click="setValues(3, valueButton)">Trio</Button>
             <Button variant="secondary" size="sm" @click="setValues(4, valueButton)">Quad</Button>
             <Button variant="secondary" size="sm" @click="setValues(5, valueButton)">Penta</Button>
@@ -184,9 +184,11 @@ function setStatPickerOpen(index, value) {
                 <SelectValue placeholder="Value" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="n in 10" :key="n" :value="String(n * 10)">
-                  {{ n * 10 }}%
-                </SelectItem>
+                <SelectGroup>
+                  <SelectItem v-for="percent in quickFillPercentOptions" :key="percent" :value="percent">
+                    {{ percent }}%
+                  </SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
