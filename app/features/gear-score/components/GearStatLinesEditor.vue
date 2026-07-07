@@ -2,6 +2,7 @@
 import {
   CheckIcon,
   ChevronDownIcon,
+  XIcon,
 } from '@lucide/vue'
 
 const props = defineProps({
@@ -33,6 +34,11 @@ function getOptionalLineMaxPercentText(index) {
 function getOptionalLineMaxPercentClass(index) {
   return props.getLineMaxPercentClass?.(index) ?? ''
 }
+
+function hasInputValue(index) {
+  const value = props.statInputs[index]
+  return value !== '' && value !== null && value !== undefined
+}
 </script>
 
 <template>
@@ -46,10 +52,10 @@ function getOptionalLineMaxPercentClass(index) {
         role="group"
         :aria-label="`Line ${index + 1}`"
         :class="[
-          'grid gap-1',
+          'group/line grid gap-1',
           getLineMaxPercentText
-            ? 'sm:grid-cols-[minmax(0,1fr)_minmax(230px,270px)]'
-            : 'sm:grid-cols-[minmax(0,1fr)_minmax(190px,220px)]',
+            ? 'sm:grid-cols-[minmax(0,1fr)_minmax(250px,290px)]'
+            : 'sm:grid-cols-[minmax(0,1fr)_minmax(210px,240px)]',
         ]"
       >
         <Popover
@@ -137,6 +143,20 @@ function getOptionalLineMaxPercentClass(index) {
               @update:model-value="emit('update-input', index, $event)"
             />
             <InputGroupAddon align="inline-end" class="pr-3 text-xs">
+              <Tooltip v-if="hasInputValue(index)">
+                <TooltipTrigger as-child>
+                  <InputGroupButton
+                    size="icon-xs"
+                    variant="ghost"
+                    :aria-label="`Clear line ${index + 1} value`"
+                    class="shrink-0 opacity-80 transition-opacity hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-focus-within/line:opacity-100 sm:group-hover/line:opacity-100"
+                    @click="emit('update-input', index, '')"
+                  >
+                    <XIcon />
+                  </InputGroupButton>
+                </TooltipTrigger>
+                <TooltipContent>Clear value</TooltipContent>
+              </Tooltip>
               <InputGroupText
                 class="whitespace-nowrap text-xs font-medium"
                 :class="isInputOverMax(index) ? 'text-destructive' : 'text-muted-foreground'"
