@@ -167,17 +167,34 @@ function confirmDelete() {
           <div class="min-w-0">
             <div class="text-sm text-muted-foreground">Best next</div>
             <template v-if="planner.topPriority">
-              <button
-                type="button"
-                class="mt-1 flex max-w-full items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                @click="planner.openEditor(planner.topPriority.id)"
+              <HoverCard
+                :open-delay="250"
+                :close-delay="100"
+                :enable-touch="false"
               >
-                <img class="size-14 shrink-0 rounded-lg bg-muted p-1.5" :src="planner.topPriority.image" alt="">
-                <div class="min-w-0">
-                  <div class="truncate text-2xl font-semibold">{{ planner.topPriority.pieceType }}</div>
-                  <div class="truncate text-sm text-muted-foreground">{{ planner.topPriority.gearType }}</div>
-                </div>
-              </button>
+                <HoverCardTrigger as-child>
+                  <button
+                    type="button"
+                    class="mt-1 flex max-w-full items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    @click="planner.openEditor(planner.topPriority.id)"
+                  >
+                    <img class="size-14 shrink-0 rounded-lg bg-muted p-1.5" :src="planner.topPriority.image" alt="">
+                    <div class="min-w-0">
+                      <div class="truncate text-2xl font-semibold">{{ planner.topPriority.pieceType }}</div>
+                      <div class="truncate text-sm text-muted-foreground">{{ planner.topPriority.gearType }}</div>
+                    </div>
+                  </button>
+                </HoverCardTrigger>
+                <HoverCardContent
+                  side="bottom"
+                  align="start"
+                  :side-offset="8"
+                  :collision-padding="12"
+                  class="w-80 p-3"
+                >
+                  <GearPlanSlotPreview :slot="planner.topPriority" />
+                </HoverCardContent>
+              </HoverCard>
               <div class="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant="outline" class="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                   <TrendingUpIcon class="size-3.5" />
@@ -238,36 +255,66 @@ function confirmDelete() {
               <div v-for="group in planner.categoryGroups" :key="group.gearType" class="grid gap-2">
                 <div class="text-xs font-medium uppercase text-muted-foreground">{{ group.gearType }}</div>
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-2">
-                  <button
-                    v-for="slot in group.slots"
-                    :key="slot.id"
-                    type="button"
-                    class="grid min-h-24 gap-2 rounded-lg border p-3 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                    :class="slot.result.eligible ? 'bg-muted/15' : 'border-dashed'"
-                    @click="planner.openEditor(slot.id)"
-                  >
-                    <div class="flex items-start justify-between gap-2">
-                      <img class="size-9 rounded-md bg-muted p-1" :src="slot.image" alt="">
-                      <Badge
-                        v-if="slot.result.eligible"
-                        variant="outline"
-                        :class="slot.result.opportunityDI <= 0.0001
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                          : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300'"
+                  <template v-for="slot in group.slots" :key="slot.id">
+                    <HoverCard
+                      v-if="slot.result.eligible"
+                      :open-delay="250"
+                      :close-delay="100"
+                      :enable-touch="false"
+                    >
+                      <HoverCardTrigger as-child>
+                        <button
+                          type="button"
+                          class="grid min-h-24 gap-2 rounded-lg border bg-muted/15 p-3 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                          @click="planner.openEditor(slot.id)"
+                        >
+                          <div class="flex items-start justify-between gap-2">
+                            <img class="size-9 rounded-md bg-muted p-1" :src="slot.image" alt="">
+                            <Badge
+                              variant="outline"
+                              :class="slot.result.opportunityDI <= 0.0001
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300'"
+                            >
+                              {{ slot.result.qualityPercent.toFixed(0) }}%
+                            </Badge>
+                          </div>
+                          <div>
+                            <div class="truncate text-sm font-medium">{{ slot.pieceType }}</div>
+                            <div class="truncate text-xs text-muted-foreground">
+                              {{ slot.result.opportunityDI <= 0.0001
+                                ? `${planner.getLineStatusLabel(slot.result)} / ${slot.result.aboveBenchmark ? 'Above benchmark' : 'At benchmark'}`
+                                : `${planner.getLineStatusLabel(slot.result)} / ${slot.result.opportunityDI.toFixed(2)}% DI open` }}
+                            </div>
+                          </div>
+                        </button>
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        side="left"
+                        align="start"
+                        :side-offset="8"
+                        :collision-padding="12"
+                        class="w-80 p-3"
                       >
-                        {{ slot.result.qualityPercent.toFixed(0) }}%
-                      </Badge>
-                      <PlusIcon v-else class="size-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <div class="truncate text-sm font-medium">{{ slot.pieceType }}</div>
-                      <div v-if="slot.result.eligible" class="truncate text-xs text-muted-foreground">
-                        {{ slot.result.opportunityDI <= 0.0001
-                          ? `${planner.getLineStatusLabel(slot.result)} / ${slot.result.aboveBenchmark ? 'Above benchmark' : 'At benchmark'}`
-                          : `${planner.getLineStatusLabel(slot.result)} / ${slot.result.opportunityDI.toFixed(2)}% DI open` }}
-                      </div>
-                    </div>
-                  </button>
+                        <GearPlanSlotPreview :slot="slot" />
+                      </HoverCardContent>
+                    </HoverCard>
+                    <template v-else>
+                      <button
+                        type="button"
+                        class="grid min-h-24 gap-2 rounded-lg border border-dashed p-3 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                        @click="planner.openEditor(slot.id)"
+                      >
+                        <div class="flex items-start justify-between gap-2">
+                          <img class="size-9 rounded-md bg-muted p-1" :src="slot.image" alt="">
+                          <PlusIcon class="size-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div class="truncate text-sm font-medium">{{ slot.pieceType }}</div>
+                        </div>
+                      </button>
+                    </template>
+                  </template>
                 </div>
               </div>
             </div>
