@@ -1,59 +1,103 @@
 const snapshotWidth = 1200
-const snapshotPadding = 56
+const outerPadding = 40
+const heroHeight = 310
+const linePanelY = 354
+const lineHeaderY = 452
+const lineRowsY = 500
+const lineRowHeight = 64
+const linePanelBottomPadding = 14
+const legalGap = 26
+const legalHeight = 20
+
+const grid = {
+  left: 72,
+  right: 1128,
+  statText: 96,
+  comparisonMiddle: 600,
+  projected: {
+    currentLeft: 488,
+    currentCenter: 648,
+    currentRight: 784,
+    currentSeparator: 666,
+    estimateLeft: 808,
+    estimateCenter: 968,
+    estimateRight: 1104,
+    estimateSeparator: 986,
+  },
+  currentOnly: {
+    currentLeft: 808,
+    currentCenter: 968,
+    currentRight: 1104,
+    currentSeparator: 986,
+  },
+}
+
+const officialAssets = {
+  hero: 'https://static.latale.com/latale/Contents/2025/10/2025100111475855513.jpg',
+}
+
+const fonts = {
+  display: '"Noto Sans KR", "Geist", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  data: '"Geist", "Noto Sans KR", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+}
+
 const colors = {
-  bgTop: '#101114',
-  bgBottom: '#191a1f',
-  panel: '#f7f5ef',
-  panelWarm: '#fff8ea',
-  ink: '#15161a',
-  muted: '#62646d',
-  faint: '#d9d4c8',
-  line: '#c9c2b4',
-  gold: '#d8a445',
-  amber: '#f2c76e',
-  emerald: '#29a474',
-  blue: '#4f8edc',
-  rose: '#e36079',
-  red: '#e5484d',
-  darkPanel: '#202126',
-  darkLine: '#32343b',
-  white: '#fffaf0',
+  ink: '#4a2941',
+  raw: '#4a3343',
+  muted: '#806879',
+  quiet: '#9d8594',
+  white: '#ffffff',
+  paper: '#fff7fa',
+  soft: '#f7eff4',
+  line: '#eddce5',
+  current: '#5964a8',
+  currentDisplay: '#5964a8',
+  currentSoft: '#f0f1fc',
+  currentLine: '#d8daf3',
+  estimate: '#c63969',
+  estimateDisplay: '#df5c86',
+  estimateSoft: '#fff0f5',
+  estimateLine: '#f2c5d7',
+  itemFill: '#fffcf5',
+  itemLine: '#e7c968',
 }
 
 const tierColors = {
-  F: ['#ece7dd', '#6d6a63'],
-  E: ['#ece7dd', '#6d6a63'],
-  D: ['#dff1ff', '#1c6fa7'],
-  C: ['#dff8e8', '#167b51'],
-  B: ['#e1ecff', '#2360b4'],
-  A: ['#fff2c9', '#9a6500'],
-  S: ['#f8e4ff', '#a234b2'],
-  SS: ['#ffe0e9', '#bf3154'],
-  SSS: ['#ffe0df', '#c3202d'],
+  F: ['#f0edf3', '#696275', '#d8d2df'],
+  E: ['#f0edf3', '#696275', '#d8d2df'],
+  D: ['#e4f4ff', '#2879a9', '#b9def2'],
+  C: ['#e5f8ee', '#218158', '#bce4cf'],
+  B: ['#e7edff', '#315fb5', '#c3d1f4'],
+  A: ['#fff4bc', '#806000', '#ead36a'],
+  S: ['#f1ecfc', '#7362bf', '#d5c9ef'],
+  SS: ['#ffeaf3', '#b9346d', '#f1bfd3'],
+  SSS: ['#ffe4ef', '#c63969', '#f0b8ce'],
 }
 
-function getCanvasContext() {
-  const canvas = document.createElement('canvas')
-  canvas.width = snapshotWidth
-  canvas.height = 1600
-  return [canvas, canvas.getContext('2d')]
+function normalizeText(value, fallback = '—') {
+  const text = String(value ?? '').trim()
+  return text || fallback
 }
 
-function setFont(ctx, size, weight = 500) {
-  ctx.font = `${weight} ${size}px Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+function setFont(ctx, size, weight = 600, family = 'data') {
+  ctx.font = `${weight} ${Math.max(1, size)}px ${fonts[family] ?? fonts.data}`
 }
 
 function drawRoundRect(ctx, x, y, width, height, radius) {
+  const safeWidth = Math.max(0, width)
+  const safeHeight = Math.max(0, height)
+  const safeRadius = Math.max(0, Math.min(radius, safeWidth / 2, safeHeight / 2))
+
   ctx.beginPath()
-  ctx.moveTo(x + radius, y)
-  ctx.lineTo(x + width - radius, y)
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
-  ctx.lineTo(x + width, y + height - radius)
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
-  ctx.lineTo(x + radius, y + height)
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
-  ctx.lineTo(x, y + radius)
-  ctx.quadraticCurveTo(x, y, x + radius, y)
+  ctx.moveTo(x + safeRadius, y)
+  ctx.lineTo(x + safeWidth - safeRadius, y)
+  ctx.quadraticCurveTo(x + safeWidth, y, x + safeWidth, y + safeRadius)
+  ctx.lineTo(x + safeWidth, y + safeHeight - safeRadius)
+  ctx.quadraticCurveTo(x + safeWidth, y + safeHeight, x + safeWidth - safeRadius, y + safeHeight)
+  ctx.lineTo(x + safeRadius, y + safeHeight)
+  ctx.quadraticCurveTo(x, y + safeHeight, x, y + safeHeight - safeRadius)
+  ctx.lineTo(x, y + safeRadius)
+  ctx.quadraticCurveTo(x, y, x + safeRadius, y)
   ctx.closePath()
 }
 
@@ -70,300 +114,604 @@ function strokeRoundRect(ctx, x, y, width, height, radius, stroke = colors.line,
   ctx.stroke()
 }
 
-function drawLabel(ctx, text, x, y, color = colors.muted) {
-  setFont(ctx, 22, 700)
-  ctx.fillStyle = color
-  ctx.letterSpacing = '0px'
-  ctx.fillText(String(text).toUpperCase(), x, y)
+function drawPanel(ctx, x, y, width, height, options = {}) {
+  const radius = options.radius ?? 28
+  ctx.save()
+  ctx.shadowColor = options.shadowColor ?? 'rgba(82, 48, 68, 0.09)'
+  ctx.shadowBlur = options.shadowBlur ?? 24
+  ctx.shadowOffsetY = options.shadowOffsetY ?? 7
+  fillRoundRect(ctx, x, y, width, height, radius, options.fill ?? colors.white)
+  ctx.restore()
+  strokeRoundRect(ctx, x, y, width, height, radius, options.stroke ?? colors.line)
 }
 
-function drawFittedText(ctx, text, x, y, maxWidth, size, weight = 600, color = colors.ink) {
-  setFont(ctx, size, weight)
-  ctx.fillStyle = color
+function fitText(ctx, value, maxWidth, options = {}) {
+  const normalized = normalizeText(value, options.fallback ?? '—')
+  const family = options.family ?? 'data'
+  const weight = options.weight ?? 600
+  const minimumSize = Math.max(8, options.minSize ?? 12)
+  let size = Math.max(minimumSize, options.size ?? 24)
 
-  const normalized = String(text || '-')
+  setFont(ctx, size, weight, family)
+  while (size > minimumSize && ctx.measureText(normalized).width > maxWidth) {
+    size -= 1
+    setFont(ctx, size, weight, family)
+  }
+
   if (ctx.measureText(normalized).width <= maxWidth) {
-    ctx.fillText(normalized, x, y)
+    return { text: normalized, size, width: ctx.measureText(normalized).width }
+  }
+
+  const characters = Array.from(normalized)
+  const ellipsis = '…'
+  let low = 0
+  let high = characters.length
+  let best = ellipsis
+
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2)
+    const candidate = `${characters.slice(0, middle).join('').trimEnd()}${ellipsis}`
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      best = candidate
+      low = middle + 1
+    }
+    else {
+      high = middle - 1
+    }
+  }
+
+  return { text: best, size, width: ctx.measureText(best).width }
+}
+
+function drawFittedText(ctx, value, x, y, maxWidth, options = {}) {
+  const fitted = fitText(ctx, value, Math.max(1, maxWidth), options)
+  setFont(ctx, fitted.size, options.weight ?? 600, options.family ?? 'data')
+  ctx.fillStyle = options.color ?? colors.ink
+  ctx.textAlign = options.align ?? 'left'
+  ctx.textBaseline = options.baseline ?? 'alphabetic'
+  ctx.fillText(fitted.text, x, y)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  return fitted
+}
+
+function drawMetricPair(ctx, value, metric, rightX, y, maxWidth, options = {}) {
+  const leftX = rightX - maxWidth
+  const separatorX = options.separatorX ?? leftX + maxWidth / 2
+  const separatorGap = options.separatorGap ?? 20
+  const valueRight = separatorX - separatorGap
+  const metricLeft = separatorX + separatorGap
+  const sharedOptions = {
+    family: options.family ?? 'data',
+    minSize: options.minSize ?? 12,
+    size: options.size ?? 21,
+  }
+
+  const valueLayout = drawFittedText(ctx, value, valueRight, y, valueRight - leftX, {
+    ...sharedOptions,
+    align: 'right',
+    color: options.valueColor ?? colors.ink,
+    weight: options.valueWeight ?? 650,
+  })
+  const metricLayout = drawFittedText(ctx, metric, rightX, y, rightX - metricLeft, {
+    ...sharedOptions,
+    align: 'right',
+    color: options.metricColor ?? colors.current,
+    weight: options.metricWeight ?? 760,
+  })
+
+  return { metricLayout, valueLayout }
+}
+
+function drawMetricSubheaders(ctx, metricWord, rightX, y, maxWidth, separatorX) {
+  const leftX = rightX - maxWidth
+  const separatorGap = 20
+  const valueRight = separatorX - separatorGap
+  const metricLeft = separatorX + separatorGap
+  const options = {
+    align: 'center',
+    color: colors.quiet,
+    minSize: 9,
+    size: 11,
+    weight: 750,
+  }
+
+  drawFittedText(ctx, 'ROLL', (leftX + valueRight) / 2, y, valueRight - leftX, options)
+  drawFittedText(ctx, metricWord, (metricLeft + rightX) / 2, y, rightX - metricLeft, options)
+}
+
+function getPillLayout(ctx, text, options = {}) {
+  const height = options.height ?? 34
+  const paddingX = options.paddingX ?? 14
+  const maxWidth = Math.max(24, options.maxWidth ?? 200)
+  const fitted = fitText(ctx, text, maxWidth - paddingX * 2, {
+    size: options.size ?? 15,
+    minSize: options.minSize ?? 11,
+    weight: options.weight ?? 800,
+  })
+  const width = Math.min(maxWidth, Math.max(options.minWidth ?? 0, Math.ceil(fitted.width + paddingX * 2)))
+  return { ...fitted, width, height }
+}
+
+function drawPill(ctx, text, anchorX, y, options = {}) {
+  const layout = getPillLayout(ctx, text, options)
+  let x = anchorX
+  if (options.align === 'right') {
+    x -= layout.width
+  }
+  else if (options.align === 'center') {
+    x -= layout.width / 2
+  }
+
+  fillRoundRect(ctx, x, y, layout.width, layout.height, layout.height / 2, options.fill ?? colors.soft)
+  if (options.stroke) {
+    strokeRoundRect(ctx, x, y, layout.width, layout.height, layout.height / 2, options.stroke)
+  }
+
+  setFont(ctx, layout.size, options.weight ?? 800)
+  ctx.fillStyle = options.color ?? colors.ink
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(layout.text, x + layout.width / 2, y + layout.height / 2)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  return { ...layout, x }
+}
+
+function getTierPalette(tier) {
+  const firstTier = normalizeText(tier, 'F').split(/\s+/)[0]
+  return tierColors[firstTier] ?? tierColors.F
+}
+
+function drawTierPill(ctx, tier, anchorX, y, options = {}) {
+  const [fill, color, stroke] = getTierPalette(tier)
+  return drawPill(ctx, tier, anchorX, y, {
+    align: options.align ?? 'left',
+    fill,
+    color,
+    stroke,
+    height: options.height ?? 36,
+    maxWidth: options.maxWidth ?? 150,
+    minWidth: options.minWidth ?? 58,
+    paddingX: options.paddingX ?? 14,
+    size: options.size ?? 17,
+    minSize: options.minSize ?? 11,
+  })
+}
+
+function drawImageCover(ctx, image, x, y, width, height, positionX = 0.5, positionY = 0.5) {
+  const imageWidth = image?.naturalWidth || image?.width || 0
+  const imageHeight = image?.naturalHeight || image?.height || 0
+  if (!imageWidth || !imageHeight) {
+    return false
+  }
+
+  const scale = Math.max(width / imageWidth, height / imageHeight)
+  const sourceWidth = width / scale
+  const sourceHeight = height / scale
+  const sourceX = Math.max(0, Math.min(imageWidth - sourceWidth, (imageWidth - sourceWidth) * positionX))
+  const sourceY = Math.max(0, Math.min(imageHeight - sourceHeight, (imageHeight - sourceHeight) * positionY))
+
+  ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height)
+  return true
+}
+
+function drawCanvasBackground(ctx, height) {
+  const wash = ctx.createLinearGradient(0, 0, snapshotWidth, height)
+  wash.addColorStop(0, '#fff9fb')
+  wash.addColorStop(0.5, colors.paper)
+  wash.addColorStop(1, '#faf3f8')
+  ctx.fillStyle = wash
+  ctx.fillRect(0, 0, snapshotWidth, height)
+}
+
+function drawHeroBackdrop(ctx, image) {
+  const fallback = ctx.createLinearGradient(0, 0, snapshotWidth, heroHeight)
+  fallback.addColorStop(0, '#fff1f6')
+  fallback.addColorStop(0.56, '#f9cde2')
+  fallback.addColorStop(1, '#ef91bd')
+  ctx.fillStyle = fallback
+  ctx.fillRect(0, 0, snapshotWidth, heroHeight)
+
+  if (image) {
+    drawImageCover(ctx, image, 0, 0, snapshotWidth, heroHeight, 0.5, 0.5)
+  }
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
+  ctx.fillRect(0, 0, snapshotWidth, heroHeight)
+
+  const identityFade = ctx.createLinearGradient(0, 0, 760, 0)
+  identityFade.addColorStop(0, 'rgba(255, 249, 252, 0.98)')
+  identityFade.addColorStop(0.68, 'rgba(255, 249, 252, 0.83)')
+  identityFade.addColorStop(1, 'rgba(255, 249, 252, 0)')
+  ctx.fillStyle = identityFade
+  ctx.fillRect(0, 0, 760, heroHeight)
+}
+
+function drawItemArtwork(ctx, itemImage, x, y, size = 96) {
+  ctx.save()
+  ctx.shadowColor = 'rgba(78, 47, 64, 0.11)'
+  ctx.shadowBlur = 16
+  ctx.shadowOffsetY = 4
+  fillRoundRect(ctx, x, y, size, size, 18, colors.itemFill)
+  ctx.restore()
+  strokeRoundRect(ctx, x, y, size, size, 18, colors.itemLine, 1.5)
+
+  if (itemImage) {
+    ctx.save()
+    ctx.imageSmoothingEnabled = false
+    const inset = Math.round(size * 0.11)
+    ctx.drawImage(itemImage, x + inset, y + inset, size - inset * 2, size - inset * 2)
+    ctx.restore()
     return
   }
 
-  let shortened = normalized
-  while (shortened.length > 1 && ctx.measureText(`${shortened}...`).width > maxWidth) {
-    shortened = shortened.slice(0, -1)
-  }
-
-  ctx.fillText(`${shortened}...`, x, y)
+  drawFittedText(ctx, '?', x + size / 2, y + size * 0.66, 50, {
+    align: 'center',
+    family: 'display',
+    size: 32,
+    minSize: 28,
+    weight: 800,
+    color: colors.quiet,
+  })
 }
 
-function drawCenteredFittedText(ctx, text, centerX, y, maxWidth, size, weight = 600, color = colors.ink) {
-  setFont(ctx, size, weight)
-  ctx.fillStyle = color
+function drawScoreHalf(ctx, result, x, options = {}) {
+  const isEstimate = options.kind === 'estimate'
+  const accent = isEstimate ? colors.estimate : colors.current
+  const display = isEstimate ? colors.estimateDisplay : colors.currentDisplay
 
-  const normalized = String(text || '-')
-  let output = normalized
-  if (ctx.measureText(output).width > maxWidth) {
-    while (output.length > 1 && ctx.measureText(`${output}...`).width > maxWidth) {
-      output = output.slice(0, -1)
-    }
-    output = `${output}...`
-  }
-
-  ctx.textAlign = 'center'
-  ctx.fillText(output, centerX, y)
-  ctx.textAlign = 'left'
-}
-
-function getBadgeWidth(ctx, text, options = {}) {
-  const paddingX = options.paddingX ?? 18
-  setFont(ctx, options.size ?? 20, 800)
-  return Math.ceil(ctx.measureText(String(text || '-')).width + paddingX * 2)
-}
-
-function drawBadge(ctx, text, x, y, options = {}) {
-  const normalized = String(text || '-')
-  const firstTier = normalized.split(' ')[0]
-  const [bg, fg] = options.palette ?? tierColors[firstTier] ?? tierColors.F
-  const paddingX = options.paddingX ?? 18
-  const height = options.height ?? 38
-
-  const width = getBadgeWidth(ctx, normalized, options)
-  fillRoundRect(ctx, x, y, width, height, height / 2, bg)
-  ctx.fillStyle = fg
-  ctx.fillText(normalized, x + paddingX, y + height / 2 + 8)
-  return width
-}
-
-function drawCenteredBadge(ctx, text, centerX, y, options = {}) {
-  const width = getBadgeWidth(ctx, text, options)
-  drawBadge(ctx, text, centerX - width / 2, y, options)
-}
-
-function drawProgress(ctx, x, y, width, value, fill = colors.gold, track = '#e8e1d5') {
-  const progress = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0
-  fillRoundRect(ctx, x, y, width, 12, 6, track)
-  if (progress > 0) {
-    fillRoundRect(ctx, x, y, width * progress / 100, 12, 6, fill)
-  }
-}
-
-function drawMetricCard(ctx, metric, x, y, width, height, accent = colors.gold) {
-  fillRoundRect(ctx, x, y, width, height, 22, metric.highlight ? colors.panelWarm : '#ffffff')
-  strokeRoundRect(ctx, x, y, width, height, 22, metric.highlight ? '#dfb95e' : '#ddd6c9', metric.highlight ? 2 : 1)
-
-  drawLabel(ctx, metric.label, x + 28, y + 40, colors.muted)
-  drawFittedText(ctx, metric.value, x + 28, y + 106, width - 56, metric.size ?? 52, 800, colors.ink)
-  if (metric.meta) {
-    drawFittedText(ctx, metric.meta, x + 28, y + height - 30, width - 56, 24, 600, metric.metaColor ?? colors.muted)
-  }
-
-  ctx.fillStyle = accent
-  fillRoundRect(ctx, x + 28, y + height - 15, width - 56, 5, 3, accent)
-}
-
-function drawLineRow(ctx, line, x, y, width, index) {
-  const rowHeight = 122
-  const rowFill = index % 2 === 0 ? '#ffffff' : '#faf7f0'
-  const currentColumn = { center: x + 560, width: 130 }
-  const projectedColumn = { center: x + 740, width: 170 }
-  const tierColumn = { center: x + 950, width: 140 }
-  const tierBadgeCenterY = y + 79
-  const currentTierBadgeHeight = 30
-  const projectedTierBadgeHeight = 34
-
-  fillRoundRect(ctx, x, y, width, rowHeight, 18, rowFill)
-  strokeRoundRect(ctx, x, y, width, rowHeight, 18, '#e2dacc')
-
-  fillRoundRect(ctx, x + 18, y + 24, 48, 48, 14, '#f0eadf')
-  setFont(ctx, 22, 800)
-  ctx.fillStyle = colors.muted
-  ctx.textAlign = 'center'
-  ctx.fillText(String(line.index), x + 42, y + 56)
-  ctx.textAlign = 'left'
-
-  drawFittedText(ctx, line.stat, x + 86, y + 44, 390, 28, 800)
-  drawFittedText(ctx, line.value, x + 86, y + 80, 280, 22, 600, colors.muted)
-
-  drawCenteredFittedText(ctx, line.currentScore, currentColumn.center, y + 48, currentColumn.width, 30, 800)
-  drawCenteredBadge(ctx, line.currentTier, currentColumn.center, tierBadgeCenterY - currentTierBadgeHeight / 2, {
-    size: 17,
-    height: currentTierBadgeHeight,
+  const label = drawPill(ctx, options.label, x, 260, {
+    fill: accent,
+    color: colors.white,
+    height: 30,
+    maxWidth: 190,
     paddingX: 13,
+    size: 12,
+    minSize: 11,
+    weight: 850,
   })
 
-  drawCenteredFittedText(ctx, line.projectedScore, projectedColumn.center, y + 48, projectedColumn.width, 30, 800)
-  drawCenteredFittedText(ctx, line.projectedValue, projectedColumn.center, y + 80, projectedColumn.width, 22, 700, colors.muted)
-  drawCenteredBadge(ctx, line.projectedTier, tierColumn.center, tierBadgeCenterY - projectedTierBadgeHeight / 2, {
-    size: 18,
-    height: projectedTierBadgeHeight,
-    paddingX: 14,
+  drawFittedText(ctx, result?.levelLabel, label.x + label.width + 14, 281, 180, {
+    size: 13,
+    minSize: 11,
+    weight: 720,
+    color: colors.muted,
   })
 
-  drawProgress(ctx, x + 86, y + 104, width - 122, line.progress, colors.gold)
+  const value = drawFittedText(ctx, result?.value, x, 346, 300, {
+    family: 'display',
+    size: 52,
+    minSize: 34,
+    weight: 820,
+    color: display,
+  })
+  if (result?.tier) {
+    drawTierPill(ctx, result.tier, x + value.width + 22, 310, {
+      maxWidth: 150,
+      height: 38,
+      size: 18,
+    })
+  }
 }
 
-function drawHeader(ctx, payload, itemImage, y) {
-  const x = snapshotPadding
-  fillRoundRect(ctx, x, y, snapshotWidth - snapshotPadding * 2, 200, 30, colors.darkPanel)
-  strokeRoundRect(ctx, x, y, snapshotWidth - snapshotPadding * 2, 200, 30, colors.darkLine)
+function drawSummaryContent(ctx, payload, itemImage) {
+  const hasProjection = Boolean(payload.projected)
+  const metricWord = payload.metricMode === 'rating' ? 'RATING' : 'SCORE'
 
-  if (itemImage) {
-    fillRoundRect(ctx, x + 28, y + 32, 136, 136, 26, '#2b2d34')
-    ctx.drawImage(itemImage, x + 48, y + 52, 96, 96)
+  drawItemArtwork(ctx, itemImage, 64, 48, 94)
+  drawFittedText(ctx, payload.itemName, 184, 107, 360, {
+    family: 'display',
+    size: 32,
+    minSize: 22,
+    weight: 800,
+    color: colors.ink,
+  })
+
+  drawPanel(ctx, 64, 236, hasProjection ? 1072 : 536, 150, {
+    fill: colors.white,
+    stroke: colors.line,
+    radius: 36,
+    shadowColor: 'rgba(82, 43, 68, 0.13)',
+    shadowBlur: 26,
+    shadowOffsetY: 9,
+  })
+
+  if (hasProjection) {
+    ctx.fillStyle = colors.line
+    ctx.fillRect(grid.comparisonMiddle, 260, 1, 102)
   }
 
-  const titleX = x + 190
-  const titleWidth = 610
-  const itemPiece = payload.itemPiece || payload.itemName
-  const itemGearType = payload.itemGearType || ''
+  drawScoreHalf(ctx, payload.current, 96, {
+    kind: 'current',
+    label: `CURRENT ${metricWord}`,
+  })
 
-  drawLabel(ctx, 'LaTale Gear Snapshot', titleX, y + 50, '#aaa59b')
-  drawFittedText(ctx, itemPiece, titleX, y + 94, titleWidth, 36, 800, colors.white)
-  if (itemGearType) {
-    drawFittedText(ctx, itemGearType, titleX, y + 128, titleWidth, 30, 800, colors.white)
-    drawFittedText(ctx, payload.subtitle, titleX, y + 166, titleWidth, 22, 600, '#cfc7b8')
+  if (hasProjection) {
+    drawScoreHalf(ctx, payload.projected, 632, {
+      kind: 'estimate',
+      label: `ESTIMATED ${metricWord}`,
+    })
+  }
+}
+
+function drawProjectedLine(ctx, line, y) {
+  drawFittedText(ctx, line.stat, grid.statText, y + 39, 368, {
+    size: 19,
+    minSize: 15,
+    weight: 700,
+    color: colors.ink,
+  })
+  drawMetricPair(ctx, line.value, line.currentMetric, grid.projected.currentRight, y + 39, 272, {
+    size: 18,
+    minSize: 12,
+    valueColor: colors.raw,
+    metricColor: colors.current,
+    separatorX: grid.projected.currentSeparator,
+  })
+  drawMetricPair(ctx, line.projectedValue, line.projectedMetric, grid.projected.estimateRight, y + 39, 272, {
+    size: 18,
+    minSize: 12,
+    valueColor: colors.raw,
+    metricColor: colors.estimate,
+    separatorX: grid.projected.estimateSeparator,
+  })
+}
+
+function drawCurrentLine(ctx, line, y) {
+  drawFittedText(ctx, line.stat, grid.statText, y + 39, 620, {
+    size: 19,
+    minSize: 15,
+    weight: 700,
+    color: colors.ink,
+  })
+  drawMetricPair(ctx, line.value, line.currentMetric, grid.currentOnly.currentRight, y + 39, 272, {
+    size: 18,
+    minSize: 12,
+    valueColor: colors.raw,
+    metricColor: colors.current,
+    separatorX: grid.currentOnly.currentSeparator,
+  })
+}
+
+function drawLineSection(ctx, payload, rowsY) {
+  const lines = payload.lines
+  const hasProjection = Boolean(payload.projected)
+  const metricWord = payload.metricMode === 'rating' ? 'RATING' : 'SCORE'
+  const panelHeight = rowsY - linePanelY + lines.length * lineRowHeight + linePanelBottomPadding
+
+  drawPanel(ctx, outerPadding, linePanelY, snapshotWidth - outerPadding * 2, panelHeight, {
+    fill: colors.white,
+    stroke: colors.line,
+    radius: 28,
+    shadowColor: 'rgba(80, 45, 66, 0.09)',
+    shadowBlur: 24,
+    shadowOffsetY: 7,
+  })
+
+  drawFittedText(ctx, 'Enchant rolls', grid.left, linePanelY + 79, 300, {
+    family: 'display',
+    size: 28,
+    minSize: 22,
+    weight: 800,
+    color: colors.ink,
+  })
+  drawFittedText(ctx, 'STAT', grid.statText, lineHeaderY + 33, 250, {
+    size: 12,
+    minSize: 10,
+    weight: 850,
+    color: colors.quiet,
+  })
+
+  if (hasProjection) {
+    fillRoundRect(ctx, grid.projected.currentLeft, lineHeaderY, 320, 42, 15, colors.currentSoft)
+    strokeRoundRect(ctx, grid.projected.currentLeft, lineHeaderY, 320, 42, 15, colors.currentLine)
+    fillRoundRect(ctx, grid.projected.estimateLeft, lineHeaderY, 320, 42, 15, colors.estimateSoft)
+    strokeRoundRect(ctx, grid.projected.estimateLeft, lineHeaderY, 320, 42, 15, colors.estimateLine)
+
+    drawFittedText(ctx, 'CURRENT', grid.projected.currentCenter, lineHeaderY + 16, 272, {
+      align: 'center',
+      size: 12,
+      minSize: 10,
+      weight: 850,
+      color: colors.current,
+    })
+    drawMetricSubheaders(
+      ctx,
+      metricWord,
+      grid.projected.currentRight,
+      lineHeaderY + 34,
+      272,
+      grid.projected.currentSeparator,
+    )
+    drawFittedText(ctx, 'ESTIMATED', grid.projected.estimateCenter, lineHeaderY + 16, 272, {
+      align: 'center',
+      size: 12,
+      minSize: 10,
+      weight: 850,
+      color: colors.estimate,
+    })
+    drawMetricSubheaders(
+      ctx,
+      metricWord,
+      grid.projected.estimateRight,
+      lineHeaderY + 34,
+      272,
+      grid.projected.estimateSeparator,
+    )
   }
   else {
-    drawFittedText(ctx, payload.subtitle, titleX, y + 140, titleWidth, 24, 600, '#cfc7b8')
+    fillRoundRect(ctx, grid.currentOnly.currentLeft, lineHeaderY, 320, 42, 15, colors.currentSoft)
+    strokeRoundRect(ctx, grid.currentOnly.currentLeft, lineHeaderY, 320, 42, 15, colors.currentLine)
+    drawFittedText(ctx, 'CURRENT', grid.currentOnly.currentCenter, lineHeaderY + 16, 272, {
+      align: 'center',
+      size: 12,
+      minSize: 10,
+      weight: 850,
+      color: colors.current,
+    })
+    drawMetricSubheaders(
+      ctx,
+      metricWord,
+      grid.currentOnly.currentRight,
+      lineHeaderY + 34,
+      272,
+      grid.currentOnly.currentSeparator,
+    )
   }
 
-  const badgeWidth = drawBadge(ctx, payload.upgradeLabel, snapshotWidth - snapshotPadding - 260, y + 44, {
-    palette: ['#f8de9d', '#6d4700'],
-    size: 20,
-    height: 40,
+  ctx.fillStyle = colors.line
+  ctx.fillRect(grid.left, rowsY - 1, grid.right - grid.left, 1)
+
+  lines.forEach((line, index) => {
+    const rowY = rowsY + index * lineRowHeight
+    if (index > 0) {
+      ctx.fillStyle = colors.line
+      ctx.fillRect(grid.left, rowY, grid.right - grid.left, 1)
+    }
+
+    if (hasProjection) {
+      drawProjectedLine(ctx, line, rowY)
+    }
+    else {
+      drawCurrentLine(ctx, line, rowY)
+    }
   })
-  drawFittedText(
-    ctx,
-    payload.generatedLabel,
-    snapshotWidth - snapshotPadding - 260,
-    y + 126,
-    Math.max(190, badgeWidth),
-    20,
-    600,
-    '#aaa59b',
-  )
 }
 
-function drawSummary(ctx, payload, y) {
-  const x = snapshotPadding
-  const width = snapshotWidth - snapshotPadding * 2
-  fillRoundRect(ctx, x, y, width, 306, 30, colors.panel)
-
-  drawLabel(ctx, 'Current Results', x + 34, y + 48)
-  drawLabel(ctx, payload.finalUpgrade ? `${payload.finalUpgrade} Summary` : 'Projection Summary', x + 548, y + 48)
-
-  drawMetricCard(ctx, {
-    label: 'Tier',
-    value: payload.current.tier,
-    size: 46,
-  }, x + 34, y + 72, 224, 176, colors.blue)
-
-  drawMetricCard(ctx, {
-    label: 'Score',
-    value: payload.current.score,
-    meta: `${payload.current.rating} rating`,
-  }, x + 276, y + 72, 224, 176, colors.blue)
-
-  drawMetricCard(ctx, {
-    label: 'Tier',
-    value: payload.projected.tier,
-    size: payload.projected.tier.length > 6 ? 40 : 46,
-    meta: `${payload.projected.scoreGain} score`,
-    metaColor: colors.emerald,
-    highlight: true,
-  }, x + 548, y + 72, 284, 176, colors.emerald)
-
-  drawMetricCard(ctx, {
-    label: 'Score',
-    value: payload.projected.score,
-    meta: `${payload.projected.rating} rating`,
-    highlight: true,
-  }, x + 850, y + 72, 224, 176, colors.gold)
-
-  drawProgress(ctx, x + 34, y + 276, 466, payload.current.progress, colors.blue, '#ddd8cf')
-  drawProgress(ctx, x + 548, y + 276, 526, payload.projected.progress, colors.gold, '#ddd8cf')
-}
-
-function drawLineSection(ctx, payload, y) {
-  const x = snapshotPadding
-  const width = snapshotWidth - snapshotPadding * 2
-  const rowX = x + 34
-  const currentColumn = { center: rowX + 560, width: 130 }
-  const projectedColumn = { center: rowX + 740, width: 170 }
-  const tierColumn = { center: rowX + 950, width: 140 }
-
-  fillRoundRect(ctx, x, y, width, 86 + payload.lines.length * 138, 30, colors.panel)
-
-  setFont(ctx, 20, 800)
-  ctx.fillStyle = colors.muted
-  drawCenteredFittedText(ctx, 'CURRENT', currentColumn.center, y + 48, currentColumn.width, 20, 800, colors.muted)
-  drawCenteredFittedText(ctx, 'PROJECTED', projectedColumn.center, y + 48, projectedColumn.width, 20, 800, colors.muted)
-  drawCenteredFittedText(ctx, 'TIER', tierColumn.center, y + 48, tierColumn.width, 20, 800, colors.muted)
-
-  let rowY = y + 70
-  payload.lines.forEach((line, index) => {
-    drawLineRow(ctx, line, rowX, rowY, width - 68, index)
-    rowY += 138
+function drawLegalLine(ctx, y) {
+  drawFittedText(ctx, 'Unofficial calculator  ·  LaTale artwork © Actoz Soft', snapshotWidth / 2, y, snapshotWidth - outerPadding * 2, {
+    align: 'center',
+    size: 12,
+    minSize: 10,
+    weight: 550,
+    color: colors.quiet,
   })
-
-  return y + 86 + payload.lines.length * 138
 }
 
 function canvasToBlob(canvas) {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) {
-        resolve(blob)
-      }
-      else {
-        reject(new Error('Could not create snapshot image.'))
-      }
-    }, 'image/png')
+    try {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob)
+        }
+        else {
+          reject(new Error('Could not create snapshot image.'))
+        }
+      }, 'image/png')
+    }
+    catch (error) {
+      reject(error)
+    }
   })
 }
 
-function loadImage(src) {
-  if (!src) {
+function loadImage(src, timeoutMs = 6000) {
+  if (!src || typeof Image === 'undefined') {
     return Promise.resolve(null)
   }
 
   return new Promise((resolve) => {
+    let settled = false
+    let timeoutId
     const image = new Image()
-    image.onload = () => resolve(image)
-    image.onerror = () => resolve(null)
-    image.src = src
+    image.crossOrigin = 'anonymous'
+
+    const finish = (result) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timeoutId)
+      image.onload = null
+      image.onerror = null
+      resolve(result)
+    }
+
+    image.onload = () => finish(image)
+    image.onerror = () => finish(null)
+    timeoutId = setTimeout(() => finish(null), timeoutMs)
+
+    try {
+      image.src = src
+    }
+    catch {
+      finish(null)
+    }
   })
 }
 
-export async function renderGearSnapshot(payload) {
-  const [canvas, ctx] = getCanvasContext()
-  const itemImage = await loadImage(payload.itemImage)
-
-  const hasLines = payload.lines.length > 0
-  const lineHeight = hasLines ? 86 + payload.lines.length * 138 : 0
-  const height = snapshotPadding + 200 + 34 + 306 + (hasLines ? 34 + lineHeight : 0) + snapshotPadding
-  canvas.height = height
-
-  const gradient = ctx.createLinearGradient(0, 0, 0, height)
-  gradient.addColorStop(0, colors.bgTop)
-  gradient.addColorStop(0.55, '#242025')
-  gradient.addColorStop(1, colors.bgBottom)
-  ctx.fillStyle = gradient
-  ctx.fillRect(0, 0, snapshotWidth, height)
-
-  const accent = ctx.createLinearGradient(snapshotPadding, 0, snapshotWidth - snapshotPadding, 0)
-  accent.addColorStop(0, colors.gold)
-  accent.addColorStop(0.45, colors.emerald)
-  accent.addColorStop(1, colors.rose)
-  fillRoundRect(ctx, snapshotPadding, snapshotPadding - 18, snapshotWidth - snapshotPadding * 2, 8, 4, accent)
-
-  let y = snapshotPadding
-  drawHeader(ctx, payload, itemImage, y)
-  y += 234
-  drawSummary(ctx, payload, y)
-  if (hasLines) {
-    y += 340
-    drawLineSection(ctx, payload, y)
+async function waitForSnapshotFonts() {
+  if (typeof document === 'undefined' || !document.fonts) {
+    return
   }
+
+  try {
+    await Promise.allSettled([
+      document.fonts.load('700 32px "Noto Sans KR"'),
+      document.fonts.load('700 20px "Geist"'),
+    ])
+    await document.fonts.ready
+  }
+  catch {
+    // The font stacks above provide local fallbacks.
+  }
+}
+
+function getLayout(lineCount) {
+  const panelHeight = lineRowsY - linePanelY + lineCount * lineRowHeight + linePanelBottomPadding
+  const legalY = linePanelY + panelHeight + legalGap
+  return {
+    height: legalY + legalHeight,
+    legalY,
+    linesY: lineRowsY,
+  }
+}
+
+function getCanvasContext(height) {
+  if (typeof document === 'undefined') {
+    return [null, null]
+  }
+
+  const canvas = document.createElement('canvas')
+  canvas.width = snapshotWidth
+  canvas.height = height
+  return [canvas, canvas.getContext?.('2d') ?? null]
+}
+
+function normalizePayload(payload) {
+  return {
+    ...(payload ?? {}),
+    current: payload?.current ?? {},
+    projected: payload?.projected ?? null,
+    lines: Array.isArray(payload?.lines) ? payload.lines.slice(0, 5) : [],
+  }
+}
+
+export async function renderGearSnapshot(payload) {
+  const normalizedPayload = normalizePayload(payload)
+  const layout = getLayout(normalizedPayload.lines.length)
+  const [canvas, ctx] = getCanvasContext(layout.height)
+
+  if (!canvas || !ctx) {
+    throw new Error('Canvas 2D is not available in this browser.')
+  }
+
+  await waitForSnapshotFonts()
+  const [heroImage, itemImage] = await Promise.all([
+    loadImage(officialAssets.hero),
+    loadImage(normalizedPayload.itemImage),
+  ])
+
+  ctx.textBaseline = 'alphabetic'
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  drawCanvasBackground(ctx, layout.height)
+  drawHeroBackdrop(ctx, heroImage)
+  drawLineSection(ctx, normalizedPayload, layout.linesY)
+  drawSummaryContent(ctx, normalizedPayload, itemImage)
+  drawLegalLine(ctx, layout.legalY)
 
   return canvasToBlob(canvas)
 }

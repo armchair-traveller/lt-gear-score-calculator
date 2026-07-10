@@ -597,12 +597,12 @@ export function useGearScoreCalculator() {
         query: Object.fromEntries(params.entries()),
       }))
       toggleClipboardTooltip()
+      return resString
     }
     catch (error) {
       console.error(error)
+      return ''
     }
-
-    return resString
   }
 
   function readURL(pars) {
@@ -638,13 +638,6 @@ export function useGearScoreCalculator() {
 
   function formatGainRange(text, baseValue) {
     return formatGainRangeWithPrecision(text, baseValue, resultMode.value === 'rating' ? 2 : 0)
-  }
-
-  function getPotentialScoreLineText(index) {
-    const row = results.value.individual[index]
-    return row.potentialMinPerc === row.potentialMaxPerc
-      ? `${row.potentialMinPerc}%`
-      : `${row.potentialMinPerc}% ~ ${row.potentialMaxPerc}%`
   }
 
   function getPotentialValueRange(index) {
@@ -714,33 +707,34 @@ export function useGearScoreCalculator() {
     snapshotError,
     snapshotCopySucceeded,
     snapshotDownloadSucceeded,
-    getSnapshotProjectedLevelLabel,
-    getSnapshotCurrentHeading,
+    snapshotShareSucceeded,
+    snapshotCanShare,
+    snapshotCanCopy,
+    snapshotExportAction,
+    hasSnapshotProjection,
     openSnapshot,
+    refreshSnapshot,
     copySnapshot,
     downloadSnapshot,
+    shareSnapshot,
   } = useGearScoreSnapshot({
     gearType,
     pieceType,
-    currentItem,
     selectedImage,
     statType,
+    resultMode,
     results,
-    totalProgress,
-    potentialProgress,
     getFinalUpgrade,
     supportsInputEnchantLevel,
     getInputEnchantLevelNumber,
     getProjectionEnchantLevel,
-    getSelectedRating,
     hasRolledValue,
     getInputValue,
     formatStatValue,
     getPotentialValueRange,
-    getPotentialScoreLineText,
-    getPotentialLineTier,
+    getPotentialLineText,
+    isInputOverMax,
     updateValues,
-    formatGainRangeWithPrecision,
   })
 
   changePiece()
@@ -800,6 +794,11 @@ export function useGearScoreCalculator() {
     snapshotError,
     snapshotCopySucceeded,
     snapshotDownloadSucceeded,
+    snapshotShareSucceeded,
+    snapshotCanShare,
+    snapshotCanCopy,
+    snapshotExportAction,
+    hasSnapshotProjection,
     results,
     tierGuideRows,
     gearCategories,
@@ -835,6 +834,7 @@ export function useGearScoreCalculator() {
     supportsInputEnchantLevel,
     getInputMaxValue,
     getInputMaxValueText,
+    getInputEnchantLevelNumber,
     getProjectionEnchantLevel,
     setInputEnchantLevel,
     setInputValueMode,
@@ -852,11 +852,11 @@ export function useGearScoreCalculator() {
     acceptDisclaimer,
     clamp,
     formatGainRangeWithPrecision,
-    getSnapshotProjectedLevelLabel,
-    getSnapshotCurrentHeading,
     openSnapshot,
+    refreshSnapshot,
     copySnapshot,
     downloadSnapshot,
+    shareSnapshot,
     getLineScoreText,
     isInputOverMax,
     getLineMaxSummaryText,

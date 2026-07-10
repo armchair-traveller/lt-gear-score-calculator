@@ -279,6 +279,7 @@ watch(
               :placeholder="valuePlaceholder"
               :aria-label="`Line ${index + 1} value`"
               :aria-invalid="isInputOverMax(index)"
+              :aria-describedby="isInputOverMax(index) ? `line-${index}-value-error` : undefined"
               class="min-w-[4.5rem]"
               @focus="focusInput(index)"
               @blur="blurInput(index)"
@@ -322,7 +323,11 @@ watch(
           </InputGroup>
         </div>
       </div>
-      <p v-if="isInputOverMax(index)" class="text-xs text-destructive">
+      <p
+        v-if="isInputOverMax(index)"
+        :id="`line-${index}-value-error`"
+        class="text-xs text-destructive"
+      >
         Value is over the final maximum.
       </p>
     </div>

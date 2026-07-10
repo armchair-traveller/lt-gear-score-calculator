@@ -46,6 +46,7 @@ const {
   saveCurrentGearToPlan,
   clamp,
   getLineScoreText,
+  isInputOverMax,
   getPotentialLineText,
   getPotentialLineTier,
   getTierClass,
@@ -57,6 +58,17 @@ const rolledLineIndexes = computed(() =>
     .map((_, index) => index)
     .filter((index) => hasRolledValue(index)),
 )
+const hasInvalidSnapshotLine = computed(() => rolledLineIndexes.value.some((index) => isInputOverMax(index)))
+const canShareSnapshot = computed(() => rolledLineIndexes.value.length > 0 && !hasInvalidSnapshotLine.value)
+const snapshotRequirement = computed(() => {
+  if (rolledLineIndexes.value.length === 0) {
+    return 'Enter an enchant value to create a shareable snapshot.'
+  }
+  if (hasInvalidSnapshotLine.value) {
+    return 'Correct values above the item maximum before sharing.'
+  }
+  return ''
+})
 
 const emptyLineCount = computed(() => statType.value.length - rolledLineIndexes.value.length)
 const emptyLineSummary = computed(() =>
@@ -122,9 +134,16 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             </ToggleGroup>
 
             <ButtonGroup aria-label="Result actions">
-              <Button variant="outline" size="sm" @click="openSnapshot">
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="!canShareSnapshot"
+                :title="snapshotRequirement || undefined"
+                :aria-describedby="!canShareSnapshot ? 'snapshot-requirement' : undefined"
+                @click="openSnapshot($event.currentTarget)"
+              >
                 <CameraIcon data-icon="inline-start" />
-                Snapshot
+                Share snapshot
               </Button>
 
               <Button
@@ -139,6 +158,14 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 {{ gearPlanSaveSucceeded ? 'Added' : 'Add to plan' }}
               </Button>
             </ButtonGroup>
+
+            <p
+              v-if="!canShareSnapshot"
+              id="snapshot-requirement"
+              class="w-full text-xs text-muted-foreground sm:text-right"
+            >
+              {{ snapshotRequirement }}
+            </p>
           </div>
         </div>
       </CardHeader>

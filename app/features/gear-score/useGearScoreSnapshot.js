@@ -1,28 +1,24 @@
-import { onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { renderGearSnapshot } from '@/utils/snapshot.js'
 
 export function useGearScoreSnapshot({
   gearType,
   pieceType,
-  currentItem,
   selectedImage,
   statType,
+  resultMode,
   results,
-  totalProgress,
-  potentialProgress,
   getFinalUpgrade,
   supportsInputEnchantLevel,
   getInputEnchantLevelNumber,
   getProjectionEnchantLevel,
-  getSelectedRating,
   hasRolledValue,
   getInputValue,
   formatStatValue,
   getPotentialValueRange,
-  getPotentialScoreLineText,
-  getPotentialLineTier,
+  getPotentialLineText,
+  isInputOverMax,
   updateValues,
-  formatGainRangeWithPrecision,
 }) {
   const snapshotOpen = ref(false)
   const snapshotImageUrl = ref('')
@@ -31,9 +27,16 @@ export function useGearScoreSnapshot({
   const snapshotError = ref('')
   const snapshotCopySucceeded = ref(false)
   const snapshotDownloadSucceeded = ref(false)
+  const snapshotShareSucceeded = ref(false)
+  const snapshotCanShare = ref(false)
+  const snapshotCanCopy = ref(false)
+  const snapshotExportAction = ref('')
   let snapshotObjectUrl = ''
   let snapshotCopySucceededTimeout = null
   let snapshotDownloadSucceededTimeout = null
+  let snapshotShareSucceededTimeout = null
+  let snapshotGenerationId = 0
+  let snapshotTriggerElement = null
 
   function getSnapshotCurrentLevelLabel(item = gearType.value) {
     if (getFinalUpgrade(item) === '') {
@@ -49,74 +52,81 @@ export function useGearScoreSnapshot({
     return finalUpgrade ? `Lv.${getProjectionEnchantLevel(item)} ${finalUpgrade}` : 'Current'
   }
 
-  function getSnapshotCurrentHeading(item = gearType.value) {
-    const levelLabel = getSnapshotCurrentLevelLabel(item)
-    return levelLabel === 'Current' ? levelLabel : `${levelLabel} Current`
+  function hasSnapshotProjection(item = gearType.value) {
+    if (!getFinalUpgrade(item)) {
+      return false
+    }
+
+    return !supportsInputEnchantLevel(item)
+      || getInputEnchantLevelNumber(item) < getProjectionEnchantLevel(item)
+  }
+
+  function getSnapshotItemName() {
+    return gearType.value.toLowerCase().includes(pieceType.value.toLowerCase())
+      ? gearType.value
+      : `${gearType.value} · ${pieceType.value}`
   }
 
   function getSnapshotPayload() {
-    const finalUpgrade = getFinalUpgrade(gearType.value)
+    const hasProjection = hasSnapshotProjection()
+    const metricMode = resultMode.value === 'rating' ? 'rating' : 'score'
     const currentLevelLabel = getSnapshotCurrentLevelLabel()
     const projectedLevelLabel = getSnapshotProjectedLevelLabel()
-    const itemMaxRating = currentItem.value?.DI?.toFixed(2) ?? '0.00'
-    const selectedMaxRating = getSelectedRating().toFixed(2)
+    const lines = statType.value.flatMap((stat, index) => {
+      const hasValue = hasRolledValue(index)
+      if (!hasValue) {
+        return []
+      }
 
+      const row = results.value.individual[index]
+
+      const line = {
+        stat,
+        value: formatStatValue(getInputValue(index), stat),
+        currentMetric: metricMode === 'rating' ? `${row.DI}%` : `${row.percent}%`,
+      }
+
+      if (hasProjection) {
+        line.projectedValue = getPotentialValueRange(index)
+        line.projectedMetric = getPotentialLineText(index)
+      }
+
+      return [line]
+    })
+
+    const currentValue = metricMode === 'rating'
+      ? `${results.value.DI}%`
+      : `${results.value.percent}%`
+    const projectedValue = metricMode === 'rating'
+      ? results.value.potentialDI
+      : results.value.potentialScore
     return {
-      itemName: `${pieceType.value} ${gearType.value}`,
-      itemPiece: pieceType.value,
-      itemGearType: gearType.value,
+      itemName: getSnapshotItemName(),
       itemImage: selectedImage.value,
-      finalUpgrade,
-      upgradeLabel: finalUpgrade ? `${currentLevelLabel} -> ${projectedLevelLabel}` : 'Current only',
-      subtitle: `${currentLevelLabel} current / ${selectedMaxRating}% selected max / ${itemMaxRating}% item max`,
-      generatedLabel: new Intl.DateTimeFormat(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }).format(new Date()),
+      metricMode,
       current: {
-        score: `${results.value.percent}%`,
-        rating: `${results.value.DI}%`,
-        tier: results.value.tier,
-        progress: totalProgress.value,
+        value: currentValue,
+        tier: metricMode === 'score' ? results.value.tier : '',
         levelLabel: currentLevelLabel,
       },
-      projected: {
-        score: results.value.potentialScore,
-        rating: results.value.potentialDI,
-        tier: results.value.potentialTier,
-        progress: potentialProgress.value,
-        scoreGain: formatGainRangeWithPrecision(results.value.potentialScore, Number(results.value.percent), 0),
-        levelLabel: projectedLevelLabel,
-      },
-      lines: statType.value.flatMap((stat, index) => {
-        const hasValue = hasRolledValue(index)
-        if (!hasValue) {
-          return []
-        }
-
-        const row = results.value.individual[index]
-
-        return [{
-          index: index + 1,
-          stat,
-          value: formatStatValue(getInputValue(index), stat),
-          currentScore: `${row.percent}%`,
-          currentTier: row.tier,
-          projectedValue: getPotentialValueRange(index),
-          projectedScore: getPotentialScoreLineText(index),
-          projectedTier: getPotentialLineTier(index),
-          progress: Math.min(Math.max(Number(row.potentialMinPerc || row.percent), 0), 100),
-        }]
-      }),
+      projected: hasProjection
+        ? {
+            value: projectedValue,
+            tier: metricMode === 'score' ? results.value.potentialTier : '',
+            levelLabel: projectedLevelLabel,
+          }
+        : null,
+      lines,
     }
   }
 
   function clearSnapshotActionFeedback() {
     clearTimeout(snapshotCopySucceededTimeout)
     clearTimeout(snapshotDownloadSucceededTimeout)
+    clearTimeout(snapshotShareSucceededTimeout)
     snapshotCopySucceeded.value = false
     snapshotDownloadSucceeded.value = false
+    snapshotShareSucceeded.value = false
   }
 
   function showSnapshotCopySucceeded() {
@@ -135,33 +145,74 @@ export function useGearScoreSnapshot({
     }, 1800)
   }
 
+  function showSnapshotShareSucceeded() {
+    clearTimeout(snapshotShareSucceededTimeout)
+    snapshotShareSucceeded.value = true
+    snapshotShareSucceededTimeout = setTimeout(() => {
+      snapshotShareSucceeded.value = false
+    }, 1800)
+  }
+
+  function revokeSnapshotObjectUrl() {
+    if (!snapshotObjectUrl) {
+      return
+    }
+
+    URL.revokeObjectURL(snapshotObjectUrl)
+    snapshotObjectUrl = ''
+  }
+
+  function clearSnapshotResult() {
+    snapshotBlob.value = null
+    snapshotImageUrl.value = ''
+    revokeSnapshotObjectUrl()
+  }
+
   async function refreshSnapshot() {
+    const generationId = ++snapshotGenerationId
     snapshotIsGenerating.value = true
     snapshotError.value = ''
     clearSnapshotActionFeedback()
-    updateValues()
+    clearSnapshotResult()
 
     try {
+      updateValues()
       const blob = await renderGearSnapshot(getSnapshotPayload())
-      snapshotBlob.value = blob
 
-      if (snapshotObjectUrl) {
-        URL.revokeObjectURL(snapshotObjectUrl)
+      if (generationId !== snapshotGenerationId) {
+        return
       }
 
+      snapshotBlob.value = blob
       snapshotObjectUrl = URL.createObjectURL(blob)
       snapshotImageUrl.value = snapshotObjectUrl
     }
     catch (error) {
+      if (generationId !== snapshotGenerationId) {
+        return
+      }
+
       console.error(error)
-      snapshotError.value = 'Could not generate snapshot.'
+      snapshotError.value = 'Could not build the preview. Try generating it again.'
     }
     finally {
-      snapshotIsGenerating.value = false
+      if (generationId === snapshotGenerationId) {
+        snapshotIsGenerating.value = false
+      }
     }
   }
 
-  function openSnapshot() {
+  function openSnapshot(triggerElement) {
+    if (
+      !statType.value.some((_, index) => hasRolledValue(index))
+      || statType.value.some((_, index) => isInputOverMax(index))
+    ) {
+      return
+    }
+
+    snapshotTriggerElement = triggerElement instanceof HTMLElement
+      ? triggerElement
+      : document.activeElement
     snapshotOpen.value = true
     refreshSnapshot()
   }
@@ -175,7 +226,20 @@ export function useGearScoreSnapshot({
   }
 
   function getSnapshotFilename() {
-    const itemName = `${pieceType.value}-${gearType.value}`
+    const finalUpgrade = hasSnapshotProjection() ? getFinalUpgrade(gearType.value) : ''
+    const metricMode = resultMode.value === 'rating' ? 'rating' : 'score'
+    const levelContext = supportsInputEnchantLevel(gearType.value)
+      ? `lv-${getInputEnchantLevelNumber(gearType.value)}`
+      : 'current'
+    const now = new Date()
+    const date = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-')
+    const itemName = [pieceType.value, gearType.value, levelContext, finalUpgrade, metricMode, date]
+      .filter(Boolean)
+      .join('-')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
@@ -184,20 +248,26 @@ export function useGearScoreSnapshot({
   }
 
   async function copySnapshot() {
-    const blob = await ensureSnapshotBlob()
+    if (snapshotExportAction.value) {
+      return
+    }
+
+    snapshotExportAction.value = 'copy'
     snapshotError.value = ''
-
-    if (!blob) {
-      snapshotError.value = 'Snapshot is not ready yet.'
-      return
-    }
-
-    if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-      snapshotError.value = 'Image copy is not supported in this browser.'
-      return
-    }
+    clearSnapshotActionFeedback()
 
     try {
+      const blob = await ensureSnapshotBlob()
+      if (!blob) {
+        snapshotError.value = 'Snapshot is not ready yet.'
+        return
+      }
+
+      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+        snapshotError.value = 'Image copy is not supported in this browser.'
+        return
+      }
+
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob }),
       ])
@@ -207,34 +277,140 @@ export function useGearScoreSnapshot({
       console.error(error)
       snapshotError.value = 'Could not copy image.'
     }
+    finally {
+      snapshotExportAction.value = ''
+    }
   }
 
   async function downloadSnapshot() {
-    const blob = await ensureSnapshotBlob()
-    snapshotError.value = ''
-
-    if (!blob) {
-      snapshotError.value = 'Snapshot is not ready yet.'
+    if (snapshotExportAction.value) {
       return
     }
 
-    const downloadUrl = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = downloadUrl
-    link.download = getSnapshotFilename()
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(downloadUrl)
-    showSnapshotDownloadSucceeded()
+    snapshotExportAction.value = 'download'
+    snapshotError.value = ''
+    clearSnapshotActionFeedback()
+    let downloadUrl = ''
+
+    try {
+      const blob = await ensureSnapshotBlob()
+      if (!blob) {
+        snapshotError.value = 'Snapshot is not ready yet.'
+        return
+      }
+
+      downloadUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = getSnapshotFilename()
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      showSnapshotDownloadSucceeded()
+    }
+    catch (error) {
+      console.error(error)
+      snapshotError.value = 'Could not save the PNG. Try copying the image instead.'
+    }
+    finally {
+      snapshotExportAction.value = ''
+      if (downloadUrl) {
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+      }
+    }
   }
 
-  onUnmounted(() => {
+  async function shareSnapshot() {
+    if (snapshotExportAction.value) {
+      return
+    }
+
+    snapshotExportAction.value = 'share'
+    snapshotError.value = ''
     clearSnapshotActionFeedback()
 
-    if (snapshotObjectUrl) {
-      URL.revokeObjectURL(snapshotObjectUrl)
+    try {
+      const blob = await ensureSnapshotBlob()
+      if (!blob) {
+        snapshotError.value = 'Snapshot is not ready yet.'
+        return
+      }
+
+      if (typeof File === 'undefined' || !navigator.share || !navigator.canShare) {
+        snapshotError.value = 'File sharing is not supported in this browser. Copy or save the PNG instead.'
+        return
+      }
+
+      const file = new File([blob], getSnapshotFilename(), { type: blob.type })
+      if (!navigator.canShare({ files: [file] })) {
+        snapshotError.value = 'File sharing is not supported in this browser. Copy or save the PNG instead.'
+        return
+      }
+
+      await navigator.share({
+        files: [file],
+        title: `${getSnapshotItemName()} · ${resultMode.value === 'rating' ? 'Rating' : 'Score'} snapshot`,
+      })
+      showSnapshotShareSucceeded()
     }
+    catch (error) {
+      if (error?.name === 'AbortError') {
+        return
+      }
+
+      console.error(error)
+      snapshotError.value = 'Could not share the image. Copy or save the PNG instead.'
+    }
+    finally {
+      snapshotExportAction.value = ''
+    }
+  }
+
+  onMounted(() => {
+    snapshotCanCopy.value = Boolean(
+      navigator.clipboard?.write && typeof ClipboardItem !== 'undefined',
+    )
+
+    if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
+      try {
+        const testFile = new File([''], 'snapshot.png', { type: 'image/png' })
+        snapshotCanShare.value = navigator.canShare({ files: [testFile] })
+      }
+      catch {
+        snapshotCanShare.value = false
+      }
+    }
+  })
+
+  watch(snapshotOpen, (isOpen, wasOpen) => {
+    if (isOpen || !wasOpen) {
+      return
+    }
+
+    snapshotGenerationId += 1
+    snapshotIsGenerating.value = false
+    snapshotExportAction.value = ''
+    clearSnapshotActionFeedback()
+    clearSnapshotResult()
+
+    if (!snapshotTriggerElement) {
+      return
+    }
+
+    const triggerElement = snapshotTriggerElement
+    snapshotTriggerElement = null
+    nextTick(() => {
+      if (triggerElement.isConnected) {
+        triggerElement.focus()
+      }
+    })
+  })
+
+  onUnmounted(() => {
+    snapshotGenerationId += 1
+    clearSnapshotActionFeedback()
+    revokeSnapshotObjectUrl()
+    snapshotTriggerElement = null
   })
 
   return {
@@ -244,10 +420,15 @@ export function useGearScoreSnapshot({
     snapshotError,
     snapshotCopySucceeded,
     snapshotDownloadSucceeded,
-    getSnapshotProjectedLevelLabel,
-    getSnapshotCurrentHeading,
+    snapshotShareSucceeded,
+    snapshotCanShare,
+    snapshotCanCopy,
+    snapshotExportAction,
+    hasSnapshotProjection,
     openSnapshot,
+    refreshSnapshot,
     copySnapshot,
     downloadSnapshot,
+    shareSnapshot,
   }
 }
