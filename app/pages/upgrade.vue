@@ -13,6 +13,7 @@ import {
 } from '@lucide/vue'
 
 import materials from '@/data/item-enhancement-materials.en.json'
+import hammerImage from '@/assets/hammer.png'
 
 const router = useRouter()
 const initialItem = getAvailableItems()[0]
@@ -22,6 +23,7 @@ const targetLevel = ref(String(initialItem?.rows?.length ?? 1))
 const ownedMaterials = ref(0)
 const quantity = ref(1)
 const searchQuery = ref('')
+const catalogExpanded = ref(false)
 const homeHref = computed(() => router.resolve('/').href)
 const planHref = computed(() => router.resolve('/plan').href)
 
@@ -241,65 +243,32 @@ function trimDecimal(value) {
 
 <template>
   <TooltipProvider>
-    <div class="min-h-screen bg-background text-foreground">
-      <header class="bg-background/95 backdrop-blur shadow-[0_1px_12px_rgb(15_23_42_/_0.04)] dark:shadow-none">
-        <div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <div class="flex min-w-0 items-center gap-3">
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/55">
-              <img class="size-11" src="/cool_priring.png" alt="">
-            </div>
-            <div class="min-w-0">
-              <h1 class="truncate text-lg font-semibold tracking-normal md:text-xl">
-                Upgrade Material Calculator
-              </h1>
-              <p class="truncate text-xs text-muted-foreground">
-                {{ selectedItem?.summary?.farm }} / {{ selectedItem?.summary?.quarter }}
-              </p>
-            </div>
-          </div>
+    <div class="parade-page">
+      <AppShellHeader
+        active="upgrade"
+        eyebrow="Upgrade materials"
+        title="Plan your next upgrade."
+      />
 
-          <div class="flex items-center gap-2">
-            <ModeToggle />
-
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button variant="outline" size="icon" as-child>
-                  <NuxtLink :to="homeHref">
-                    <ArrowLeftIcon />
-                    <span class="sr-only">Open enchant calculator</span>
-                  </NuxtLink>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Enchant calculator</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button variant="outline" size="icon" as-child>
-                  <NuxtLink :to="planHref">
-                    <img class="size-5" src="/smart_priring.png" alt="">
-                    <span class="sr-only">Open planner</span>
-                  </NuxtLink>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Planner</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-      </header>
-
-      <main class="mx-auto grid w-full max-w-[1600px] gap-4 px-4 py-4 md:px-6 xl:grid-cols-[minmax(420px,560px)_minmax(0,1fr)]">
-        <section class="grid content-start gap-4">
-          <Card class="rounded-lg">
+      <main class="parade-workspace grid gap-4 xl:grid-cols-[1.08fr_.92fr]">
+        <section class="grid content-start gap-4 xl:col-span-2">
+          <Card class="parade-card parade-goal-card relative rounded-[22px] border-sky-200">
             <CardHeader>
-              <CardTitle class="flex items-center gap-2 text-base">
-                <CalculatorIcon class="size-4" />
-                Goal
-              </CardTitle>
-              <CardDescription>{{ selectedItem?.summary?.type }}</CardDescription>
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <img class="size-12 object-contain drop-shadow-sm" src="/cool_priring.png" alt="">
+                  <div>
+                    <p class="parade-section-kicker">Upgrade setup</p>
+                    <CardTitle class="mt-1 text-lg">Choose your goal</CardTitle>
+                  </div>
+                </div>
+                <Button variant="secondary" as-child>
+                  <a href="#upgrade-catalog">Browse</a>
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent class="grid gap-4">
-              <div class="grid gap-2">
+            <CardContent class="grid gap-4 lg:grid-cols-[minmax(240px,1.3fr)_1fr_1fr_auto] lg:items-end">
+              <div class="grid gap-2 lg:min-w-0">
                 <Label for="upgrade-item">Item</Label>
                 <Select v-model="itemValue">
                   <SelectTrigger
@@ -329,7 +298,7 @@ function trimDecimal(value) {
                 </Select>
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid grid-cols-2 gap-3">
                 <div class="grid gap-2">
                   <Label for="current-level">Current</Label>
                   <Select v-model="currentLevel">
@@ -367,7 +336,7 @@ function trimDecimal(value) {
                 </div>
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid grid-cols-2 gap-3">
                 <div class="grid gap-2">
                   <Label for="quantity">Quantity</Label>
                   <Input
@@ -391,21 +360,24 @@ function trimDecimal(value) {
                 </div>
               </div>
 
-              <div class="flex flex-wrap gap-2">
-                <Button variant="secondary" size="sm" @click="setRange(currentLevelNumber, Math.min(maxLevel, currentLevelNumber + 1))">
-                  Next
-                </Button>
-                <Button variant="secondary" size="sm" @click="setRange(0, maxLevel)">
-                  +0 to max
-                </Button>
-                <Button variant="outline" size="sm" @click="setRange(currentLevelNumber, maxLevel)">
-                  Current to max
-                </Button>
+              <div class="grid gap-2">
+                <Label>Presets</Label>
+                <div class="flex flex-wrap gap-2 lg:flex-nowrap">
+                  <Button variant="secondary" size="sm" @click="setRange(currentLevelNumber, Math.min(maxLevel, currentLevelNumber + 1))">
+                    Next
+                  </Button>
+                  <Button variant="outline" size="sm" @click="setRange(0, maxLevel)">
+                    +0 → max
+                  </Button>
+                  <Button variant="outline" size="sm" @click="setRange(currentLevelNumber, maxLevel)">
+                    Current → max
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card class="rounded-lg">
+          <Card class="hidden">
             <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
                 <MapPinnedIcon class="size-4" />
@@ -436,8 +408,8 @@ function trimDecimal(value) {
           </Card>
         </section>
 
-        <section class="grid content-start gap-4">
-          <Card class="rounded-lg">
+        <section class="grid content-start gap-4 xl:col-span-2 xl:grid-cols-[1.08fr_.92fr]">
+          <Card class="parade-card rounded-[22px] border-t-4 border-t-primary">
             <CardHeader>
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -459,23 +431,41 @@ function trimDecimal(value) {
                 >
                   <CheckCircle2Icon v-if="canEnhance" class="size-3.5" />
                   <TriangleAlertIcon v-else class="size-3.5" />
-                  {{ canEnhance ? 'Ready' : 'Missing' }}
+                  {{ canEnhance ? 'Ready' : `${formatNumber(remainingMaterials)} missing` }}
                 </Badge>
               </div>
             </CardHeader>
 
             <CardContent class="grid gap-4">
-              <div class="grid gap-3 md:grid-cols-4">
-                <div class="rounded-lg bg-muted/20 p-4">
+              <div class="parade-material-hero grid grid-cols-[1fr_auto] items-center gap-4 rounded-2xl border border-sky-200 p-4">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-3">
+                    <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-card shadow-sm">
+                      <img class="size-8 object-contain" :src="hammerImage" alt="">
+                    </span>
+                    <div class="min-w-0">
+                      <h3 class="truncate text-base font-bold">{{ selectedItem?.summary?.farm }} material</h3>
+                      <p class="text-sm text-muted-foreground">{{ formatNumber(ownedMaterialNumber) }} / {{ formatNumber(requiredMaterials) }}</p>
+                    </div>
+                  </div>
+                  <Progress :model-value="completionPercent" class="mt-3 h-2" />
+                </div>
+                <div class="text-right">
+                  <strong class="block text-3xl font-bold text-amber-700">{{ completionPercent.toFixed(0) }}%</strong>
+                  <span class="text-xs font-semibold text-amber-800">owned</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <div class="rounded-2xl border border-sky-200 bg-secondary/45 p-3 md:p-4">
                   <div class="flex items-center gap-2 text-sm text-muted-foreground">
                     <PackageIcon class="size-4" />
                     Required
                   </div>
-                  <div class="mt-2 text-3xl font-semibold tracking-normal">{{ formatNumber(requiredMaterials) }}</div>
-                  <div class="mt-1 text-xs text-muted-foreground">{{ formatCompactNumber(requiredMaterials) }} total</div>
+                  <div class="mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatNumber(requiredMaterials) }}</div>
                 </div>
 
-                <div class="rounded-lg bg-muted/20 p-4">
+                <div class="hidden">
                   <div class="flex items-center gap-2 text-sm text-muted-foreground">
                     <Layers3Icon class="size-4" />
                     Owned
@@ -484,13 +474,13 @@ function trimDecimal(value) {
                   <div class="mt-1 text-xs text-muted-foreground">{{ completionPercent.toFixed(0) }}% covered</div>
                 </div>
 
-                <div class="rounded-lg bg-muted/20 p-4">
+                <div class="parade-warning-surface rounded-2xl border border-amber-200 p-3 md:p-4">
                   <div class="flex items-center gap-2 text-sm text-muted-foreground">
                     <SparklesIcon class="size-4" />
                     {{ canEnhance ? 'Extra' : 'Remaining' }}
                   </div>
                   <div
-                    class="mt-2 text-3xl font-semibold tracking-normal"
+                    class="mt-2 text-xl font-bold tracking-tight md:text-3xl"
                     :class="canEnhance ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'"
                   >
                     {{ formatNumber(canEnhance ? extraMaterials : remainingMaterials) }}
@@ -500,17 +490,14 @@ function trimDecimal(value) {
                   </div>
                 </div>
 
-                <div class="rounded-lg bg-muted/20 p-4">
+                <div class="parade-success-surface rounded-2xl border border-emerald-200 p-3 md:p-4">
                   <div class="flex items-center gap-2 text-sm text-muted-foreground">
                     <CoinsIcon class="size-4" />
                     Fee
                   </div>
-                  <div class="mt-2 text-3xl font-semibold tracking-normal">{{ formatFee(requiredFeeMillions) }}</div>
-                  <div class="mt-1 text-xs text-muted-foreground">{{ selectedRows.length }} step{{ selectedRows.length === 1 ? '' : 's' }}</div>
+                  <div class="mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatFee(requiredFeeMillions) }}</div>
                 </div>
               </div>
-
-              <Progress :model-value="completionPercent" class="h-2" />
 
               <div
                 v-if="ascensionMaterial"
@@ -539,7 +526,7 @@ function trimDecimal(value) {
                 </div>
               </div>
 
-              <div class="grid gap-3 md:grid-cols-2">
+              <div class="hidden">
                 <div class="rounded-lg bg-muted/20 p-3">
                   <div class="text-xs text-muted-foreground">Current cumulative</div>
                   <div class="mt-1 text-lg font-semibold">{{ formatNumber(currentCumulative * quantityNumber) }}</div>
@@ -552,45 +539,46 @@ function trimDecimal(value) {
             </CardContent>
           </Card>
 
-          <Card class="rounded-lg">
+          <Card class="parade-card rounded-[22px] border-t-4 border-t-amber-400">
             <CardHeader>
-              <CardTitle class="text-base">Upgrade Steps</CardTitle>
-              <CardDescription>{{ selectedItem?.summary?.type }}</CardDescription>
+              <CardTitle class="text-lg">Upgrade steps</CardTitle>
             </CardHeader>
             <CardContent>
               <Table
-                container-class="max-h-[420px] min-w-0 rounded-lg border"
-                class="min-w-[600px] [&_td]:py-2.5 [&_th]:h-10"
+                container-class="max-h-[420px] min-w-0 rounded-xl border"
+                class="min-w-[420px] [&_td]:py-3 [&_th]:h-10"
               >
                 <TableHeader>
                   <TableRow>
                     <TableHead>Step</TableHead>
                     <TableHead>Material</TableHead>
                     <TableHead>Fee</TableHead>
-                    <TableHead>Cumulative</TableHead>
+                    <TableHead class="hidden">Cumulative</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <TableRow v-for="row in selectedRows" :key="row.step">
-                    <TableCell class="font-medium">{{ row.step }}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" class="font-bold text-primary">{{ row.step }}</Badge>
+                    </TableCell>
                     <TableCell>{{ formatNumber(parseNumber(row.material) * quantityNumber) }}</TableCell>
                     <TableCell>{{ formatFee(parseFeeToMillions(row.fee) * quantityNumber) }}</TableCell>
-                    <TableCell>{{ formatNumber(parseNumber(row.cumulative) * quantityNumber) }}</TableCell>
+                    <TableCell class="hidden">{{ formatNumber(parseNumber(row.cumulative) * quantityNumber) }}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
 
-          <Card class="rounded-lg">
+          <Card id="upgrade-catalog" class="parade-card rounded-[22px] xl:col-span-2">
             <CardHeader>
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle class="text-base">Catalog</CardTitle>
-                  <CardDescription>{{ visibleCatalogItems.length }} entries</CardDescription>
+                  <CardTitle class="text-lg">Related items</CardTitle>
+                  <CardDescription>{{ catalogExpanded ? `${visibleCatalogItems.length} catalog entries` : 'Quick picks from the upgrade catalog' }}</CardDescription>
                 </div>
 
-                <div class="relative w-full sm:w-[280px]">
+                <div v-if="catalogExpanded" class="relative w-full sm:w-[280px]">
                   <SearchIcon class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     v-model="searchQuery"
@@ -599,17 +587,18 @@ function trimDecimal(value) {
                     aria-label="Search upgrade catalog"
                   />
                 </div>
+                <Button v-else variant="outline" @click="catalogExpanded = true">Catalog</Button>
               </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea class="max-h-[460px] rounded-lg border">
-                <div class="grid">
+              <ScrollArea :class="catalogExpanded ? 'max-h-[460px]' : ''">
+                <div class="grid gap-2" :class="catalogExpanded ? '' : 'md:grid-cols-3'">
                   <button
-                    v-for="item in visibleCatalogItems"
+                    v-for="item in visibleCatalogItems.slice(0, catalogExpanded ? visibleCatalogItems.length : 3)"
                     :key="item.value"
                     type="button"
-                    class="grid gap-2 border-b px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40 sm:grid-cols-[minmax(0,1fr)_auto]"
-                    :class="item.value === itemValue ? 'bg-muted/55' : ''"
+                    class="grid gap-2 rounded-2xl border bg-card/75 px-4 py-3 text-left transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:grid-cols-[minmax(0,1fr)_auto]"
+                    :class="item.value === itemValue ? 'border-primary bg-secondary/70' : ''"
                     @click="selectCatalogItem(item.value)"
                   >
                     <span class="min-w-0">

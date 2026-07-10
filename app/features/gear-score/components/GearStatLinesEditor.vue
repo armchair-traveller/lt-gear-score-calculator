@@ -182,11 +182,11 @@ watch(
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg bg-muted/20">
+  <div class="grid gap-2">
     <div
       v-for="(_, index) in statTypes"
       :key="index"
-      class="grid gap-2 p-3"
+      class="grid gap-2 rounded-2xl border bg-card/75 p-2"
     >
       <div
         role="group"
@@ -194,8 +194,8 @@ watch(
         :class="[
           'group/line grid gap-1',
           getLineMaxPercentText
-            ? 'sm:grid-cols-[minmax(0,1fr)_minmax(250px,290px)]'
-            : 'sm:grid-cols-[minmax(0,1fr)_minmax(210px,240px)]',
+            ? 'grid-cols-[minmax(0,1fr)_minmax(140px,170px)]'
+            : 'grid-cols-[minmax(0,1fr)_minmax(120px,145px)]',
         ]"
       >
         <Popover
@@ -210,7 +210,7 @@ watch(
               :disabled="disabled"
               :aria-label="`Line ${index + 1} stat`"
               :aria-expanded="pickerOpen[index] || false"
-              class="h-10 w-full justify-between rounded-b-none rounded-t-3xl bg-input/50 px-3 font-normal shadow-none hover:bg-muted/60 focus-visible:ring-inset dark:bg-input/30 dark:hover:bg-input/40 sm:h-9 sm:rounded-l-3xl sm:rounded-r-none"
+              class="h-12 w-full justify-between rounded-l-3xl rounded-r-none bg-input/50 px-3 font-normal shadow-none hover:bg-muted/60 focus-visible:ring-inset dark:bg-input/30 dark:hover:bg-input/40"
             >
               <span class="flex min-w-0 items-center gap-3">
                 <span
@@ -219,8 +219,16 @@ watch(
                 >
                   {{ index + 1 }}
                 </span>
-                <span class="min-w-0 truncate text-left">
-                  {{ statTypes[index] || 'Select stat...' }}
+                <span class="min-w-0 flex-1 text-left">
+                  <span class="block truncate">
+                    {{ statTypes[index] || 'Select stat...' }}
+                  </span>
+                  <span class="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                    {{ getLineMaxSummaryText(index) }}
+                    <template v-if="getOptionalLineMaxPercentText(index)">
+                      · <span :class="getOptionalLineMaxPercentClass(index)">{{ getOptionalLineMaxPercentText(index) }}</span>
+                    </template>
+                  </span>
                 </span>
               </span>
               <ChevronDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
@@ -258,7 +266,7 @@ watch(
 
         <div
           :class="[
-            'h-10 rounded-b-3xl rounded-t-none border border-transparent bg-input/50 transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30 dark:bg-input/30 sm:h-9 sm:rounded-l-none sm:rounded-r-3xl',
+            'h-12 rounded-l-none rounded-r-3xl border border-transparent bg-input/50 transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30 dark:bg-input/30',
             isInputOverMax(index)
               ? 'border-destructive ring-3 ring-inset ring-destructive/20 dark:ring-destructive/40'
               : '',
@@ -280,12 +288,12 @@ watch(
               :aria-label="`Line ${index + 1} value`"
               :aria-invalid="isInputOverMax(index)"
               :aria-describedby="isInputOverMax(index) ? `line-${index}-value-error` : undefined"
-              class="min-w-[4.5rem]"
+              class="min-w-0"
               @focus="focusInput(index)"
               @blur="blurInput(index)"
               @update:model-value="updateInput(index, $event)"
             />
-            <InputGroupAddon align="inline-end" class="pr-3 text-xs">
+            <InputGroupAddon v-if="hasInputValue(index) || isPercentMode" align="inline-end" class="pr-3 text-xs">
               <Tooltip v-if="hasInputValue(index)">
                 <TooltipTrigger as-child>
                   <InputGroupButton
@@ -306,18 +314,6 @@ watch(
                 class="text-xs font-semibold"
               >
                 %
-              </InputGroupText>
-              <InputGroupText
-                class="whitespace-nowrap text-xs font-medium"
-                :class="isInputOverMax(index) ? 'text-destructive' : 'text-muted-foreground'"
-              >
-                <span>{{ getLineMaxSummaryText(index) }}</span>
-                <span
-                  v-if="getOptionalLineMaxPercentText(index)"
-                  :class="getOptionalLineMaxPercentClass(index)"
-                >
-                  [{{ getOptionalLineMaxPercentText(index) }}]
-                </span>
               </InputGroupText>
             </InputGroupAddon>
           </InputGroup>

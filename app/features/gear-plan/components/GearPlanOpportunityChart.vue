@@ -6,6 +6,7 @@ import {
 
 const {
   rankedSlots,
+  slotModels,
   maxChartDI,
   openEditor,
   getPrimaryReason,
@@ -19,7 +20,7 @@ function getWidth(value) {
 
 <template>
   <section class="grid gap-3">
-    <div class="flex flex-wrap items-end justify-between gap-3">
+    <div class="hidden flex-wrap items-end justify-between gap-3">
       <div>
         <h2 class="text-base font-semibold">Potential</h2>
         <p class="text-sm text-muted-foreground">Common DI scale across ranked pieces</p>
@@ -52,7 +53,7 @@ function getWidth(value) {
         <HoverCardTrigger as-child>
           <button
             type="button"
-            class="grid w-full gap-3 border-b p-3 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50 sm:grid-cols-[minmax(190px,280px)_minmax(260px,1fr)_150px] sm:items-center"
+            class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50 sm:grid-cols-[minmax(190px,280px)_minmax(260px,1fr)_150px]"
             @click="openEditor(slot.id)"
           >
             <div class="flex min-w-0 items-center gap-3">
@@ -68,7 +69,7 @@ function getWidth(value) {
               </div>
             </div>
 
-            <div class="min-w-0">
+            <div class="hidden min-w-0 sm:block">
               <div class="flex h-3 w-full overflow-hidden rounded-sm bg-muted/70">
                 <Tooltip>
                   <TooltipTrigger as-child>
@@ -137,9 +138,18 @@ function getWidth(value) {
       </HoverCard>
     </div>
 
-    <div v-else class="rounded-lg border border-dashed p-8 text-center">
-      <div class="text-sm font-medium">No ranked pieces yet</div>
-      <div class="mt-1 text-sm text-muted-foreground">Enter at least 3 final lines on a gear slot to start ranking.</div>
+    <div v-else class="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed bg-secondary/20 p-8 text-center">
+      <span class="flex size-20 items-center justify-center rounded-3xl bg-secondary">
+        <img class="size-16 object-contain" src="/smart_priring.png" alt="">
+      </span>
+      <h3 class="mt-4 text-xl font-bold">Build your upgrade queue</h3>
+      <p class="mt-1 max-w-md text-sm text-muted-foreground">Add the final values from at least three enchant lines. The planner will compare completed pieces and surface the largest opportunity.</p>
+      <div class="mt-4 flex flex-wrap justify-center gap-2 text-xs font-semibold text-muted-foreground">
+        <Badge variant="secondary">1 · Pick a slot</Badge>
+        <Badge variant="secondary">2 · Enter final lines</Badge>
+        <Badge variant="secondary">3 · Compare priority</Badge>
+      </div>
+      <Button class="mt-5" @click="slotModels[0] && openEditor(slotModels[0].id)">Add first gear piece</Button>
     </div>
   </section>
 </template>

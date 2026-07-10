@@ -48,12 +48,14 @@ function getLineStatusClass(status) {
   <Sheet v-model:open="editorOpen">
     <SheetContent
       side="right"
-      class="gap-0 p-0 data-[side=right]:!w-full sm:data-[side=right]:!max-w-none md:data-[side=right]:!w-[680px]"
+      class="gap-0 p-0 data-[side=right]:!w-full sm:data-[side=right]:!max-w-none md:data-[side=right]:!w-[640px]"
     >
       <template v-if="selectedSlot">
         <SheetHeader class="border-b px-5 py-4 pr-14">
           <div class="flex min-w-0 items-center gap-3">
-            <img class="size-12 shrink-0 rounded-lg bg-muted p-1" :src="selectedSlot.image" alt="">
+            <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50">
+              <img class="size-10" :src="selectedSlot.image" alt="">
+            </span>
             <div class="min-w-0">
               <SheetTitle class="truncate">{{ selectedSlot.pieceType }} {{ selectedSlot.gearType }}</SheetTitle>
               <SheetDescription>
@@ -72,22 +74,22 @@ function getLineStatusClass(status) {
               Shared planner preview is read-only.
             </div>
 
-            <div class="grid gap-2 sm:grid-cols-3">
-              <div class="rounded-lg bg-muted/20 p-3">
+            <div class="grid grid-cols-3 gap-2">
+              <div class="parade-metric p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                   <GaugeIcon class="size-3.5" />
                   Current DI
                 </div>
                 <div class="mt-1 text-xl font-semibold">{{ editorResult.currentDI.toFixed(2) }}%</div>
               </div>
-              <div class="rounded-lg bg-muted/20 p-3">
+              <div class="parade-metric p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                   <TargetIcon class="size-3.5" />
                   Benchmark
                 </div>
                 <div class="mt-1 text-xl font-semibold">{{ editorResult.benchmarkDI.toFixed(2) }}%</div>
               </div>
-              <div class="rounded-lg bg-muted/20 p-3">
+              <div class="parade-warning-surface rounded-2xl border border-amber-200 p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                   <TrendingUpIcon class="size-3.5" />
                   Potential

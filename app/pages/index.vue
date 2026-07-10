@@ -5,10 +5,10 @@ provideGearScoreCalculator(calculator)
 
 <template>
   <TooltipProvider>
-    <div class="min-h-screen bg-background text-foreground">
+    <div class="parade-page">
       <GearScoreHeader />
 
-      <main class="mx-auto grid w-full max-w-[1600px] gap-4 px-4 py-4 md:px-6 xl:grid-cols-[minmax(420px,560px)_minmax(0,1fr)]">
+      <main class="parade-workspace grid gap-4 xl:grid-cols-[minmax(390px,414px)_minmax(0,1fr)]">
         <GearScoreInputPanel />
         <GearScoreResultsPanel />
       </main>

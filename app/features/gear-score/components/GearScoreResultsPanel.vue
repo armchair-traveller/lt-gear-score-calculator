@@ -108,7 +108,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
 
 <template>
   <section class="grid content-start gap-4">
-    <Card class="rounded-lg">
+    <Card class="parade-card rounded-[22px]">
       <CardHeader>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -171,14 +171,11 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
       </CardHeader>
 
       <CardContent class="grid gap-4">
-        <div
-          class="grid gap-3"
-          :class="rolledLineIndexes.length > 0 ? 'lg:grid-cols-[220px_1fr]' : 'lg:grid-cols-[220px]'"
-        >
-          <div class="rounded-lg bg-muted/20 p-4">
-            <div class="text-sm text-muted-foreground">Total</div>
+        <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
+          <div class="rounded-2xl bg-secondary/55 p-4">
+            <div class="parade-section-kicker">Current strength</div>
             <div class="mt-1 flex items-end gap-2">
-              <div class="text-4xl font-semibold tracking-normal">
+              <div class="text-5xl font-bold tracking-[-0.06em]">
                 {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
               </div>
               <Badge variant="outline" :class="getTierClass(results.tier)">
@@ -188,7 +185,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             <Progress :model-value="totalProgress" class="mt-4 h-2" />
           </div>
 
-          <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-lg bg-muted/20">
+          <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-2xl bg-secondary/30">
             <div
               v-for="index in rolledLineIndexes"
               :key="`result-${index}`"
@@ -219,11 +216,18 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
               {{ emptyLineSummary }}
             </div>
           </div>
+          <div v-else class="flex min-h-32 items-center gap-4 rounded-2xl border border-dashed bg-secondary/20 p-5">
+            <img class="size-16 shrink-0 object-contain" src="/smart_priring.png" alt="">
+            <div>
+              <h3 class="font-bold">Add your first enchant value</h3>
+              <p class="mt-1 max-w-md text-sm text-muted-foreground">Results update immediately as you enter each line. Start with the values shown on your item.</p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
 
-    <Card v-if="getFinalUpgrade(gearType) !== ''" class="rounded-lg">
+    <Card v-if="getFinalUpgrade(gearType) !== ''" class="parade-card rounded-[22px]">
       <Tabs default-value="summary" class="min-w-0 gap-6">
         <CardHeader>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -247,14 +251,11 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
 
         <CardContent class="min-w-0">
           <TabsContent value="summary" class="m-0">
-            <div
-              class="grid gap-3"
-              :class="rolledLineIndexes.length > 0 ? 'lg:grid-cols-[220px_1fr]' : 'lg:grid-cols-[220px]'"
-            >
-              <div class="rounded-lg bg-muted/20 p-4">
+            <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
+              <div class="parade-projection-card rounded-2xl border border-amber-300 p-4">
                 <div class="text-sm text-muted-foreground">Projected</div>
                 <div class="mt-1 flex items-end gap-2">
-                  <div class="text-3xl font-semibold tracking-normal">
+                  <div class="text-4xl font-bold tracking-[-0.05em] text-amber-700">
                     {{ resultMode === 'rating' ? results.potentialDI : results.potentialScore }}
                   </div>
                   <Badge variant="outline" :class="getTierClass(results.potentialTier)">
@@ -265,7 +266,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 <Progress :model-value="potentialProgress" class="mt-4 h-2" />
               </div>
 
-              <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-lg bg-muted/20">
+              <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-2xl bg-secondary/30">
                 <div
                   v-for="index in rolledLineIndexes"
                   :key="`potential-${index}`"
@@ -298,6 +299,9 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 >
                   {{ emptyLineSummary }}
                 </div>
+              </div>
+              <div v-else class="flex min-h-32 items-center rounded-2xl bg-secondary/25 p-5">
+                <p class="text-sm text-muted-foreground">Your fully upgraded projection will appear here once at least one enchant value is entered.</p>
               </div>
             </div>
           </TabsContent>
@@ -486,7 +490,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
     </Card>
 
     <div class="grid gap-4 2xl:grid-cols-2">
-      <Card class="rounded-lg">
+      <Card class="parade-card rounded-[22px]">
         <CardHeader>
           <CardTitle class="flex items-center gap-2 text-base">
             <SwordsIcon class="size-4" />
@@ -519,7 +523,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
         </CardContent>
       </Card>
 
-      <Card class="rounded-lg">
+      <Card class="parade-card rounded-[22px]">
         <CardHeader>
           <CardTitle class="flex items-center gap-2 text-base">
             <TablePropertiesIcon class="size-4" />

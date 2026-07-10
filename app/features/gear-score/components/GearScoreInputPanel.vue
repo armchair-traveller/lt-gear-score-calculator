@@ -43,6 +43,7 @@ const {
 } = useGearScoreCalculatorContext()
 
 const imageImportOpen = ref(false)
+const recommendationsOpen = ref(false)
 
 function setStatInput(index, value) {
   statInput.value[index] = value
@@ -54,8 +55,8 @@ function setStatPickerOpen(index, value) {
 </script>
 
 <template>
-  <section class="grid gap-4">
-    <Card class="gap-0 rounded-lg py-0">
+  <section class="gear-score-input-panel grid content-start gap-4">
+    <Card class="parade-card gap-0 rounded-[22px] py-0">
       <CardHeader class="p-0">
         <button
           type="button"
@@ -64,7 +65,9 @@ function setStatPickerOpen(index, value) {
           @click="gearSheetOpen = true"
         >
           <div class="flex min-w-0 items-center gap-3">
-            <img class="size-12 shrink-0 rounded-lg bg-muted p-1" :src="selectedImage" alt="">
+            <span class="flex size-14 shrink-0 items-center justify-center rounded-2xl border-2 border-amber-300 bg-[linear-gradient(145deg,var(--parade-yellow-soft),white)] shadow-[0_8px_18px_rgb(239_178_26_/_0.14)]">
+              <img class="size-11" :src="selectedImage" alt="">
+            </span>
             <div class="min-w-0">
               <CardTitle class="truncate text-base">
                 {{ pieceType }} {{ gearType }}
@@ -74,7 +77,7 @@ function setStatPickerOpen(index, value) {
               </CardDescription>
             </div>
           </div>
-          <div class="flex shrink-0 items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
+          <div class="flex shrink-0 items-center gap-1.5 rounded-xl border bg-secondary/70 px-2.5 py-1.5 text-xs font-semibold text-secondary-foreground transition-colors group-hover:bg-secondary group-hover:text-foreground">
             <SearchIcon class="size-3.5" />
             <span class="hidden sm:inline">Change gear</span>
             <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -84,7 +87,7 @@ function setStatPickerOpen(index, value) {
 
       <CardContent class="grid gap-4 p-4">
         <div
-          class="grid gap-1 sm:grid-cols-2"
+          class="grid grid-cols-2 gap-1"
           role="group"
           aria-label="Gear selection"
         >
@@ -93,7 +96,7 @@ function setStatPickerOpen(index, value) {
             <Select v-model="gearType">
               <SelectTrigger
                 id="gear-type"
-                class="w-full justify-start rounded-b-none rounded-t-3xl sm:rounded-l-3xl sm:rounded-r-none *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
+                class="w-full justify-start rounded-l-3xl rounded-r-none *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
               >
                 <span class="flex shrink-0 items-center text-muted-foreground">
                   <SparklesIcon class="size-3.5" aria-hidden="true" />
@@ -113,7 +116,7 @@ function setStatPickerOpen(index, value) {
             <Select v-model="pieceType">
               <SelectTrigger
                 id="piece-type"
-                class="w-full justify-start rounded-b-3xl rounded-t-none sm:rounded-l-none sm:rounded-r-3xl *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
+                class="w-full justify-start rounded-l-none rounded-r-3xl *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start *:data-[slot=select-value]:text-left"
               >
                 <span class="flex shrink-0 items-center text-muted-foreground">
                   <img class="size-4 rounded-sm" :src="selectedImage" alt="" aria-hidden="true">
@@ -132,7 +135,7 @@ function setStatPickerOpen(index, value) {
         <div v-if="supportsInputEnchantLevel()">
           <div
             class="grid gap-1 rounded-md bg-muted/70 p-1"
-            :class="currentInputEnchantLevelOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'"
+            :class="currentInputEnchantLevelOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
             role="group"
             aria-label="Input enchant level"
           >
@@ -152,10 +155,13 @@ function setStatPickerOpen(index, value) {
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <Label id="input-value-mode-label" class="text-xs font-medium text-muted-foreground">
-            Input mode
-          </Label>
+        <div class="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <Label id="input-value-mode-label" class="text-sm font-bold text-foreground">
+              Current enchant values
+            </Label>
+            <p class="mt-0.5 text-xs text-muted-foreground">Choose a stat, then enter the value shown in game.</p>
+          </div>
           <ToggleGroup
             :model-value="inputValueMode"
             type="single"
@@ -200,74 +206,74 @@ function setStatPickerOpen(index, value) {
           @update-picker-open="setStatPickerOpen"
         />
 
-        <div class="grid gap-3 rounded-lg bg-muted/15 p-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" @click="imageImportOpen = true">
-              <ScanTextIcon data-icon="inline-start" />
-              Import
-            </Button>
-            <Button variant="outline" size="sm" @click="clearStatInputs">
-              <RefreshCcwIcon data-icon="inline-start" />
-              Clear
-            </Button>
-          </div>
+        <div class="grid grid-cols-2 gap-2">
+          <Button variant="secondary" size="sm" @click="imageImportOpen = true">
+            <ScanTextIcon data-icon="inline-start" />
+            Import screenshot
+          </Button>
+          <Button variant="outline" size="sm" @click="clearStatInputs">
+            <RefreshCcwIcon data-icon="inline-start" />
+            Clear
+          </Button>
+          <Collapsible
+            v-if="currentRecommendations"
+            v-model:open="recommendationsOpen"
+            :key="`${gearType}-${pieceType}`"
+            class="col-span-2"
+          >
+            <CollapsibleTrigger as-child>
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full justify-between"
+                :class="{ 'rounded-b-none': recommendationsOpen }"
+              >
+                {{ recommendationsOpen ? 'Hide recommended options' : 'Recommended options' }}
+                <ChevronRightIcon
+                  data-icon="inline-end"
+                  class="transition-transform"
+                  :class="{ 'rotate-90': recommendationsOpen }"
+                />
+              </Button>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent class="rounded-b-2xl border border-t-0 bg-secondary/30">
+              <div class="grid gap-3 p-3">
+                <div class="grid gap-2">
+                  <div class="text-xs font-medium text-muted-foreground">Main</div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <Badge
+                      v-for="stat in currentRecommendations.main"
+                      :key="`main-${stat}`"
+                      variant="secondary"
+                    >
+                      {{ stat }}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div class="grid gap-2">
+                  <div class="text-xs font-medium text-muted-foreground">Secondary</div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <Badge
+                      v-for="stat in currentRecommendations.secondary"
+                      :key="`secondary-${stat}`"
+                      variant="outline"
+                    >
+                      {{ stat }}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
-
-        <Collapsible
-          v-if="currentRecommendations"
-          v-slot="{ open }"
-          :key="`${gearType}-${pieceType}`"
-          class="rounded-lg bg-muted/15"
-        >
-          <CollapsibleTrigger as-child>
-            <Button
-              variant="ghost"
-              class="h-auto w-full justify-between rounded-lg px-3 py-2.5 text-left text-sm"
-            >
-              <span>View recommended options</span>
-              <ChevronRightIcon
-                class="size-4 text-muted-foreground transition-transform"
-                :class="{ 'rotate-90': open }"
-              />
-            </Button>
-          </CollapsibleTrigger>
-
-          <CollapsibleContent>
-            <div class="grid gap-3 px-3 pb-3 pt-1">
-              <div class="grid gap-2">
-                <div class="text-xs font-medium text-muted-foreground">Main</div>
-                <div class="flex flex-wrap gap-1.5">
-                  <Badge
-                    v-for="stat in currentRecommendations.main"
-                    :key="`main-${stat}`"
-                    variant="secondary"
-                  >
-                    {{ stat }}
-                  </Badge>
-                </div>
-              </div>
-
-              <div class="grid gap-2">
-                <div class="text-xs font-medium text-muted-foreground">Secondary</div>
-                <div class="flex flex-wrap gap-1.5">
-                  <Badge
-                    v-for="stat in currentRecommendations.secondary"
-                    :key="`secondary-${stat}`"
-                    variant="outline"
-                  >
-                    {{ stat }}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
       </CardContent>
     </Card>
 
     <GearImageImportDialog v-model:open="imageImportOpen" />
 
-    <Card class="rounded-lg">
+    <Card class="parade-card rounded-[22px]">
       <CardHeader>
         <CardTitle class="flex items-center gap-2 text-base">
           <ShieldCheckIcon class="size-4" />

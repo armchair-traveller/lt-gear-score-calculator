@@ -31,82 +31,34 @@ function confirmDelete() {
 
 <template>
   <TooltipProvider>
-    <div class="min-h-screen bg-background text-foreground">
-      <header class="bg-background/95 backdrop-blur shadow-[0_1px_12px_rgb(15_23_42_/_0.04)] dark:shadow-none">
-        <div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <div class="flex min-w-0 items-center gap-3">
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/55">
-              <img class="size-11" src="/smart_priring.png" alt="">
-            </div>
-            <div class="min-w-0">
-              <h1 class="truncate text-lg font-semibold tracking-normal md:text-xl">Planner</h1>
-              <p class="truncate text-xs text-muted-foreground">
-                Final gear / optimal max-penta potential
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <ModeToggle />
-
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button variant="outline" size="icon" as-child>
-                  <NuxtLink :to="planner.homeHref">
-                    <ArrowLeftIcon />
-                    <span class="sr-only">Open enchant calculator</span>
-                  </NuxtLink>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Enchant calculator</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button variant="outline" size="icon" as-child>
-                  <NuxtLink :to="planner.upgradeHref">
-                    <img class="size-5" src="/cool_priring.png" alt="">
-                    <span class="sr-only">Open upgrade material calculator</span>
-                  </NuxtLink>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Upgrade calculator</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  :disabled="!planner.eligibleSlots.length"
-                  @click="planner.copyShareLink"
-                >
-                  <CheckIcon v-if="planner.shareCopied" class="text-emerald-600 dark:text-emerald-400" />
-                  <ClipboardIcon v-else />
-                  <span class="sr-only">Copy planner link</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{{ planner.shareCopied ? 'Copied' : 'Copy planner link' }}</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button variant="outline" size="icon" @click="planner.plannerNotesOpen = true">
-                  <InfoIcon />
-                  <span class="sr-only">Open planner notes</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Planner notes</TooltipContent>
-            </Tooltip>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
-                <Button variant="outline" size="icon">
-                  <MoreHorizontalIcon />
-                  <span class="sr-only">More planner actions</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+    <div class="parade-page">
+      <AppShellHeader
+        active="planner"
+        eyebrow="Gear planner"
+        title="See which piece earns your effort next."
+        description="Rank your final pieces against a shared benchmark without losing sight of the actual gear slots."
+        show-help
+        @help="planner.plannerNotesOpen = true"
+      >
+        <template #utilities>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="!planner.eligibleSlots.length"
+            @click="planner.copyShareLink"
+          >
+            <CheckIcon v-if="planner.shareCopied" data-icon="inline-start" />
+            <ClipboardIcon v-else data-icon="inline-start" />
+            {{ planner.shareCopied ? 'Copied' : 'Share plan' }}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" size="icon" aria-label="Planner actions">
+                <MoreHorizontalIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
                 <DropdownMenuItem
                   :disabled="planner.isSharedPreview || !planner.eligibleSlots.length"
                   variant="destructive"
@@ -115,13 +67,13 @@ function confirmDelete() {
                   <RotateCcwIcon />
                   Reset planner
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </template>
+      </AppShellHeader>
 
-      <main class="mx-auto grid w-full max-w-[1600px] gap-6 px-4 py-5 md:px-6">
+      <main class="parade-workspace grid gap-4">
         <section
           v-if="planner.isSharedPreview"
           class="flex flex-col gap-3 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sky-900 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-100 sm:flex-row sm:items-center sm:justify-between"
@@ -163,9 +115,9 @@ function confirmDelete() {
           </Button>
         </section>
 
-        <section class="grid gap-4 border-b pb-6 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(140px,190px))] lg:items-end">
-          <div class="min-w-0">
-            <div class="text-sm text-muted-foreground">Best next</div>
+        <section class="parade-card grid grid-cols-2 gap-3 rounded-[22px] border bg-card p-4 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(140px,160px))] lg:items-stretch">
+          <div class="col-span-2 min-w-0 rounded-2xl border border-sky-200 bg-secondary/55 p-4 lg:col-span-1">
+            <div class="parade-metric-label">Best next upgrade</div>
             <template v-if="planner.topPriority">
               <HoverCard
                 :open-delay="250"
@@ -204,7 +156,7 @@ function confirmDelete() {
               </div>
             </template>
             <template v-else>
-              <div class="mt-1 text-2xl font-semibold">
+              <div class="mt-2 text-2xl font-bold">
                 {{ planner.eligibleSlots.length ? 'No open potential' : 'No ranking yet' }}
               </div>
               <div v-if="planner.eligibleSlots.length" class="mt-1 text-sm text-muted-foreground">
@@ -213,26 +165,29 @@ function confirmDelete() {
             </template>
           </div>
 
-          <div class="rounded-lg bg-muted/20 p-4">
-            <div class="text-xs text-muted-foreground">Ranked</div>
-            <div class="mt-1 text-2xl font-semibold">{{ planner.eligibleSlots.length }} / {{ planner.slotModels.length }}</div>
+          <div class="parade-metric">
+            <div class="parade-metric-label">Ranked</div>
+            <div class="parade-metric-value">{{ planner.eligibleSlots.length }} / {{ planner.slotModels.length }}</div>
+            <p class="mt-1 text-xs text-muted-foreground">slots with 3+ lines</p>
           </div>
-          <div class="rounded-lg bg-muted/20 p-4">
-            <div class="text-xs text-muted-foreground">Loadout quality</div>
-            <div class="mt-1 text-2xl font-semibold">{{ planner.loadoutQualityPercent.toFixed(0) }}%</div>
+          <div class="parade-metric">
+            <div class="parade-metric-label">Loadout quality</div>
+            <div class="parade-metric-value">{{ planner.loadoutQualityPercent.toFixed(0) }}%</div>
+            <p class="mt-1 text-xs text-muted-foreground">across ranked pieces</p>
           </div>
-          <div class="rounded-lg bg-muted/20 p-4">
-            <div class="text-xs text-muted-foreground">Potential</div>
-            <div class="mt-1 text-2xl font-semibold">{{ planner.totalOpportunityDI.toFixed(2) }}%</div>
+          <div class="parade-metric hidden lg:block">
+            <div class="parade-metric-label">Potential</div>
+            <div class="parade-metric-value">{{ planner.totalOpportunityDI.toFixed(2) }}%</div>
+            <p class="mt-1 text-xs text-muted-foreground">total DI still open</p>
           </div>
         </section>
 
-        <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
-          <section class="grid content-start gap-4">
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <section class="parade-card grid content-start gap-4 rounded-[22px] border bg-card p-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 class="text-base font-semibold">Potential ranking</h2>
-                <p class="text-sm text-muted-foreground">Fully upgraded optimal max-penta benchmark</p>
+                <h2 class="text-lg font-bold">Upgrade priority</h2>
+                <p class="text-sm text-muted-foreground">Ranked by damage-impact opportunity.</p>
               </div>
               <Tabs v-model="planner.sortMode" class="w-auto">
                 <TabsList>
@@ -245,16 +200,19 @@ function confirmDelete() {
             <GearPlanOpportunityChart />
           </section>
 
-          <section class="grid content-start gap-4">
-            <div>
-              <h2 class="text-base font-semibold">Gear slots</h2>
-              <p class="text-sm text-muted-foreground">Latest {{ planner.slotModels.length }} pieces</p>
+          <section class="parade-card grid content-start gap-4 rounded-[22px] border bg-card p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-bold">Gear slots</h2>
+                <p class="text-sm text-muted-foreground">Select a slot to review or edit it.</p>
+              </div>
+              <Button variant="outline" size="sm" :disabled="!planner.eligibleSlots.length" @click="planner.copyShareLink">Share plan</Button>
             </div>
 
             <div class="grid gap-5">
               <div v-for="group in planner.categoryGroups" :key="group.gearType" class="grid gap-2">
                 <div class="text-xs font-medium uppercase text-muted-foreground">{{ group.gearType }}</div>
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-2">
+                <div class="grid grid-cols-3 gap-2 xl:grid-cols-2">
                   <template v-for="slot in group.slots" :key="slot.id">
                     <HoverCard
                       v-if="slot.result.eligible"
