@@ -21,7 +21,7 @@ const gears = {
         "Strength/Magic":{
           "Value": 20001,
           "DI": 0.88,
-          "Potential": [2400,2400]
+          "Potential": [2500,2500]
         },
         "Basic Stats":{
           "Value": 15001,
@@ -56,12 +56,12 @@ const gears = {
         "Back Attack Damage":{
           "Value": 101,
           "DI": 0.79,
-          "Potential": [12,12]
+          "Potential": [8,8]
         },
         "Stamina": {
           "Value": 20001,
           "DI": 0,
-          "Potential": [2400,2400]
+          "Potential": [2500,2500]
         },
         "Maximum HP %": {
           "Value": 11,
@@ -98,7 +98,7 @@ const gears = {
         "Strength/Magic":{
           "Value": 20001,
           "DI": 0.88,
-          "Potential": [2400,2400]
+          "Potential": [2500,2500]
         },
         "Basic Stats":{
           "Value": 15001,
@@ -133,12 +133,12 @@ const gears = {
         "Back Attack Damage":{
           "Value": 101,
           "DI": 0.79,
-          "Potential": [12,12]
+          "Potential": [8,8]
         },
         "Stamina": {
           "Value": 20001,
           "DI": 0,
-          "Potential": [2400,2400]
+          "Potential": [2500,2500]
         },
         "Maximum HP %": {
           "Value": 11,
@@ -195,7 +195,7 @@ const gears = {
         "Strength/Magic":{
           "Value": 20001,
           "DI": 0.88,
-          "Potential": [2400,2400]
+          "Potential": [2500,2500]
         },
         "Static Damage %":{
           "Value": 16,
@@ -210,12 +210,12 @@ const gears = {
         "Back Attack Damage":{
           "Value": 101,
           "DI": 0.79,
-          "Potential": [12,12]
+          "Potential": [8,8]
         },
         "Stamina": {
           "Value": 20001,
           "DI": 0,
-          "Potential": [2400,2400]
+          "Potential": [2500,2500]
         },
         "Maximum HP %": {
           "Value": 11,
