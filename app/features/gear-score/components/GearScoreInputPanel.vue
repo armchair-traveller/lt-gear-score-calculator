@@ -79,7 +79,7 @@ function setStatPickerOpen(index, value) {
           </div>
           <div class="flex shrink-0 items-center gap-1.5 rounded-xl border bg-secondary/70 px-2.5 py-1.5 text-xs font-semibold text-secondary-foreground transition-colors group-hover:bg-secondary group-hover:text-foreground">
             <SearchIcon class="size-3.5" />
-            <span class="hidden sm:inline">Change gear</span>
+            <span class="hidden @min-[30rem]/card-header:inline">Change gear</span>
             <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5" />
           </div>
         </button>
