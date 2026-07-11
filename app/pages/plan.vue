@@ -216,7 +216,7 @@ function confirmDelete() {
             <div class="grid gap-5">
               <div v-for="group in planner.categoryGroups" :key="group.gearType" class="grid gap-2">
                 <div class="text-xs font-medium uppercase text-muted-foreground">{{ group.gearType }}</div>
-                <div class="grid grid-cols-3 gap-2 xl:grid-cols-2">
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-2">
                   <template v-for="slot in group.slots" :key="slot.id">
                     <HoverCard
                       v-if="slot.result.eligible"
@@ -228,7 +228,7 @@ function confirmDelete() {
                         <button
                           type="button"
                           :data-selected="planner.editorOpen && planner.selectedSlot?.id === slot.id"
-                          class="grid min-h-24 gap-2 rounded-lg border bg-surface-inset p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[selected=true]:border-primary data-[selected=true]:bg-info-surface"
+                          class="grid min-h-24 min-w-0 gap-2 rounded-lg border bg-surface-inset p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[selected=true]:border-primary data-[selected=true]:bg-info-surface"
                           @click="planner.openEditor(slot.id)"
                         >
                           <div class="flex items-start justify-between gap-2">
@@ -240,7 +240,7 @@ function confirmDelete() {
                               {{ slot.result.qualityPercent.toFixed(0) }}%
                             </Badge>
                           </div>
-                          <div>
+                          <div class="min-w-0">
                             <div class="truncate text-sm font-medium">{{ slot.pieceType }}</div>
                             <div class="truncate text-xs text-muted-foreground">
                               {{ slot.result.opportunityDI <= 0.0001
@@ -264,14 +264,14 @@ function confirmDelete() {
                       <button
                         type="button"
                         :data-selected="planner.editorOpen && planner.selectedSlot?.id === slot.id"
-                        class="grid min-h-24 gap-2 rounded-lg border border-dashed bg-surface-inset/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[selected=true]:border-primary data-[selected=true]:border-solid data-[selected=true]:bg-info-surface"
+                        class="grid min-h-24 min-w-0 gap-2 rounded-lg border border-dashed bg-surface-inset/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[selected=true]:border-primary data-[selected=true]:border-solid data-[selected=true]:bg-info-surface"
                         @click="planner.openEditor(slot.id)"
                       >
                         <div class="flex items-start justify-between gap-2">
                           <img class="size-9 rounded-md bg-surface-raised p-1" :src="slot.image" alt="">
                           <PlusIcon class="size-4 text-muted-foreground" />
                         </div>
-                        <div>
+                        <div class="min-w-0">
                           <div class="truncate text-sm font-medium">{{ slot.pieceType }}</div>
                         </div>
                       </button>
