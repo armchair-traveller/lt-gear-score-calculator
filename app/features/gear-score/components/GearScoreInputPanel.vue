@@ -60,12 +60,12 @@ function setStatPickerOpen(index, value) {
       <CardHeader class="p-0">
         <button
           type="button"
-          class="group flex w-full items-center justify-between gap-3 rounded-t-lg px-4 py-4 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
+          class="group flex w-full items-center justify-between gap-3 rounded-t-lg px-4 py-4 text-left transition-colors hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
           aria-label="Open gear selector"
           @click="gearSheetOpen = true"
         >
           <div class="flex min-w-0 items-center gap-3">
-            <span class="flex size-14 shrink-0 items-center justify-center rounded-2xl border-2 border-amber-300 bg-[linear-gradient(145deg,var(--parade-yellow-soft),white)] shadow-[0_8px_18px_rgb(239_178_26_/_0.14)]">
+            <span class="parade-item-well flex size-14 shrink-0 items-center justify-center rounded-2xl">
               <img class="size-11" :src="selectedImage" alt="">
             </span>
             <div class="min-w-0">
@@ -77,7 +77,7 @@ function setStatPickerOpen(index, value) {
               </CardDescription>
             </div>
           </div>
-          <div class="flex shrink-0 items-center gap-1.5 rounded-xl border bg-secondary/70 px-2.5 py-1.5 text-xs font-semibold text-secondary-foreground transition-colors group-hover:bg-secondary group-hover:text-foreground">
+          <div class="flex shrink-0 items-center gap-1.5 rounded-xl border bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-surface-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
             <SearchIcon class="size-3.5" />
             <span class="hidden @min-[30rem]/card-header:inline">Change gear</span>
             <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -134,7 +134,7 @@ function setStatPickerOpen(index, value) {
 
         <div v-if="supportsInputEnchantLevel()">
           <div
-            class="grid gap-1 rounded-md bg-muted/70 p-1"
+            class="grid gap-1 rounded-md bg-surface-inset p-1"
             :class="currentInputEnchantLevelOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
             role="group"
             aria-label="Input enchant level"
@@ -146,8 +146,8 @@ function setStatPickerOpen(index, value) {
               :aria-pressed="inputEnchantLevel === option.value"
               class="h-9 rounded-sm px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               :class="inputEnchantLevel === option.value
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'"
+                ? 'bg-surface-raised text-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-surface-raised/70 hover:text-foreground'"
               @click="setInputEnchantLevel(option.value)"
             >
               {{ option.label }}
@@ -237,7 +237,7 @@ function setStatPickerOpen(index, value) {
               </Button>
             </CollapsibleTrigger>
 
-            <CollapsibleContent class="rounded-b-2xl border border-t-0 bg-secondary/30">
+            <CollapsibleContent class="rounded-b-2xl border border-t-0 bg-surface-inset">
               <div class="grid gap-3 p-3">
                 <div class="grid gap-2">
                   <div class="text-xs font-medium text-muted-foreground">Main</div>
@@ -285,7 +285,7 @@ function setStatPickerOpen(index, value) {
           <div
             v-for="trait in selectedTraitRows"
             :key="trait.id"
-            class="flex gap-3 rounded-lg bg-muted/20 p-3"
+            class="flex gap-3 rounded-lg border bg-surface-inset p-3"
           >
             <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
             <div>
@@ -294,7 +294,7 @@ function setStatPickerOpen(index, value) {
             </div>
           </div>
         </div>
-        <div v-else class="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
+        <div v-else class="rounded-lg border border-dashed bg-surface-inset p-4 text-sm text-muted-foreground">
           No special stat notes for the current rolled lines.
         </div>
       </CardContent>

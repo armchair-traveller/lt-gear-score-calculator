@@ -290,36 +290,36 @@ function getLineStatusLabel(line) {
 
 function getLineStatusClass(line) {
   if (line.ignored) {
-    return 'bg-muted text-muted-foreground'
+    return 'border-border bg-muted text-muted-foreground'
   }
   if (isLineDuplicate(line)) {
-    return 'bg-destructive/10 text-destructive dark:bg-destructive/20'
+    return 'border-destructive/30 bg-destructive/10 text-destructive'
   }
   if (!isLineValid(line)) {
-    return 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+    return 'border-warning-border bg-warning-surface text-warning-foreground'
   }
   if (line.stat === otherStat) {
-    return 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
+    return 'border-info-border bg-info-surface text-info-foreground'
   }
 
-  return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+  return 'border-success-border bg-success-surface text-success-foreground'
 }
 
 function getLineShellClass(line) {
   if (line.ignored) {
-    return 'border-border/60 bg-muted/15 text-muted-foreground'
+    return 'border-border/60 bg-surface-inset/60 text-muted-foreground'
   }
   if (isLineDuplicate(line)) {
     return 'border-destructive/30 bg-destructive/5'
   }
   if (!isLineValid(line)) {
-    return 'border-amber-500/35 bg-amber-50/60 dark:bg-amber-950/20'
+    return 'border-warning-border bg-warning-surface/60'
   }
   if (line.stat === otherStat) {
-    return 'border-sky-500/30 bg-sky-50/60 dark:bg-sky-950/20'
+    return 'border-info-border bg-info-surface/60'
   }
 
-  return 'border-border bg-background/70'
+  return 'border-success-border/50 bg-success-surface/30'
 }
 
 function getRollText(line) {
@@ -392,8 +392,8 @@ function revokePreviewUrl() {
           />
           <button
             type="button"
-            class="relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-dashed bg-muted/20 p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 lg:min-h-[320px]"
-            :class="isDragging ? 'border-ring bg-muted/40' : 'border-border'"
+            class="relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-dashed bg-surface-inset p-3 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 lg:min-h-[320px]"
+            :class="isDragging ? 'border-info-border bg-info-surface' : 'border-border'"
             @click="openFilePicker"
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
@@ -402,7 +402,7 @@ function revokePreviewUrl() {
             <img v-if="previewUrl" :src="previewUrl" alt="" class="max-h-[46vh] w-full rounded-md object-contain" />
             <span v-else class="grid justify-items-center gap-3 text-center">
               <span
-                class="flex size-12 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm"
+                class="flex size-12 items-center justify-center rounded-lg bg-surface-raised text-muted-foreground shadow-sm"
               >
                 <UploadCloudIcon class="size-5" />
               </span>
@@ -410,7 +410,7 @@ function revokePreviewUrl() {
             </span>
           </button>
 
-          <div v-if="selectedFile" class="min-w-0 rounded-lg bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+          <div v-if="selectedFile" class="min-w-0 rounded-lg border bg-surface-raised px-3 py-2 text-xs text-muted-foreground">
             <div class="truncate font-medium text-foreground">{{ selectedFile.name }}</div>
             <div>{{ Math.ceil(selectedFile.size / 1024) }} KB</div>
           </div>
@@ -444,7 +444,7 @@ function revokePreviewUrl() {
 
           <div
             v-if="isLoading"
-            class="grid min-h-[260px] place-items-center rounded-lg bg-muted/15 p-6 text-center text-sm text-muted-foreground lg:min-h-0"
+            class="grid min-h-[260px] place-items-center rounded-lg border bg-surface-inset p-6 text-center text-sm text-muted-foreground lg:min-h-0"
           >
             <span class="grid justify-items-center gap-3">
               <Loader2Icon class="size-6 animate-spin" />
@@ -455,18 +455,23 @@ function revokePreviewUrl() {
           <div v-else-if="importResult" class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
             <div class="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{{ activeLines.length }} active</Badge>
-              <Badge variant="outline">{{ readyLineCount }} ready</Badge>
+              <Badge
+                variant="outline"
+                class="border-success-border bg-success-surface text-success-foreground"
+              >
+                {{ readyLineCount }} ready
+              </Badge>
               <Badge
                 v-if="invalidLineCount"
                 variant="outline"
-                class="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                class="border-warning-border bg-warning-surface text-warning-foreground"
               >
                 {{ invalidLineCount }} review
               </Badge>
               <Badge
                 v-if="duplicateStats.length"
                 variant="outline"
-                class="bg-destructive/10 text-destructive dark:bg-destructive/20"
+                class="border-destructive/30 bg-destructive/10 text-destructive"
               >
                 {{ duplicateStats.length }} duplicate
               </Badge>
@@ -482,7 +487,7 @@ function revokePreviewUrl() {
                 >
                   <div class="flex min-w-0 items-start gap-3">
                     <div
-                      class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground"
+                      class="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-inset text-xs font-semibold text-muted-foreground"
                     >
                       {{ index + 1 }}
                     </div>
@@ -554,7 +559,7 @@ function revokePreviewUrl() {
 
           <div
             v-else
-            class="grid min-h-[260px] place-items-center rounded-lg bg-muted/15 p-6 text-center text-sm text-muted-foreground lg:min-h-0"
+            class="grid min-h-[260px] place-items-center rounded-lg border border-dashed bg-surface-inset p-6 text-center text-sm text-muted-foreground lg:min-h-0"
           >
             <span class="grid justify-items-center gap-3">
               <ScanTextIcon class="size-6" />
@@ -564,7 +569,7 @@ function revokePreviewUrl() {
         </div>
       </div>
 
-      <div class="border-t bg-popover/95 px-5 py-3">
+      <div class="border-t bg-surface-raised px-5 py-3">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p class="min-h-5 text-sm" :class="applyIssue ? 'text-destructive' : 'text-muted-foreground'">
             {{

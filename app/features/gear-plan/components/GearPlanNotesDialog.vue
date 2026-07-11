@@ -50,7 +50,7 @@ const steps = [
             class="grid content-start gap-2 border-t pt-3"
           >
             <div class="flex items-center gap-2 font-medium">
-              <span class="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs">
+              <span class="flex size-6 shrink-0 items-center justify-center rounded-md bg-surface-inset text-xs">
                 {{ index + 1 }}
               </span>
               <component :is="step.icon" class="size-4 text-muted-foreground" />
@@ -72,11 +72,11 @@ const steps = [
               <dd class="mt-0.5 leading-5 text-muted-foreground">The open DI between your piece and its curated optimal max-penta benchmark.</dd>
             </div>
             <div>
-              <dt class="font-medium text-amber-700 dark:text-amber-300">Roll gap</dt>
+              <dt class="font-medium text-warning-foreground">Roll gap</dt>
               <dd class="mt-0.5 leading-5 text-muted-foreground">Potential gained by improving the values of your selected stats.</dd>
             </div>
             <div>
-              <dt class="font-medium text-sky-700 dark:text-sky-300">Piece gap</dt>
+              <dt class="font-medium text-info-foreground">Piece gap</dt>
               <dd class="mt-0.5 leading-5 text-muted-foreground">Potential from missing lines or replacing non-optimal stats.</dd>
             </div>
             <div>

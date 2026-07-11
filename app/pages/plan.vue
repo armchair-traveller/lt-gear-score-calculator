@@ -10,6 +10,10 @@ import {
   ShieldAlertIcon,
   TrendingUpIcon,
 } from '@lucide/vue'
+import {
+  gearPlanStatusClasses,
+  getGearPlanOpportunityStatusClass,
+} from '@/features/gear-plan/status-styles.js'
 
 const gearPlan = useGearPlan()
 provideGearPlan(gearPlan)
@@ -76,7 +80,7 @@ function confirmDelete() {
       <main class="parade-workspace grid gap-4">
         <section
           v-if="planner.isSharedPreview"
-          class="flex flex-col gap-3 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sky-900 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-100 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-col gap-3 rounded-lg border border-info-border bg-info-surface p-4 text-info-foreground sm:flex-row sm:items-center sm:justify-between"
         >
           <div class="flex items-start gap-3">
             <ShieldAlertIcon class="mt-0.5 size-5 shrink-0" />
@@ -116,7 +120,7 @@ function confirmDelete() {
         </section>
 
         <section class="parade-card grid grid-cols-2 gap-3 rounded-[22px] border bg-card p-4 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(140px,160px))] lg:items-stretch">
-          <div class="col-span-2 min-w-0 rounded-2xl border border-sky-200 bg-secondary/55 p-4 lg:col-span-1">
+          <div class="col-span-2 min-w-0 rounded-2xl border border-info-border bg-info-surface p-4 lg:col-span-1">
             <div class="parade-metric-label">Best next upgrade</div>
             <template v-if="planner.topPriority">
               <HoverCard
@@ -130,7 +134,7 @@ function confirmDelete() {
                     class="mt-1 flex max-w-full items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     @click="planner.openEditor(planner.topPriority.id)"
                   >
-                    <img class="size-14 shrink-0 rounded-lg bg-muted p-1.5" :src="planner.topPriority.image" alt="">
+                    <img class="size-14 shrink-0 rounded-lg bg-surface-inset p-1.5" :src="planner.topPriority.image" alt="">
                     <div class="min-w-0">
                       <div class="truncate text-2xl font-semibold">{{ planner.topPriority.pieceType }}</div>
                       <div class="truncate text-sm text-muted-foreground">{{ planner.topPriority.gearType }}</div>
@@ -148,7 +152,7 @@ function confirmDelete() {
                 </HoverCardContent>
               </HoverCard>
               <div class="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant="outline" class="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                <Badge variant="outline" :class="gearPlanStatusClasses.opportunity">
                   <TrendingUpIcon class="size-3.5" />
                   {{ planner.topPriority.result.opportunityDI.toFixed(2) }}% DI potential
                 </Badge>
@@ -223,16 +227,15 @@ function confirmDelete() {
                       <HoverCardTrigger as-child>
                         <button
                           type="button"
-                          class="grid min-h-24 gap-2 rounded-lg border bg-muted/15 p-3 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                          :data-selected="planner.editorOpen && planner.selectedSlot?.id === slot.id"
+                          class="grid min-h-24 gap-2 rounded-lg border bg-surface-inset p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[selected=true]:border-primary data-[selected=true]:bg-info-surface"
                           @click="planner.openEditor(slot.id)"
                         >
                           <div class="flex items-start justify-between gap-2">
-                            <img class="size-9 rounded-md bg-muted p-1" :src="slot.image" alt="">
+                            <img class="size-9 rounded-md bg-surface-raised p-1" :src="slot.image" alt="">
                             <Badge
                               variant="outline"
-                              :class="slot.result.opportunityDI <= 0.0001
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                                : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300'"
+                              :class="getGearPlanOpportunityStatusClass(slot.result.opportunityDI)"
                             >
                               {{ slot.result.qualityPercent.toFixed(0) }}%
                             </Badge>
@@ -260,11 +263,12 @@ function confirmDelete() {
                     <template v-else>
                       <button
                         type="button"
-                        class="grid min-h-24 gap-2 rounded-lg border border-dashed p-3 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                        :data-selected="planner.editorOpen && planner.selectedSlot?.id === slot.id"
+                        class="grid min-h-24 gap-2 rounded-lg border border-dashed bg-surface-inset/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[selected=true]:border-primary data-[selected=true]:border-solid data-[selected=true]:bg-info-surface"
                         @click="planner.openEditor(slot.id)"
                       >
                         <div class="flex items-start justify-between gap-2">
-                          <img class="size-9 rounded-md bg-muted p-1" :src="slot.image" alt="">
+                          <img class="size-9 rounded-md bg-surface-raised p-1" :src="slot.image" alt="">
                           <PlusIcon class="size-4 text-muted-foreground" />
                         </div>
                         <div>

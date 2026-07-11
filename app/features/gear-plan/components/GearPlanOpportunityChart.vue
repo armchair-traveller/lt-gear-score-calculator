@@ -3,11 +3,17 @@ import {
   ArrowDownRightIcon,
   CheckCircle2Icon,
 } from '@lucide/vue'
+import {
+  gearPlanStatusClasses,
+  getGearPlanOpportunityTextClass,
+} from '@/features/gear-plan/status-styles.js'
 
 const {
   rankedSlots,
   slotModels,
   maxChartDI,
+  editorOpen,
+  selectedSlot,
   openEditor,
   getPrimaryReason,
   getLineStatusLabel,
@@ -28,21 +34,21 @@ function getWidth(value) {
 
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span class="flex items-center gap-1.5">
-          <span class="size-2.5 rounded-sm bg-foreground/80" />
+          <span class="size-2.5 rounded-sm bg-chart-3" />
           Current
         </span>
         <span class="flex items-center gap-1.5">
-          <span class="size-2.5 rounded-sm bg-amber-400 dark:bg-amber-500" />
+          <span class="size-2.5 rounded-sm bg-chart-2" />
           Roll gap
         </span>
         <span class="flex items-center gap-1.5">
-          <span class="size-2.5 rounded-sm bg-sky-500" />
+          <span class="size-2.5 rounded-sm bg-chart-1" />
           Piece gap
         </span>
       </div>
     </div>
 
-    <div v-if="rankedSlots.length" class="overflow-hidden rounded-lg border">
+    <div v-if="rankedSlots.length" class="overflow-hidden rounded-lg border bg-surface-inset">
       <HoverCard
         v-for="(slot, index) in rankedSlots"
         :key="slot.id"
@@ -53,14 +59,15 @@ function getWidth(value) {
         <HoverCardTrigger as-child>
           <button
             type="button"
-            class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50 sm:grid-cols-[minmax(190px,280px)_minmax(260px,1fr)_150px]"
+            :data-selected="editorOpen && selectedSlot?.id === slot.id"
+            class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b bg-surface-raised p-3 text-left transition-colors last:border-b-0 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50 data-[selected=true]:bg-info-surface sm:grid-cols-[minmax(190px,280px)_minmax(260px,1fr)_150px]"
             @click="openEditor(slot.id)"
           >
             <div class="flex min-w-0 items-center gap-3">
               <span class="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">
                 {{ index + 1 }}
               </span>
-              <img class="size-9 shrink-0 rounded-md bg-muted p-1" :src="slot.image" alt="">
+              <img class="size-9 shrink-0 rounded-md bg-surface-inset p-1" :src="slot.image" alt="">
               <div class="min-w-0">
                 <div class="truncate text-sm font-medium">{{ slot.pieceType }}</div>
                 <div class="truncate text-xs text-muted-foreground">
@@ -70,11 +77,11 @@ function getWidth(value) {
             </div>
 
             <div class="hidden min-w-0 sm:block">
-              <div class="flex h-3 w-full overflow-hidden rounded-sm bg-muted/70">
+              <div class="flex h-3 w-full overflow-hidden rounded-sm bg-surface-inset">
                 <Tooltip>
                   <TooltipTrigger as-child>
                     <span
-                      class="h-full shrink-0 bg-foreground/80"
+                      class="h-full shrink-0 bg-chart-3"
                       :style="{ width: getWidth(slot.result.currentDI) }"
                     />
                   </TooltipTrigger>
@@ -83,7 +90,7 @@ function getWidth(value) {
                 <Tooltip>
                   <TooltipTrigger as-child>
                     <span
-                      class="h-full shrink-0 bg-amber-400 dark:bg-amber-500"
+                      class="h-full shrink-0 bg-chart-2"
                       :style="{ width: getWidth(slot.result.rollGapDI) }"
                     />
                   </TooltipTrigger>
@@ -92,7 +99,7 @@ function getWidth(value) {
                 <Tooltip>
                   <TooltipTrigger as-child>
                     <span
-                      class="h-full shrink-0 bg-sky-500"
+                      class="h-full shrink-0 bg-chart-1"
                       :style="{ width: getWidth(slot.result.pieceGapDI) }"
                     />
                   </TooltipTrigger>
@@ -108,14 +115,17 @@ function getWidth(value) {
               <Badge
                 v-if="slot.result.opportunityDI <= 0.0001"
                 variant="outline"
-                class="bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                :class="gearPlanStatusClasses.complete"
               >
                 <CheckCircle2Icon class="size-3.5" />
                 {{ slot.result.aboveBenchmark ? 'Above benchmark' : 'At benchmark' }}
               </Badge>
               <template v-else>
                 <div class="text-right">
-                  <div class="flex items-center justify-end gap-1 text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  <div
+                    class="flex items-center justify-end gap-1 text-sm font-semibold"
+                    :class="getGearPlanOpportunityTextClass(slot.result.opportunityDI)"
+                  >
                     <ArrowDownRightIcon class="size-3.5" />
                     {{ slot.result.opportunityDI.toFixed(2) }}% DI
                   </div>
@@ -138,8 +148,8 @@ function getWidth(value) {
       </HoverCard>
     </div>
 
-    <div v-else class="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed bg-secondary/20 p-8 text-center">
-      <span class="flex size-20 items-center justify-center rounded-3xl bg-secondary">
+    <div v-else class="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed bg-surface-inset p-8 text-center">
+      <span class="flex size-20 items-center justify-center rounded-3xl bg-surface-raised">
         <img class="size-16 object-contain" src="/smart_priring.png" alt="">
       </span>
       <h3 class="mt-4 text-xl font-bold">Build your upgrade queue</h3>

@@ -172,10 +172,10 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
 
       <CardContent class="grid gap-4">
         <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
-          <div class="rounded-2xl bg-secondary/55 p-4">
+          <div class="rounded-2xl border border-info-border bg-info-surface p-4">
             <div class="parade-section-kicker">Current strength</div>
             <div class="mt-1 flex items-end gap-2">
-              <div class="text-5xl font-bold tracking-[-0.06em]">
+              <div class="text-5xl font-bold tracking-[-0.06em] text-info-foreground">
                 {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
               </div>
               <Badge variant="outline" :class="getTierClass(results.tier)">
@@ -185,11 +185,11 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             <Progress :model-value="totalProgress" class="mt-4 h-2" />
           </div>
 
-          <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-2xl bg-secondary/30">
+          <div v-if="rolledLineIndexes.length > 0" class="divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset">
             <div
               v-for="index in rolledLineIndexes"
               :key="`result-${index}`"
-              class="grid gap-2 p-3"
+              class="grid gap-2 bg-surface-raised/45 p-3"
             >
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="min-w-0">
@@ -211,12 +211,12 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             </div>
             <div
               v-if="emptyLineCount > 0"
-              class="border-t border-border/50 px-3 py-2 text-xs text-muted-foreground"
+              class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
             >
               {{ emptyLineSummary }}
             </div>
           </div>
-          <div v-else class="flex min-h-32 items-center gap-4 rounded-2xl border border-dashed bg-secondary/20 p-5">
+          <div v-else class="flex min-h-32 items-center gap-4 rounded-2xl border border-dashed bg-surface-inset p-5">
             <img class="size-16 shrink-0 object-contain" src="/smart_priring.png" alt="">
             <div>
               <h3 class="font-bold">Add your first enchant value</h3>
@@ -252,25 +252,25 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
         <CardContent class="min-w-0">
           <TabsContent value="summary" class="m-0">
             <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
-              <div class="parade-projection-card rounded-2xl border border-amber-300 p-4">
+              <div class="parade-projection-card rounded-2xl border border-warning-border p-4">
                 <div class="text-sm text-muted-foreground">Projected</div>
                 <div class="mt-1 flex items-end gap-2">
-                  <div class="text-4xl font-bold tracking-[-0.05em] text-amber-700">
+                  <div class="text-4xl font-bold tracking-[-0.05em] text-warning-foreground">
                     {{ resultMode === 'rating' ? results.potentialDI : results.potentialScore }}
                   </div>
                   <Badge variant="outline" :class="getTierClass(results.potentialTier)">
                     {{ results.potentialTier }}
                   </Badge>
                 </div>
-                <div class="mt-2 text-sm text-emerald-700 dark:text-emerald-300">{{ potentialGainText }} gain</div>
+                <div class="mt-2 text-sm text-success-foreground">{{ potentialGainText }} gain</div>
                 <Progress :model-value="potentialProgress" class="mt-4 h-2" />
               </div>
 
-              <div v-if="rolledLineIndexes.length > 0" class="overflow-hidden rounded-2xl bg-secondary/30">
+              <div v-if="rolledLineIndexes.length > 0" class="divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset">
                 <div
                   v-for="index in rolledLineIndexes"
                   :key="`potential-${index}`"
-                  class="grid gap-2 p-3"
+                  class="grid gap-2 bg-surface-raised/45 p-3"
                 >
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <div class="min-w-0">
@@ -295,19 +295,19 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 </div>
                 <div
                   v-if="emptyLineCount > 0"
-                  class="border-t border-border/50 px-3 py-2 text-xs text-muted-foreground"
+                  class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
                 >
                   {{ emptyLineSummary }}
                 </div>
               </div>
-              <div v-else class="flex min-h-32 items-center rounded-2xl bg-secondary/25 p-5">
+              <div v-else class="flex min-h-32 items-center rounded-2xl border border-dashed bg-surface-inset p-5">
                 <p class="text-sm text-muted-foreground">Your fully upgraded projection will appear here once at least one enchant value is entered.</p>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="lines" class="m-0 min-w-0">
-            <Table container-class="max-h-[360px] min-w-0 rounded-lg border" class="min-w-[520px]">
+            <Table container-class="max-h-[360px] min-w-0 rounded-lg border bg-surface-raised" class="min-w-[520px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Stat</TableHead>
@@ -384,7 +384,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             </div>
 
             <dl
-              class="grid divide-y divide-border/60 border-y border-border/60 md:divide-x md:divide-y-0"
+              class="grid divide-y divide-border/60 overflow-hidden rounded-xl border bg-surface-inset md:divide-x md:divide-y-0"
               :class="results.qualityOdds.showProjectedQuality
                 ? 'md:grid-cols-[1fr_1.4fr_1fr_1fr]'
                 : 'md:grid-cols-3'"
@@ -407,7 +407,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
               </div>
             </dl>
 
-            <Table container-class="max-h-[320px] min-w-0 rounded-lg border" class="min-w-[660px]">
+            <Table container-class="max-h-[320px] min-w-0 rounded-lg border bg-surface-raised" class="min-w-[660px]">
               <TableHeader>
                 <TableRow>
                   <TableHead class="w-[88px]">Order</TableHead>
@@ -454,7 +454,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                       orientation="horizontal"
                       :spacing="1"
                       :model-value="qualityLineEnchantMethods[line.index]"
-                      class="grid h-11 w-[190px] grid-cols-2 gap-1 rounded-md bg-muted/70 p-1"
+                      class="grid h-11 w-[190px] grid-cols-2 gap-1 rounded-md bg-surface-inset p-1"
                       :aria-label="`${line.stat} roll method`"
                       @update:model-value="updateQualityLineEnchantMethod(line.index, $event)"
                     >
@@ -462,7 +462,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                         v-for="method in currentOddsEnchantMethodOptions"
                         :key="method.value"
                         :value="method.value"
-                        class="h-9 min-w-0 flex-1 flex-col gap-0 rounded-sm px-1 text-xs leading-none text-muted-foreground shadow-none hover:bg-background/60 hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                        class="h-9 min-w-0 flex-1 flex-col gap-0 rounded-sm px-1 text-xs leading-none text-muted-foreground shadow-none hover:bg-surface-raised/70 hover:text-foreground data-[state=on]:bg-surface-raised data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                         :aria-label="`${method.label}: ${method.successRate * 100}% success rate for ${line.stat}`"
                       >
                         <span class="font-medium">{{ method.label }}</span>
@@ -498,7 +498,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table container-class="rounded-lg border">
+          <Table container-class="rounded-lg border bg-surface-raised">
             <TableHeader>
               <TableRow>
                 <TableHead>Tier</TableHead>
@@ -533,7 +533,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
         </CardHeader>
         <CardContent>
           <Table
-            container-class="max-h-[360px] min-w-0 rounded-lg border"
+            container-class="max-h-[360px] min-w-0 rounded-lg border bg-surface-raised"
             class="min-w-[720px] [&_td]:py-2.5 [&_th]:h-10"
           >
             <TableHeader>

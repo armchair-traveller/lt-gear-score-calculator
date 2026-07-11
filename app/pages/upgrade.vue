@@ -56,6 +56,17 @@ const completionPercent = computed(() => {
   return clamp(ownedMaterialNumber.value / requiredMaterials.value * 100, 0, 100)
 })
 const canEnhance = computed(() => ownedMaterialNumber.value >= requiredMaterials.value)
+const materialStatusClasses = computed(() => canEnhance.value
+  ? {
+      badge: 'border-success-border bg-success-surface text-success-foreground',
+      foreground: 'text-success-foreground',
+      surface: 'parade-success-surface border-success-border',
+    }
+  : {
+      badge: 'border-warning-border bg-warning-surface text-warning-foreground',
+      foreground: 'text-warning-foreground',
+      surface: 'parade-warning-surface border-warning-border',
+    })
 const currentCumulative = computed(() =>
   (selectedItem.value?.rows ?? [])
     .slice(0, currentLevelNumber.value)
@@ -252,7 +263,7 @@ function trimDecimal(value) {
 
       <main class="parade-workspace grid gap-4 xl:grid-cols-[1.08fr_.92fr]">
         <section class="grid content-start gap-4 xl:col-span-2">
-          <Card class="parade-card parade-goal-card relative rounded-[22px] border-sky-200">
+          <Card class="parade-card parade-goal-card relative rounded-[22px] border-info-border">
             <CardHeader>
               <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
@@ -425,9 +436,7 @@ function trimDecimal(value) {
                 <Badge
                   variant="outline"
                   class="w-fit"
-                  :class="canEnhance
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                    : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300'"
+                  :class="materialStatusClasses.badge"
                 >
                   <CheckCircle2Icon v-if="canEnhance" class="size-3.5" />
                   <TriangleAlertIcon v-else class="size-3.5" />
@@ -437,10 +446,10 @@ function trimDecimal(value) {
             </CardHeader>
 
             <CardContent class="grid gap-4">
-              <div class="parade-material-hero grid grid-cols-[1fr_auto] items-center gap-4 rounded-2xl border border-sky-200 p-4">
+              <div class="parade-material-hero grid grid-cols-[1fr_auto] items-center gap-4 rounded-2xl border border-info-border p-4">
                 <div class="min-w-0">
                   <div class="flex items-center gap-3">
-                    <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-card shadow-sm">
+                    <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface-raised shadow-sm">
                       <img class="size-8 object-contain" :src="hammerImage" alt="">
                     </span>
                     <div class="min-w-0">
@@ -451,13 +460,13 @@ function trimDecimal(value) {
                   <Progress :model-value="completionPercent" class="mt-3 h-2" />
                 </div>
                 <div class="text-right">
-                  <strong class="block text-3xl font-bold text-amber-700">{{ completionPercent.toFixed(0) }}%</strong>
-                  <span class="text-xs font-semibold text-amber-800">owned</span>
+                  <strong class="block text-3xl font-bold" :class="materialStatusClasses.foreground">{{ completionPercent.toFixed(0) }}%</strong>
+                  <span class="text-xs font-semibold" :class="materialStatusClasses.foreground">owned</span>
                 </div>
               </div>
 
               <div class="grid grid-cols-3 gap-2">
-                <div class="rounded-2xl border border-sky-200 bg-secondary/45 p-3 md:p-4">
+                <div class="rounded-2xl border border-info-border bg-info-surface p-3 md:p-4">
                   <div class="flex items-center gap-2 text-sm text-muted-foreground">
                     <PackageIcon class="size-4" />
                     Required
@@ -474,14 +483,14 @@ function trimDecimal(value) {
                   <div class="mt-1 text-xs text-muted-foreground">{{ completionPercent.toFixed(0) }}% covered</div>
                 </div>
 
-                <div class="parade-warning-surface rounded-2xl border border-amber-200 p-3 md:p-4">
+                <div class="rounded-2xl border p-3 md:p-4" :class="materialStatusClasses.surface">
                   <div class="flex items-center gap-2 text-sm text-muted-foreground">
                     <SparklesIcon class="size-4" />
                     {{ canEnhance ? 'Extra' : 'Remaining' }}
                   </div>
                   <div
                     class="mt-2 text-xl font-bold tracking-tight md:text-3xl"
-                    :class="canEnhance ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'"
+                    :class="materialStatusClasses.foreground"
                   >
                     {{ formatNumber(canEnhance ? extraMaterials : remainingMaterials) }}
                   </div>
@@ -490,7 +499,7 @@ function trimDecimal(value) {
                   </div>
                 </div>
 
-                <div class="parade-success-surface rounded-2xl border border-emerald-200 p-3 md:p-4">
+                <div class="parade-success-surface rounded-2xl border border-success-border p-3 md:p-4">
                   <div class="flex items-center gap-2 text-sm text-muted-foreground">
                     <CoinsIcon class="size-4" />
                     Fee
@@ -501,12 +510,12 @@ function trimDecimal(value) {
 
               <div
                 v-if="ascensionMaterial"
-                class="rounded-lg border border-sky-200/80 bg-sky-50/70 p-4 dark:border-sky-900/70 dark:bg-sky-950/35"
+                class="rounded-lg border border-info-border bg-info-surface p-4"
               >
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 text-sm font-medium">
-                      <SparklesIcon class="size-4 text-sky-700 dark:text-sky-300" />
+                      <SparklesIcon class="size-4 text-info-foreground" />
                       Ascension material
                     </div>
                     <div class="mt-1 truncate text-sm text-muted-foreground">
@@ -516,7 +525,7 @@ function trimDecimal(value) {
 
                   <div class="grid gap-1 sm:min-w-36 sm:text-right">
                     <div class="text-xs text-muted-foreground">Required</div>
-                    <div class="text-2xl font-semibold tracking-normal text-sky-800 dark:text-sky-200">
+                    <div class="text-2xl font-semibold tracking-normal text-info-foreground">
                       {{ formatNumber(ascensionMaterial.total) }}
                     </div>
                     <div class="text-xs text-muted-foreground">
@@ -539,7 +548,7 @@ function trimDecimal(value) {
             </CardContent>
           </Card>
 
-          <Card class="parade-card rounded-[22px] border-t-4 border-t-amber-400">
+          <Card class="parade-card rounded-[22px] border-t-4 border-t-chart-2">
             <CardHeader>
               <CardTitle class="text-lg">Upgrade steps</CardTitle>
             </CardHeader>
@@ -597,8 +606,8 @@ function trimDecimal(value) {
                     v-for="item in visibleCatalogItems.slice(0, catalogExpanded ? visibleCatalogItems.length : 3)"
                     :key="item.value"
                     type="button"
-                    class="grid gap-2 rounded-2xl border bg-card/75 px-4 py-3 text-left transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:grid-cols-[minmax(0,1fr)_auto]"
-                    :class="item.value === itemValue ? 'border-primary bg-secondary/70' : ''"
+                    class="grid gap-2 rounded-2xl border bg-surface-raised px-4 py-3 text-left transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:grid-cols-[minmax(0,1fr)_auto]"
+                    :class="item.value === itemValue ? 'border-info-border bg-info-surface' : ''"
                     @click="selectCatalogItem(item.value)"
                   >
                     <span class="min-w-0">
@@ -608,7 +617,7 @@ function trimDecimal(value) {
                       </span>
                       <span
                         v-if="getAscensionMaterialLabel(item)"
-                        class="mt-1 flex min-w-0 items-center gap-1 text-xs font-medium text-sky-700 dark:text-sky-300"
+                        class="mt-1 flex min-w-0 items-center gap-1 text-xs font-medium text-info-foreground"
                       >
                         <SparklesIcon class="size-3 shrink-0" />
                         <span class="truncate">{{ getAscensionMaterialLabel(item) }}</span>

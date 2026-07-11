@@ -31,7 +31,7 @@ const {
 
       <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
         <div class="grid min-h-full min-w-0 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <section class="min-h-0 min-w-0 rounded-lg bg-muted/15">
+          <section class="min-h-0 min-w-0 rounded-lg border bg-surface-inset">
             <div class="px-3 py-2">
               <div class="text-sm font-medium">Gear catalog</div>
               <div class="text-xs text-muted-foreground">Hover to inspect, click to select</div>
@@ -59,8 +59,10 @@ const {
           </section>
 
           <section class="grid min-h-0 min-w-0 content-start gap-4">
-            <div class="flex items-center gap-3 rounded-lg bg-muted/15 p-3">
-              <img class="size-12 rounded-lg bg-muted p-1" :src="getItemImage(highlightedPiece[1], highlightedPiece[0])" alt="">
+            <div class="flex items-center gap-3 rounded-lg border bg-surface-raised p-3">
+              <span class="parade-item-well flex size-12 shrink-0 items-center justify-center rounded-lg">
+                <img class="size-10" :src="getItemImage(highlightedPiece[1], highlightedPiece[0])" alt="">
+              </span>
               <div class="min-w-0">
                 <div class="truncate font-semibold">{{ highlightedPiece[1] }} {{ highlightedPiece[0] }}</div>
                 <div class="truncate text-sm text-muted-foreground">
@@ -78,7 +80,7 @@ const {
 
               <TabsContent value="enchants" class="m-0 min-h-0 min-w-0">
                 <Table
-                  container-class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]"
+                  container-class="max-h-[52vh] min-w-0 rounded-lg border bg-surface-raised xl:max-h-[calc(100vh-16rem)]"
                   class="min-w-[560px]"
                 >
                   <TableHeader>
@@ -107,7 +109,7 @@ const {
 
               <TabsContent value="tiers" class="m-0 min-h-0 min-w-0">
                 <Table
-                  container-class="max-h-[52vh] min-w-0 rounded-lg border bg-card xl:max-h-[calc(100vh-16rem)]"
+                  container-class="max-h-[52vh] min-w-0 rounded-lg border bg-surface-raised xl:max-h-[calc(100vh-16rem)]"
                   class="min-w-[720px]"
                 >
                   <TableHeader>
@@ -142,7 +144,7 @@ const {
                   <div
                     v-for="trait in highlightedTraitRows"
                     :key="trait.id"
-                    class="flex gap-3 rounded-lg bg-muted/15 p-3"
+                    class="flex gap-3 rounded-lg border bg-surface-inset p-3"
                   >
                     <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
                     <div>
@@ -151,7 +153,7 @@ const {
                     </div>
                   </div>
                 </div>
-                <div v-else class="rounded-lg bg-muted/15 p-4 text-sm text-muted-foreground">
+                <div v-else class="rounded-lg border border-dashed bg-surface-inset p-4 text-sm text-muted-foreground">
                   No special traits listed for this piece.
                 </div>
               </TabsContent>

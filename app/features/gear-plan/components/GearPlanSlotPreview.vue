@@ -21,11 +21,11 @@ const filledLines = computed(() =>
 <template>
   <div class="grid gap-3">
     <div v-if="showSummary" class="grid grid-cols-2 gap-2">
-      <div class="rounded-lg bg-muted/25 p-3">
+      <div class="rounded-lg bg-surface-inset p-3">
         <div class="text-xs text-muted-foreground">Current DI</div>
         <div class="mt-1 text-lg font-semibold">{{ result.currentDI.toFixed(2) }}%</div>
       </div>
-      <div class="rounded-lg bg-muted/25 p-3">
+      <div class="rounded-lg bg-surface-inset p-3">
         <div class="text-xs text-muted-foreground">Benchmark</div>
         <div class="mt-1 text-lg font-semibold">{{ result.benchmarkDI.toFixed(2) }}%</div>
       </div>

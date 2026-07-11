@@ -138,15 +138,15 @@ export function formatGainRangeWithPrecision(text, baseValue, decimals) {
 export function getTierClass(tier) {
   const firstTier = String(tier).split(' ')[0]
   const classes = {
-    F: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
-    E: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
-    D: 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-    C: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-    B: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-    A: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-    S: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300',
-    SS: 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
-    SSS: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
+    F: 'border-tier-f/30 bg-tier-f/10 text-tier-f',
+    E: 'border-tier-e/30 bg-tier-e/10 text-tier-e',
+    D: 'border-tier-d/30 bg-tier-d/10 text-tier-d',
+    C: 'border-tier-c/30 bg-tier-c/10 text-tier-c',
+    B: 'border-tier-b/30 bg-tier-b/10 text-tier-b',
+    A: 'border-tier-a/30 bg-tier-a/10 text-tier-a',
+    S: 'border-tier-s/30 bg-tier-s/10 text-tier-s',
+    SS: 'border-tier-ss/30 bg-tier-ss/10 text-tier-ss',
+    SSS: 'border-tier-sss/30 bg-tier-sss/10 text-tier-sss',
   }
 
   return classes[firstTier] ?? classes.F
@@ -155,8 +155,8 @@ export function getTierClass(tier) {
 export function getRollStatusClass(status) {
   const classes = {
     ignored: 'text-muted-foreground',
-    upgrade: 'text-emerald-700 dark:text-emerald-300',
-    new: 'text-amber-700 dark:text-amber-300',
+    upgrade: 'text-success-foreground',
+    new: 'text-warning-foreground',
   }
 
   return classes[status] ?? ''
@@ -177,8 +177,8 @@ export function getMaxRollPercentClass(percent) {
     return 'text-muted-foreground'
   }
   if (percent < 90) {
-    return 'text-amber-600 dark:text-amber-300'
+    return 'text-warning-foreground'
   }
 
-  return 'text-red-600 dark:text-red-400'
+  return 'text-destructive'
 }

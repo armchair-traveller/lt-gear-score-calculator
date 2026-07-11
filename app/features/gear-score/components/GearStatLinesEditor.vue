@@ -186,7 +186,7 @@ watch(
     <div
       v-for="(_, index) in statTypes"
       :key="index"
-      class="grid gap-2 rounded-2xl border bg-card/75 p-2"
+      class="grid gap-2 rounded-2xl border bg-surface-raised p-2"
     >
       <div
         role="group"
@@ -210,7 +210,7 @@ watch(
               :disabled="disabled"
               :aria-label="`Line ${index + 1} stat`"
               :aria-expanded="pickerOpen[index] || false"
-              class="h-12 w-full justify-between rounded-l-3xl rounded-r-none bg-input/50 px-3 font-normal shadow-none hover:bg-muted/60 focus-visible:ring-inset dark:bg-input/30 dark:hover:bg-input/40"
+              class="h-12 w-full justify-between rounded-l-3xl rounded-r-none bg-surface-inset px-3 font-normal shadow-none hover:bg-accent focus-visible:ring-inset"
             >
               <span class="flex min-w-0 items-center gap-3">
                 <span
@@ -266,9 +266,9 @@ watch(
 
         <div
           :class="[
-            'h-12 rounded-l-none rounded-r-3xl border border-transparent bg-input/50 transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30 dark:bg-input/30',
+            'h-12 rounded-l-none rounded-r-3xl border border-transparent bg-surface-inset transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30',
             isInputOverMax(index)
-              ? 'border-destructive ring-3 ring-inset ring-destructive/20 dark:ring-destructive/40'
+              ? 'border-destructive ring-3 ring-inset ring-destructive/30'
               : '',
           ]"
         >

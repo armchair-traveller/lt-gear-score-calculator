@@ -140,7 +140,7 @@ async function copyInputLink() {
       </DialogHeader>
 
       <div class="min-h-0 min-w-0 overflow-y-auto p-2 sm:p-4">
-        <div class="grid place-items-center overflow-hidden rounded-lg bg-muted/20 p-2 sm:p-5">
+        <div class="grid place-items-center overflow-hidden rounded-lg border bg-surface-inset p-2 sm:p-5">
           <div
             v-if="snapshotIsGenerating"
             class="flex min-h-56 flex-col items-center justify-center gap-2 text-center text-muted-foreground sm:min-h-[520px]"
@@ -167,7 +167,7 @@ async function copyInputLink() {
               aria-describedby="snapshot-details"
             >
             <span
-              class="absolute bottom-2 right-2 grid size-7 place-items-center rounded-full bg-background/85 text-muted-foreground shadow-sm sm:hidden"
+              class="absolute bottom-2 right-2 grid size-7 place-items-center rounded-full bg-surface-raised/90 text-muted-foreground shadow-sm sm:hidden"
               aria-hidden="true"
             >
               <ExpandIcon class="size-4" />
