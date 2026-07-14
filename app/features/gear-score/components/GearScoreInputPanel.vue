@@ -237,34 +237,39 @@ function setStatPickerOpen(index, value) {
               </Button>
             </CollapsibleTrigger>
 
-            <CollapsibleContent class="rounded-b-2xl border border-t-0 bg-surface-inset">
-              <div class="grid gap-3 p-3">
-                <div class="grid gap-2">
-                  <div class="text-xs font-medium text-muted-foreground">Main</div>
-                  <div class="flex flex-wrap gap-1.5">
-                    <Badge
-                      v-for="stat in currentRecommendations.main"
-                      :key="`main-${stat}`"
-                      variant="secondary"
-                    >
-                      {{ stat }}
-                    </Badge>
+            <CollapsibleContent force-mount>
+              <Transition name="motion-swap">
+                <div
+                  v-if="recommendationsOpen"
+                  class="grid gap-3 rounded-b-2xl border border-t-0 bg-surface-inset p-3"
+                >
+                  <div class="grid gap-2">
+                    <div class="text-xs font-medium text-muted-foreground">Main</div>
+                    <div class="flex flex-wrap gap-1.5">
+                      <Badge
+                        v-for="stat in currentRecommendations.main"
+                        :key="`main-${stat}`"
+                        variant="secondary"
+                      >
+                        {{ stat }}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
 
-                <div class="grid gap-2">
-                  <div class="text-xs font-medium text-muted-foreground">Secondary</div>
-                  <div class="flex flex-wrap gap-1.5">
-                    <Badge
-                      v-for="stat in currentRecommendations.secondary"
-                      :key="`secondary-${stat}`"
-                      variant="outline"
-                    >
-                      {{ stat }}
-                    </Badge>
+                  <div class="grid gap-2">
+                    <div class="text-xs font-medium text-muted-foreground">Secondary</div>
+                    <div class="flex flex-wrap gap-1.5">
+                      <Badge
+                        v-for="stat in currentRecommendations.secondary"
+                        :key="`secondary-${stat}`"
+                        variant="outline"
+                      >
+                        {{ stat }}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Transition>
             </CollapsibleContent>
           </Collapsible>
         </div>

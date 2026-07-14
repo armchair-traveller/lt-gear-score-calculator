@@ -36,6 +36,14 @@ const {
   getLineStatusLabel,
   getStatStep,
 } = useGearPlanContext()
+
+function getBreakdownScale(value) {
+  if (!editorResult.value.opportunityDI) {
+    return 0
+  }
+
+  return Math.max(0, Math.min(value / editorResult.value.opportunityDI, 1))
+}
 </script>
 
 <template>
@@ -74,14 +82,14 @@ const {
                   <GaugeIcon class="size-3.5" />
                   Current DI
                 </div>
-                <div class="mt-1 text-xl font-semibold">{{ editorResult.currentDI.toFixed(2) }}%</div>
+                <div class="motion-tabular mt-1 text-xl font-semibold">{{ editorResult.currentDI.toFixed(2) }}%</div>
               </div>
               <div class="parade-metric p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                   <TargetIcon class="size-3.5" />
                   Benchmark
                 </div>
-                <div class="mt-1 text-xl font-semibold">{{ editorResult.benchmarkDI.toFixed(2) }}%</div>
+                <div class="motion-tabular mt-1 text-xl font-semibold">{{ editorResult.benchmarkDI.toFixed(2) }}%</div>
               </div>
               <div class="rounded-2xl border border-warning-border bg-warning-surface p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
@@ -89,7 +97,7 @@ const {
                   Potential
                 </div>
                 <div
-                  class="mt-1 text-xl font-semibold"
+                  class="motion-tabular mt-1 text-xl font-semibold"
                   :class="getGearPlanOpportunityTextClass(editorResult.opportunityDI)"
                 >
                   {{ editorResult.opportunityDI.toFixed(2) }}%
@@ -101,14 +109,17 @@ const {
               <div class="flex items-center justify-between gap-3">
                 <h3 class="text-sm font-semibold">Final enchant lines</h3>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs text-muted-foreground">{{ editorResult.filledLineCount }} / 5 lines</span>
-                  <Badge
-                    variant="outline"
-                    :class="getGearPlanLineStatusClass(editorResult.lineStatus)"
-                  >
-                    <CheckCircle2Icon v-if="editorResult.lineStatus === 'penta'" class="size-3.5" />
-                    {{ getLineStatusLabel(editorResult) }}
-                  </Badge>
+                  <span class="motion-tabular text-xs text-muted-foreground">{{ editorResult.filledLineCount }} / 5 lines</span>
+                  <Transition name="motion-swap" mode="out-in">
+                    <Badge
+                      :key="editorResult.lineStatus"
+                      variant="outline"
+                      :class="getGearPlanLineStatusClass(editorResult.lineStatus)"
+                    >
+                      <CheckCircle2Icon v-if="editorResult.lineStatus === 'penta'" class="size-3.5" />
+                      {{ getLineStatusLabel(editorResult) }}
+                    </Badge>
+                  </Transition>
                 </div>
               </div>
 
@@ -137,23 +148,23 @@ const {
               <div class="grid gap-2">
                 <div class="grid grid-cols-[120px_1fr_auto] items-center gap-3 text-sm">
                   <span class="text-muted-foreground">Roll values</span>
-                  <div class="h-2 overflow-hidden rounded-sm bg-surface-inset">
+                  <div class="relative h-2 overflow-hidden rounded-sm bg-surface-inset">
                     <div
-                      class="h-full bg-chart-2"
-                      :style="{ width: `${editorResult.opportunityDI ? editorResult.rollGapDI / editorResult.opportunityDI * 100 : 0}%` }"
+                      class="motion-bar absolute inset-0 bg-chart-2"
+                      :style="{ transform: `scaleX(${getBreakdownScale(editorResult.rollGapDI)})` }"
                     />
                   </div>
-                  <span class="font-medium">{{ editorResult.rollGapDI.toFixed(2) }}%</span>
+                  <span class="motion-tabular font-medium">{{ editorResult.rollGapDI.toFixed(2) }}%</span>
                 </div>
                 <div class="grid grid-cols-[120px_1fr_auto] items-center gap-3 text-sm">
                   <span class="text-muted-foreground">Piece gap</span>
-                  <div class="h-2 overflow-hidden rounded-sm bg-surface-inset">
+                  <div class="relative h-2 overflow-hidden rounded-sm bg-surface-inset">
                     <div
-                      class="h-full bg-chart-1"
-                      :style="{ width: `${editorResult.opportunityDI ? editorResult.pieceGapDI / editorResult.opportunityDI * 100 : 0}%` }"
+                      class="motion-bar absolute inset-0 bg-chart-1"
+                      :style="{ transform: `scaleX(${getBreakdownScale(editorResult.pieceGapDI)})` }"
                     />
                   </div>
-                  <span class="font-medium">{{ editorResult.pieceGapDI.toFixed(2) }}%</span>
+                  <span class="motion-tabular font-medium">{{ editorResult.pieceGapDI.toFixed(2) }}%</span>
                 </div>
               </div>
               <p class="text-xs text-muted-foreground">
@@ -193,6 +204,7 @@ const {
           <Button
             class="sm:ml-auto"
             :disabled="!editorResult.eligible"
+            :aria-label="`Save ${selectedSlot.pieceType}`"
             @click="saveEditor"
           >
             Save gear piece

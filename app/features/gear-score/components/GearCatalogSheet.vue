@@ -78,7 +78,7 @@ const {
                 <TabsTrigger value="traits">Traits</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="enchants" class="m-0 min-h-0 min-w-0">
+              <TabsContent value="enchants" class="motion-tab-panel m-0 min-h-0 min-w-0">
                 <Table
                   container-class="max-h-[52vh] min-w-0 rounded-lg border bg-surface-raised xl:max-h-[calc(100vh-16rem)]"
                   class="min-w-[560px]"
@@ -107,7 +107,7 @@ const {
                 </Table>
               </TabsContent>
 
-              <TabsContent value="tiers" class="m-0 min-h-0 min-w-0">
+              <TabsContent value="tiers" class="motion-tab-panel m-0 min-h-0 min-w-0">
                 <Table
                   container-class="max-h-[52vh] min-w-0 rounded-lg border bg-surface-raised xl:max-h-[calc(100vh-16rem)]"
                   class="min-w-[720px]"
@@ -139,7 +139,7 @@ const {
                 </Table>
               </TabsContent>
 
-              <TabsContent value="traits" class="m-0">
+              <TabsContent value="traits" class="motion-tab-panel m-0">
                 <div v-if="highlightedTraitRows.length" class="grid gap-2">
                   <div
                     v-for="trait in highlightedTraitRows"

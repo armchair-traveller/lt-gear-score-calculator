@@ -3,7 +3,7 @@ import { CheckIcon, MonitorIcon, MoonIcon, SunIcon } from '@lucide/vue'
 import { useColorMode } from '@vueuse/core'
 
 const mode = useColorMode({
-  disableTransition: false,
+  disableTransition: true,
   emitAuto: true,
 })
 
@@ -22,7 +22,9 @@ const currentIcon = computed(() => {
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
       <Button variant="outline" size="icon">
-        <component :is="currentIcon" class="transition-transform duration-200" />
+        <Transition name="motion-pop" mode="out-in">
+          <component :is="currentIcon" :key="mode" />
+        </Transition>
         <span class="sr-only">Toggle theme</span>
       </Button>
     </DropdownMenuTrigger>

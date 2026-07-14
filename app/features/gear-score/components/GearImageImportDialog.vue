@@ -399,21 +399,31 @@ function revokePreviewUrl() {
             @dragleave.prevent="isDragging = false"
             @drop.prevent="handleDrop"
           >
-            <img v-if="previewUrl" :src="previewUrl" alt="" class="max-h-[46vh] w-full rounded-md object-contain" />
-            <span v-else class="grid justify-items-center gap-3 text-center">
-              <span
-                class="flex size-12 items-center justify-center rounded-lg bg-surface-raised text-muted-foreground shadow-sm"
-              >
-                <UploadCloudIcon class="size-5" />
+            <Transition name="motion-fade" mode="out-in">
+              <img
+                v-if="previewUrl"
+                key="preview"
+                :src="previewUrl"
+                alt=""
+                class="max-h-[46vh] w-full rounded-md object-contain"
+              />
+              <span v-else key="empty" class="grid justify-items-center gap-3 text-center">
+                <span
+                  class="flex size-12 items-center justify-center rounded-lg bg-surface-raised text-muted-foreground shadow-sm"
+                >
+                  <UploadCloudIcon class="size-5" />
+                </span>
+                <span class="text-sm font-medium">Upload screenshot</span>
               </span>
-              <span class="text-sm font-medium">Upload screenshot</span>
-            </span>
+            </Transition>
           </button>
 
-          <div v-if="selectedFile" class="min-w-0 rounded-lg border bg-surface-raised px-3 py-2 text-xs text-muted-foreground">
-            <div class="truncate font-medium text-foreground">{{ selectedFile.name }}</div>
-            <div>{{ Math.ceil(selectedFile.size / 1024) }} KB</div>
-          </div>
+          <Transition name="motion-swap">
+            <div v-if="selectedFile" class="min-w-0 rounded-lg border bg-surface-raised px-3 py-2 text-xs text-muted-foreground">
+              <div class="truncate font-medium text-foreground">{{ selectedFile.name }}</div>
+              <div class="motion-tabular">{{ Math.ceil(selectedFile.size / 1024) }} KB</div>
+            </div>
+          </Transition>
 
           <div class="grid grid-cols-2 gap-2">
             <Button class="w-full" :disabled="!selectedFile || isLoading" @click="parseImage">
@@ -434,25 +444,32 @@ function revokePreviewUrl() {
         </div>
 
         <div class="grid min-h-0 min-w-0 gap-3 p-4 lg:grid-rows-[auto_minmax(0,1fr)]">
-          <div
-            v-if="error"
-            class="flex gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            <AlertCircleIcon class="mt-0.5 size-4 shrink-0" />
-            <span>{{ error }}</span>
-          </div>
+          <Transition name="motion-swap">
+            <div
+              v-if="error"
+              class="flex gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+              role="alert"
+            >
+              <AlertCircleIcon class="mt-0.5 size-4 shrink-0" />
+              <span>{{ error }}</span>
+            </div>
+          </Transition>
 
-          <div
-            v-if="isLoading"
-            class="grid min-h-[260px] place-items-center rounded-lg border bg-surface-inset p-6 text-center text-sm text-muted-foreground lg:min-h-0"
-          >
-            <span class="grid justify-items-center gap-3">
-              <Loader2Icon class="size-6 animate-spin" />
-              Reading enchant lines
-            </span>
-          </div>
+          <Transition name="motion-fade" mode="out-in">
+            <div
+              v-if="isLoading"
+              key="loading"
+              class="grid min-h-[260px] place-items-center rounded-lg border bg-surface-inset p-6 text-center text-sm text-muted-foreground lg:min-h-0"
+              role="status"
+              aria-live="polite"
+            >
+              <span class="grid justify-items-center gap-3">
+                <Loader2Icon class="size-6 animate-spin" />
+                Reading enchant lines
+              </span>
+            </div>
 
-          <div v-else-if="importResult" class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
+            <div v-else-if="importResult" key="review" class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
             <div class="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{{ activeLines.length }} active</Badge>
               <Badge
@@ -555,17 +572,19 @@ function revokePreviewUrl() {
                 </article>
               </div>
             </ScrollArea>
-          </div>
+            </div>
 
-          <div
-            v-else
-            class="grid min-h-[260px] place-items-center rounded-lg border border-dashed bg-surface-inset p-6 text-center text-sm text-muted-foreground lg:min-h-0"
-          >
-            <span class="grid justify-items-center gap-3">
-              <ScanTextIcon class="size-6" />
-              {{ selectedFile ? 'Ready to parse' : 'No equip/enchant screenshot selected' }}
-            </span>
-          </div>
+            <div
+              v-else
+              key="empty"
+              class="grid min-h-[260px] place-items-center rounded-lg border border-dashed bg-surface-inset p-6 text-center text-sm text-muted-foreground lg:min-h-0"
+            >
+              <span class="grid justify-items-center gap-3">
+                <ScanTextIcon class="size-6" />
+                {{ selectedFile ? 'Ready to parse' : 'No equip/enchant screenshot selected' }}
+              </span>
+            </div>
+          </Transition>
         </div>
       </div>
 

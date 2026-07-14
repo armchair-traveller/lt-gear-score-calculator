@@ -31,14 +31,17 @@ const {
     <template #utilities>
       <Tooltip>
         <TooltipTrigger as-child>
-          <Button variant="outline" size="sm" @click="generateURL">
-            <CheckIcon v-if="clipboardTooltip" data-icon="inline-start" />
-            <ClipboardIcon v-else data-icon="inline-start" />
-            {{ clipboardTooltip ? 'Copied' : 'Share' }}
+          <Button variant="outline" size="sm" class="min-w-[6.5rem]" @click="generateURL">
+            <Transition name="motion-pop" mode="out-in">
+              <CheckIcon v-if="clipboardTooltip" key="copied" data-icon="inline-start" />
+              <ClipboardIcon v-else key="share" data-icon="inline-start" />
+            </Transition>
+            <span>{{ clipboardTooltip ? 'Copied' : 'Share' }}</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>{{ clipboardTooltip ? 'Link copied' : 'Copy calculator link' }}</TooltipContent>
       </Tooltip>
+      <span class="sr-only" aria-live="polite">{{ clipboardTooltip ? 'Link copied' : '' }}</span>
 
       <DropdownMenu>
         <DropdownMenuTrigger as-child>

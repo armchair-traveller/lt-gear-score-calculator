@@ -24,6 +24,10 @@ const ownedMaterials = ref(0)
 const quantity = ref(1)
 const searchQuery = ref('')
 const catalogExpanded = ref(false)
+const catalogSection = ref(null)
+const catalogSearchControl = ref(null)
+const catalogFocusPending = ref(false)
+const catalogSearchScrollPending = ref(false)
 const homeHref = computed(() => router.resolve('/').href)
 const planHref = computed(() => router.resolve('/plan').href)
 
@@ -108,6 +112,10 @@ const visibleCatalogItems = computed(() => {
     getAscensionMaterialLabel(item),
   ].some((value) => String(value ?? '').toLowerCase().includes(query)))
 })
+const selectedStepsKey = computed(() => [
+  selectedItem.value?.value,
+  ...selectedRows.value.map((row) => row.step),
+].join(':'))
 
 watch(selectedItem, (item) => {
   if (!item) {
@@ -134,6 +142,55 @@ function selectCatalogItem(value) {
     currentLevel.value = '0'
     targetLevel.value = String(maxLevel.value || 1)
   }
+}
+
+async function expandCatalog({ scrollToCatalog = false } = {}) {
+  catalogFocusPending.value = true
+  catalogSearchScrollPending.value = !scrollToCatalog
+  catalogExpanded.value = true
+  await nextTick()
+
+  if (scrollToCatalog) {
+    const catalogElement = catalogSection.value?.$el ?? catalogSection.value
+    catalogElement?.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }
+
+  focusCatalogSearch()
+}
+
+function focusCatalogSearch() {
+  if (!catalogFocusPending.value) {
+    return
+  }
+
+  const searchInput = catalogSearchControl.value?.querySelector('input')
+  if (!searchInput) {
+    return
+  }
+
+  searchInput?.focus({ preventScroll: true })
+
+  if (catalogSearchScrollPending.value) {
+    searchInput.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'nearest',
+    })
+  }
+
+  catalogFocusPending.value = false
+  catalogSearchScrollPending.value = false
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function browseCatalog(event) {
+  event.preventDefault()
+  expandCatalog({ scrollToCatalog: true })
 }
 
 function setRange(startLevel, endLevel) {
@@ -274,7 +331,7 @@ function trimDecimal(value) {
                   </div>
                 </div>
                 <Button variant="secondary" as-child>
-                  <a href="#upgrade-catalog">Browse</a>
+                  <a href="#upgrade-catalog" aria-controls="upgrade-catalog" @click="browseCatalog">Browse</a>
                 </Button>
               </div>
             </CardHeader>
@@ -429,19 +486,28 @@ function trimDecimal(value) {
                     Materials
                   </CardTitle>
                   <CardDescription>
-                    +{{ currentLevelNumber }} to +{{ targetLevelNumber }} / {{ quantityNumber }} item{{ quantityNumber === 1 ? '' : 's' }}
+                    <span class="motion-tabular">+{{ currentLevelNumber }} to +{{ targetLevelNumber }} / {{ quantityNumber }} item{{ quantityNumber === 1 ? '' : 's' }}</span>
                   </CardDescription>
                 </div>
 
-                <Badge
-                  variant="outline"
-                  class="w-fit"
-                  :class="materialStatusClasses.badge"
+                <div
+                  class="grid h-5 w-48"
+                  aria-live="polite"
+                  aria-atomic="true"
                 >
-                  <CheckCircle2Icon v-if="canEnhance" class="size-3.5" />
-                  <TriangleAlertIcon v-else class="size-3.5" />
-                  {{ canEnhance ? 'Ready' : `${formatNumber(remainingMaterials)} missing` }}
-                </Badge>
+                  <Transition name="motion-swap">
+                    <Badge
+                      :key="canEnhance ? 'ready' : 'missing'"
+                      variant="outline"
+                      class="col-start-1 row-start-1 w-full justify-center overflow-hidden"
+                      :class="materialStatusClasses.badge"
+                    >
+                      <CheckCircle2Icon v-if="canEnhance" data-icon="inline-start" />
+                      <TriangleAlertIcon v-else data-icon="inline-start" />
+                      <span class="motion-tabular">{{ canEnhance ? 'Ready' : `${formatNumber(remainingMaterials)} missing` }}</span>
+                    </Badge>
+                  </Transition>
+                </div>
               </div>
             </CardHeader>
 
@@ -454,13 +520,13 @@ function trimDecimal(value) {
                     </span>
                     <div class="min-w-0">
                       <h3 class="truncate text-base font-bold">{{ selectedItem?.summary?.farm }} material</h3>
-                      <p class="text-sm text-muted-foreground">{{ formatNumber(ownedMaterialNumber) }} / {{ formatNumber(requiredMaterials) }}</p>
+                      <p class="motion-tabular text-sm text-muted-foreground">{{ formatNumber(ownedMaterialNumber) }} / {{ formatNumber(requiredMaterials) }}</p>
                     </div>
                   </div>
                   <Progress :model-value="completionPercent" class="mt-3 h-2" />
                 </div>
                 <div class="text-right">
-                  <strong class="block text-3xl font-bold" :class="materialStatusClasses.foreground">{{ completionPercent.toFixed(0) }}%</strong>
+                  <strong class="motion-tabular block text-3xl font-bold" :class="materialStatusClasses.foreground">{{ completionPercent.toFixed(0) }}%</strong>
                   <span class="text-xs font-semibold" :class="materialStatusClasses.foreground">owned</span>
                 </div>
               </div>
@@ -471,7 +537,7 @@ function trimDecimal(value) {
                     <PackageIcon class="size-4" />
                     Required
                   </div>
-                  <div class="mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatNumber(requiredMaterials) }}</div>
+                  <div class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatNumber(requiredMaterials) }}</div>
                 </div>
 
                 <div class="hidden">
@@ -483,20 +549,28 @@ function trimDecimal(value) {
                   <div class="mt-1 text-xs text-muted-foreground">{{ completionPercent.toFixed(0) }}% covered</div>
                 </div>
 
-                <div class="rounded-2xl border p-3 md:p-4" :class="materialStatusClasses.surface">
-                  <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                    <SparklesIcon class="size-4" />
-                    {{ canEnhance ? 'Extra' : 'Remaining' }}
-                  </div>
-                  <div
-                    class="mt-2 text-xl font-bold tracking-tight md:text-3xl"
-                    :class="materialStatusClasses.foreground"
-                  >
-                    {{ formatNumber(canEnhance ? extraMaterials : remainingMaterials) }}
-                  </div>
-                  <div class="mt-1 text-xs text-muted-foreground">
-                    {{ canEnhance ? 'after target' : 'still needed' }}
-                  </div>
+                <div class="grid min-w-0">
+                  <Transition name="motion-swap">
+                    <div
+                      :key="canEnhance ? 'extra' : 'remaining'"
+                      class="col-start-1 row-start-1 rounded-2xl border p-3 md:p-4"
+                      :class="materialStatusClasses.surface"
+                    >
+                      <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                        <SparklesIcon class="size-4" />
+                        {{ canEnhance ? 'Extra' : 'Remaining' }}
+                      </div>
+                      <div
+                        class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl"
+                        :class="materialStatusClasses.foreground"
+                      >
+                        {{ formatNumber(canEnhance ? extraMaterials : remainingMaterials) }}
+                      </div>
+                      <div class="mt-1 text-xs text-muted-foreground">
+                        {{ canEnhance ? 'after target' : 'still needed' }}
+                      </div>
+                    </div>
+                  </Transition>
                 </div>
 
                 <div class="parade-success-surface rounded-2xl border border-success-border p-3 md:p-4">
@@ -504,36 +578,39 @@ function trimDecimal(value) {
                     <CoinsIcon class="size-4" />
                     Fee
                   </div>
-                  <div class="mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatFee(requiredFeeMillions) }}</div>
+                  <div class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatFee(requiredFeeMillions) }}</div>
                 </div>
               </div>
 
-              <div
-                v-if="ascensionMaterial"
-                class="rounded-lg border border-info-border bg-info-surface p-4"
-              >
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2 text-sm font-medium">
-                      <SparklesIcon class="size-4 text-info-foreground" />
-                      Ascension material
+              <Transition name="motion-pop" mode="out-in">
+                <div
+                  v-if="ascensionMaterial"
+                  :key="ascensionMaterial.name"
+                  class="rounded-lg border border-info-border bg-info-surface p-4"
+                >
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2 text-sm font-medium">
+                        <SparklesIcon class="size-4 text-info-foreground" />
+                        Ascension material
+                      </div>
+                      <div class="mt-1 truncate text-sm text-muted-foreground">
+                        {{ ascensionMaterial.name }}
+                      </div>
                     </div>
-                    <div class="mt-1 truncate text-sm text-muted-foreground">
-                      {{ ascensionMaterial.name }}
-                    </div>
-                  </div>
 
-                  <div class="grid gap-1 sm:min-w-36 sm:text-right">
-                    <div class="text-xs text-muted-foreground">Required</div>
-                    <div class="text-2xl font-semibold tracking-normal text-info-foreground">
-                      {{ formatNumber(ascensionMaterial.total) }}
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      {{ formatNumber(ascensionMaterial.perItem) }} per item
+                    <div class="grid gap-1 sm:min-w-36 sm:text-right">
+                      <div class="text-xs text-muted-foreground">Required</div>
+                      <div class="motion-tabular text-2xl font-semibold tracking-normal text-info-foreground">
+                        {{ formatNumber(ascensionMaterial.total) }}
+                      </div>
+                      <div class="motion-tabular text-xs text-muted-foreground">
+                        {{ formatNumber(ascensionMaterial.perItem) }} per item
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Transition>
 
               <div class="hidden">
                 <div class="rounded-lg bg-muted/20 p-3">
@@ -553,82 +630,116 @@ function trimDecimal(value) {
               <CardTitle class="text-lg">Upgrade steps</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table
-                container-class="max-h-[420px] min-w-0 rounded-xl border"
-                class="min-w-[420px] [&_td]:py-3 [&_th]:h-10"
-              >
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Step</TableHead>
-                    <TableHead>Material</TableHead>
-                    <TableHead>Fee</TableHead>
-                    <TableHead class="hidden">Cumulative</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="row in selectedRows" :key="row.step">
-                    <TableCell>
-                      <Badge variant="secondary" class="font-bold text-primary">{{ row.step }}</Badge>
-                    </TableCell>
-                    <TableCell>{{ formatNumber(parseNumber(row.material) * quantityNumber) }}</TableCell>
-                    <TableCell>{{ formatFee(parseFeeToMillions(row.fee) * quantityNumber) }}</TableCell>
-                    <TableCell class="hidden">{{ formatNumber(parseNumber(row.cumulative) * quantityNumber) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              <div class="grid min-w-0">
+                <Transition name="motion-swap">
+                  <div :key="selectedStepsKey" class="col-start-1 row-start-1 min-w-0">
+                    <Table
+                      container-class="max-h-[420px] min-w-0 rounded-xl border"
+                      class="motion-tabular min-w-[420px] [&_td]:py-3 [&_th]:h-10"
+                    >
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Step</TableHead>
+                          <TableHead>Material</TableHead>
+                          <TableHead>Fee</TableHead>
+                          <TableHead class="hidden">Cumulative</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow v-for="row in selectedRows" :key="row.step">
+                          <TableCell>
+                            <Badge variant="secondary" class="font-bold text-primary">{{ row.step }}</Badge>
+                          </TableCell>
+                          <TableCell>{{ formatNumber(parseNumber(row.material) * quantityNumber) }}</TableCell>
+                          <TableCell>{{ formatFee(parseFeeToMillions(row.fee) * quantityNumber) }}</TableCell>
+                          <TableCell class="hidden">{{ formatNumber(parseNumber(row.cumulative) * quantityNumber) }}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </Transition>
+              </div>
             </CardContent>
           </Card>
 
-          <Card id="upgrade-catalog" class="parade-card rounded-[22px] xl:col-span-2">
+          <Card id="upgrade-catalog" ref="catalogSection" class="parade-card scroll-mt-4 rounded-[22px] xl:col-span-2">
             <CardHeader>
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle class="text-lg">Related items</CardTitle>
-                  <CardDescription>{{ catalogExpanded ? `${visibleCatalogItems.length} catalog entries` : 'Quick picks from the upgrade catalog' }}</CardDescription>
+                  <CardDescription>
+                    <Transition name="motion-fade" mode="out-in">
+                      <span :key="catalogExpanded ? 'catalog' : 'quick'" class="motion-tabular block">
+                        {{ catalogExpanded ? `${visibleCatalogItems.length} catalog entries` : 'Quick picks from the upgrade catalog' }}
+                      </span>
+                    </Transition>
+                  </CardDescription>
                 </div>
 
-                <div v-if="catalogExpanded" class="relative w-full sm:w-[280px]">
-                  <SearchIcon class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    v-model="searchQuery"
-                    class="pl-9"
-                    placeholder="Search"
-                    aria-label="Search upgrade catalog"
-                  />
+                <div ref="catalogSearchControl" class="relative h-11 w-full sm:w-[280px]">
+                  <Transition name="motion-swap" @after-enter="focusCatalogSearch">
+                    <div v-if="catalogExpanded" key="search" class="absolute inset-0">
+                      <SearchIcon class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        v-model="searchQuery"
+                        class="h-11 pl-9"
+                        placeholder="Search"
+                        aria-label="Search upgrade catalog"
+                        aria-controls="upgrade-catalog-list"
+                      />
+                    </div>
+                    <Button
+                      v-else
+                      key="catalog-button"
+                      variant="outline"
+                      class="absolute right-0 top-0 min-h-11"
+                      aria-controls="upgrade-catalog-list"
+                      :aria-expanded="catalogExpanded"
+                      @click="expandCatalog()"
+                    >
+                      Catalog
+                    </Button>
+                  </Transition>
                 </div>
-                <Button v-else variant="outline" @click="catalogExpanded = true">Catalog</Button>
               </div>
             </CardHeader>
             <CardContent>
               <ScrollArea :class="catalogExpanded ? 'max-h-[460px]' : ''">
-                <div class="grid gap-2" :class="catalogExpanded ? '' : 'md:grid-cols-3'">
-                  <button
-                    v-for="item in visibleCatalogItems.slice(0, catalogExpanded ? visibleCatalogItems.length : 3)"
-                    :key="item.value"
-                    type="button"
-                    class="grid gap-2 rounded-2xl border bg-surface-raised px-4 py-3 text-left transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:grid-cols-[minmax(0,1fr)_auto]"
-                    :class="item.value === itemValue ? 'border-info-border bg-info-surface' : ''"
-                    @click="selectCatalogItem(item.value)"
+                <Transition name="motion-fade" mode="out-in">
+                  <div
+                    id="upgrade-catalog-list"
+                    :key="catalogExpanded ? 'catalog' : 'quick-picks'"
+                    class="grid gap-2"
+                    :class="catalogExpanded ? '' : 'md:grid-cols-3'"
                   >
-                    <span class="min-w-0">
-                      <span class="block truncate text-sm font-medium">{{ item.name }}</span>
-                      <span class="mt-0.5 block truncate text-xs text-muted-foreground">
-                        {{ item.summary.farm }} / {{ item.summary.quarter }}
+                    <button
+                      v-for="item in visibleCatalogItems.slice(0, catalogExpanded ? visibleCatalogItems.length : 3)"
+                      :key="item.value"
+                      type="button"
+                      class="grid min-h-11 gap-2 rounded-2xl border bg-surface-raised px-4 py-3 text-left transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:grid-cols-[minmax(0,1fr)_auto]"
+                      :class="item.value === itemValue ? 'border-info-border bg-info-surface' : ''"
+                      @click="selectCatalogItem(item.value)"
+                    >
+                      <span class="min-w-0">
+                        <span class="block truncate text-sm font-medium">{{ item.name }}</span>
+                        <span class="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {{ item.summary.farm }} / {{ item.summary.quarter }}
+                        </span>
+                        <span
+                          v-if="getAscensionMaterialLabel(item)"
+                          class="mt-1 flex min-w-0 items-center gap-1 text-xs font-medium text-info-foreground"
+                        >
+                          <SparklesIcon class="size-3 shrink-0" />
+                          <span class="truncate">{{ getAscensionMaterialLabel(item) }}</span>
+                        </span>
                       </span>
-                      <span
-                        v-if="getAscensionMaterialLabel(item)"
-                        class="mt-1 flex min-w-0 items-center gap-1 text-xs font-medium text-info-foreground"
-                      >
-                        <SparklesIcon class="size-3 shrink-0" />
-                        <span class="truncate">{{ getAscensionMaterialLabel(item) }}</span>
+                      <span class="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <Badge variant="secondary">{{ item.summary.max }}</Badge>
+                        <Badge variant="outline">{{ item.summary.total }}</Badge>
                       </span>
-                    </span>
-                    <span class="flex flex-wrap items-center gap-2 sm:justify-end">
-                      <Badge variant="secondary">{{ item.summary.max }}</Badge>
-                      <Badge variant="outline">{{ item.summary.total }}</Badge>
-                    </span>
-                  </button>
-                </div>
+                    </button>
+                  </div>
+                </Transition>
               </ScrollArea>
             </CardContent>
           </Card>

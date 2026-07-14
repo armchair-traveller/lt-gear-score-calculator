@@ -61,9 +61,6 @@ const rolledLineIndexes = computed(() =>
 const hasInvalidSnapshotLine = computed(() => rolledLineIndexes.value.some((index) => isInputOverMax(index)))
 const canShareSnapshot = computed(() => rolledLineIndexes.value.length > 0 && !hasInvalidSnapshotLine.value)
 const snapshotRequirement = computed(() => {
-  if (rolledLineIndexes.value.length === 0) {
-    return 'Enter an enchant value to create a shareable snapshot.'
-  }
   if (hasInvalidSnapshotLine.value) {
     return 'Correct values above the item maximum before sharing.'
   }
@@ -139,7 +136,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 size="sm"
                 :disabled="!canShareSnapshot"
                 :title="snapshotRequirement || undefined"
-                :aria-describedby="!canShareSnapshot ? 'snapshot-requirement' : undefined"
+                :aria-describedby="snapshotRequirement ? 'snapshot-requirement' : undefined"
                 @click="openSnapshot($event.currentTarget)"
               >
                 <CameraIcon data-icon="inline-start" />
@@ -150,22 +147,33 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 v-if="supportsGearPlan"
                 variant="outline"
                 size="sm"
+                class="min-w-24"
                 :disabled="!canSaveToGearPlan"
                 @click="saveCurrentGearToPlan"
               >
-                <CheckIcon v-if="gearPlanSaveSucceeded" data-icon="inline-start" />
-                <BookmarkPlusIcon v-else data-icon="inline-start" />
-                {{ gearPlanSaveSucceeded ? 'Added' : 'Add to plan' }}
+                <Transition name="motion-swap" mode="out-in">
+                  <span
+                    :key="gearPlanSaveSucceeded ? 'saved' : 'save'"
+                    class="inline-flex items-center gap-1"
+                  >
+                    <CheckIcon v-if="gearPlanSaveSucceeded" data-icon="inline-start" />
+                    <BookmarkPlusIcon v-else data-icon="inline-start" />
+                    {{ gearPlanSaveSucceeded ? 'Added' : 'Add to plan' }}
+                  </span>
+                </Transition>
               </Button>
             </ButtonGroup>
 
-            <p
-              v-if="!canShareSnapshot"
-              id="snapshot-requirement"
-              class="w-full text-xs text-muted-foreground sm:text-right"
-            >
-              {{ snapshotRequirement }}
-            </p>
+            <Transition name="motion-fade">
+              <p
+                v-if="snapshotRequirement"
+                id="snapshot-requirement"
+                class="w-full text-xs text-muted-foreground sm:text-right"
+                aria-live="polite"
+              >
+                {{ snapshotRequirement }}
+              </p>
+            </Transition>
           </div>
         </div>
       </CardHeader>
@@ -175,7 +183,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
           <div class="rounded-2xl border border-info-border bg-info-surface p-4">
             <div class="parade-section-kicker">Current strength</div>
             <div class="mt-1 flex items-end gap-2">
-              <div class="text-5xl font-bold tracking-[-0.06em] text-info-foreground">
+              <div class="motion-tabular text-5xl font-bold tracking-[-0.06em] text-info-foreground">
                 {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
               </div>
               <Badge variant="outline" :class="getTierClass(results.tier)">
@@ -185,43 +193,61 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             <Progress :model-value="totalProgress" class="mt-4 h-2" />
           </div>
 
-          <div v-if="rolledLineIndexes.length > 0" class="divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset">
-            <div
-              v-for="index in rolledLineIndexes"
-              :key="`result-${index}`"
-              class="grid gap-2 bg-surface-raised/45 p-3"
-            >
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="truncate text-sm font-medium">
-                    {{ statType[index] }}
+          <div class="min-h-32">
+            <Transition name="motion-swap" mode="out-in">
+              <div
+                v-if="rolledLineIndexes.length > 0"
+                key="current-results"
+                class="min-h-32 divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset"
+              >
+                <TransitionGroup
+                  name="motion-list"
+                  tag="div"
+                  class="motion-list-collapse divide-y divide-border/60"
+                >
+                  <div
+                    v-for="index in rolledLineIndexes"
+                    :key="`result-${index}`"
+                    class="grid gap-2 bg-surface-raised/45 p-3"
+                  >
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <div class="min-w-0">
+                        <div class="truncate text-sm font-medium">
+                          {{ statType[index] }}
+                        </div>
+                        <div class="motion-tabular text-xs text-muted-foreground">
+                          {{ statInput[index] }}
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="motion-tabular text-sm font-semibold">{{ getLineScoreText(index) }}</span>
+                        <Badge variant="outline" :class="getTierClass(results.individual[index].tier)">
+                          {{ results.individual[index].tier }}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Progress :model-value="clamp(Number(results.individual[index].percent), 0, 100)" class="h-1.5" />
                   </div>
-                  <div class="text-xs text-muted-foreground">
-                    {{ statInput[index] }}
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-semibold">{{ getLineScoreText(index) }}</span>
-                  <Badge variant="outline" :class="getTierClass(results.individual[index].tier)">
-                    {{ results.individual[index].tier }}
-                  </Badge>
+                </TransitionGroup>
+                <div
+                  v-if="emptyLineCount > 0"
+                  class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
+                >
+                  {{ emptyLineSummary }}
                 </div>
               </div>
-              <Progress :model-value="clamp(Number(results.individual[index].percent), 0, 100)" class="h-1.5" />
-            </div>
-            <div
-              v-if="emptyLineCount > 0"
-              class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
-            >
-              {{ emptyLineSummary }}
-            </div>
-          </div>
-          <div v-else class="flex min-h-32 items-center gap-4 rounded-2xl border border-dashed bg-surface-inset p-5">
-            <img class="size-16 shrink-0 object-contain" src="/smart_priring.png" alt="">
-            <div>
-              <h3 class="font-bold">Add your first enchant value</h3>
-              <p class="mt-1 max-w-md text-sm text-muted-foreground">Results update immediately as you enter each line. Start with the values shown on your item.</p>
-            </div>
+              <div
+                v-else
+                key="current-empty"
+                class="flex min-h-32 items-center gap-4 rounded-2xl border border-dashed bg-surface-inset p-5"
+              >
+                <img class="size-16 shrink-0 object-contain" src="/smart_priring.png" alt="">
+                <div>
+                  <h3 class="font-bold">Add your first enchant value</h3>
+                  <p class="mt-1 max-w-md text-sm text-muted-foreground">Results update immediately as you enter each line. Start with the values shown on your item.</p>
+                </div>
+              </div>
+            </Transition>
           </div>
         </div>
       </CardContent>
@@ -250,63 +276,83 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
         </CardHeader>
 
         <CardContent class="min-w-0">
-          <TabsContent value="summary" class="m-0">
+          <TabsContent value="summary" class="motion-tab-panel m-0">
             <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
               <div class="parade-projection-card rounded-2xl border border-warning-border p-4">
                 <div class="text-sm text-muted-foreground">Projected</div>
                 <div class="mt-1 flex items-end gap-2">
-                  <div class="text-4xl font-bold tracking-[-0.05em] text-warning-foreground">
+                  <div class="motion-tabular text-4xl font-bold tracking-[-0.05em] text-warning-foreground">
                     {{ resultMode === 'rating' ? results.potentialDI : results.potentialScore }}
                   </div>
                   <Badge variant="outline" :class="getTierClass(results.potentialTier)">
                     {{ results.potentialTier }}
                   </Badge>
                 </div>
-                <div class="mt-2 text-sm text-success-foreground">{{ potentialGainText }} gain</div>
+                <div class="motion-tabular mt-2 text-sm text-success-foreground">{{ potentialGainText }} gain</div>
                 <Progress :model-value="potentialProgress" class="mt-4 h-2" />
               </div>
 
-              <div v-if="rolledLineIndexes.length > 0" class="divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset">
-                <div
-                  v-for="index in rolledLineIndexes"
-                  :key="`potential-${index}`"
-                  class="grid gap-2 bg-surface-raised/45 p-3"
-                >
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div class="min-w-0">
-                      <div class="truncate text-sm font-medium">
-                        {{ statType[index] }}:
-                        <span v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
-                          {{ results.individual[index].potentialMin }}
-                        </span>
-                        <span v-else>
-                          {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
-                        </span>
+              <div class="min-h-32">
+                <Transition name="motion-swap" mode="out-in">
+                  <div
+                    v-if="rolledLineIndexes.length > 0"
+                    key="potential-results"
+                    class="min-h-32 divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset"
+                  >
+                    <TransitionGroup
+                      name="motion-list"
+                      tag="div"
+                      class="motion-list-collapse divide-y divide-border/60"
+                    >
+                      <div
+                        v-for="index in rolledLineIndexes"
+                        :key="`potential-${index}`"
+                        class="grid gap-2 bg-surface-raised/45 p-3"
+                      >
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <div class="min-w-0">
+                            <div class="truncate text-sm font-medium">
+                              {{ statType[index] }}:
+                              <span class="motion-tabular">
+                                <template v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
+                                  {{ results.individual[index].potentialMin }}
+                                </template>
+                                <template v-else>
+                                  {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
+                                </template>
+                              </span>
+                            </div>
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <span class="motion-tabular text-sm font-semibold">{{ getPotentialLineText(index) }}</span>
+                            <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
+                              {{ getPotentialLineTier(index) }}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Progress :model-value="clamp(Number(results.individual[index].potentialMinPerc), 0, 100)" class="h-1.5" />
                       </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span class="text-sm font-semibold">{{ getPotentialLineText(index) }}</span>
-                      <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
-                        {{ getPotentialLineTier(index) }}
-                      </Badge>
+                    </TransitionGroup>
+                    <div
+                      v-if="emptyLineCount > 0"
+                      class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
+                    >
+                      {{ emptyLineSummary }}
                     </div>
                   </div>
-                  <Progress :model-value="clamp(Number(results.individual[index].potentialMinPerc), 0, 100)" class="h-1.5" />
-                </div>
-                <div
-                  v-if="emptyLineCount > 0"
-                  class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
-                >
-                  {{ emptyLineSummary }}
-                </div>
-              </div>
-              <div v-else class="flex min-h-32 items-center rounded-2xl border border-dashed bg-surface-inset p-5">
-                <p class="text-sm text-muted-foreground">Your fully upgraded projection will appear here once at least one enchant value is entered.</p>
+                  <div
+                    v-else
+                    key="potential-empty"
+                    class="flex min-h-32 items-center rounded-2xl border border-dashed bg-surface-inset p-5"
+                  >
+                    <p class="text-sm text-muted-foreground">Your fully upgraded projection will appear here once at least one enchant value is entered.</p>
+                  </div>
+                </Transition>
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="lines" class="m-0 min-w-0">
+          <TabsContent value="lines" class="motion-tab-panel m-0 min-w-0">
             <Table container-class="max-h-[360px] min-w-0 rounded-lg border bg-surface-raised" class="min-w-[520px]">
               <TableHeader>
                 <TableRow>
@@ -338,11 +384,11 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             </Table>
           </TabsContent>
 
-          <TabsContent v-if="results.qualityOdds.available" value="quality" class="m-0 grid min-w-0 gap-4">
+          <TabsContent v-if="results.qualityOdds.available" value="quality" class="motion-tab-panel m-0 grid min-w-0 gap-4">
             <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] sm:items-end">
               <div class="min-w-0">
                 <div class="text-sm text-muted-foreground">Chance to reach target</div>
-                <div class="mt-1 text-3xl font-semibold tracking-normal">{{ results.qualityOdds.totalChanceText }}</div>
+                <div class="motion-tabular mt-1 text-3xl font-semibold tracking-normal">{{ results.qualityOdds.totalChanceText }}</div>
               </div>
 
               <div class="min-w-0">
@@ -357,6 +403,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                       max="100"
                       step="0.01"
                       aria-label="Quality target percentage"
+                      class="motion-tabular"
                       @blur="commitQualityTarget"
                       @keydown.enter.prevent="$event.currentTarget.blur()"
                       @keydown.esc.prevent="cancelQualityTargetEdit"
@@ -389,28 +436,28 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 ? 'md:grid-cols-[1fr_1.4fr_1fr_1fr]'
                 : 'md:grid-cols-3'"
             >
-              <div class="px-3 py-3 md:first:pl-0">
+              <div class="px-3 py-3">
                 <dt class="text-xs text-muted-foreground">Quality</dt>
-                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.qualityText }}</dd>
+                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.qualityText }}</dd>
               </div>
               <div v-if="results.qualityOdds.showProjectedQuality" class="px-3 py-3">
                 <dt class="text-xs text-muted-foreground">Projected quality</dt>
-                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.plannedQualityText }}</dd>
+                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.plannedQualityText }}</dd>
               </div>
               <div class="px-3 py-3">
                 <dt class="text-xs text-muted-foreground">Base rolls</dt>
-                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.baseRollText }}</dd>
+                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.baseRollText }}</dd>
               </div>
               <div class="px-3 py-3 md:last:pr-0">
                 <dt class="text-xs text-muted-foreground">Full survival</dt>
-                <dd class="mt-1 text-lg font-semibold">{{ results.qualityOdds.survivalChanceText }}</dd>
+                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.survivalChanceText }}</dd>
               </div>
             </dl>
 
             <Table container-class="max-h-[320px] min-w-0 rounded-lg border bg-surface-raised" class="min-w-[660px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead class="w-[88px]">Order</TableHead>
+                  <TableHead class="w-[104px]">Order</TableHead>
                   <TableHead>Stat</TableHead>
                   <TableHead class="w-[210px]">
                     {{ currentOddsEnchantMethodOptions.length > 1 ? 'Roll method / state' : 'Roll state' }}
@@ -419,69 +466,71 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="(line, position) in results.qualityOdds.lines" :key="`${line.index}-${line.stat}`">
-                  <TableCell>
-                    <div class="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="size-7"
-                        :disabled="position === 0"
-                        title="Move earlier"
-                        aria-label="Move earlier"
-                        @click="moveQualityOddsLine(position, -1)"
+                <TransitionGroup name="motion-list">
+                  <TableRow v-for="(line, position) in results.qualityOdds.lines" :key="`quality-line-${line.index}`">
+                    <TableCell>
+                      <div class="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          class="touch-target size-7"
+                          :disabled="position === 0"
+                          title="Move earlier"
+                          aria-label="Move earlier"
+                          @click="moveQualityOddsLine(position, -1)"
+                        >
+                          <ArrowUpIcon class="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          class="touch-target size-7"
+                          :disabled="position === results.qualityOdds.lines.length - 1"
+                          title="Move later"
+                          aria-label="Move later"
+                          @click="moveQualityOddsLine(position, 1)"
+                        >
+                          <ArrowDownIcon class="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell class="font-medium">{{ line.stat }}</TableCell>
+                    <TableCell>
+                      <ToggleGroup
+                        v-if="currentOddsEnchantMethodOptions.length > 1 && line.status === 'new'"
+                        type="single"
+                        orientation="horizontal"
+                        :spacing="1"
+                        :model-value="qualityLineEnchantMethods[line.index]"
+                        class="grid h-11 w-[190px] grid-cols-2 gap-1 rounded-md bg-surface-inset p-1"
+                        :aria-label="`${line.stat} roll method`"
+                        @update:model-value="updateQualityLineEnchantMethod(line.index, $event)"
                       >
-                        <ArrowUpIcon class="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="size-7"
-                        :disabled="position === results.qualityOdds.lines.length - 1"
-                        title="Move later"
-                        aria-label="Move later"
-                        @click="moveQualityOddsLine(position, 1)"
+                        <ToggleGroupItem
+                          v-for="method in currentOddsEnchantMethodOptions"
+                          :key="method.value"
+                          :value="method.value"
+                          class="h-9 min-w-0 flex-1 flex-col gap-0 rounded-sm px-1 text-xs leading-none text-muted-foreground shadow-none hover:bg-surface-raised/70 hover:text-foreground data-[state=on]:bg-surface-raised data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                          :aria-label="`${method.label}: ${method.successRate * 100}% success rate for ${line.stat}`"
+                        >
+                          <span class="font-medium">{{ method.label }}</span>
+                          <span class="motion-tabular mt-1 text-[11px] text-muted-foreground">{{ method.successRate * 100 }}%</span>
+                        </ToggleGroupItem>
+                      </ToggleGroup>
+                      <span v-else :class="getRollStatusClass(line.status)">{{ line.rollText }}</span>
+                    </TableCell>
+                    <TableCell class="motion-tabular">
+                      <span>{{ line.range }}</span>
+                      <span
+                        v-if="Number.isFinite(line.maxRollPercent)"
+                        class="ml-1 font-medium"
+                        :class="getMaxRollPercentClass(line.maxRollPercent)"
                       >
-                        <ArrowDownIcon class="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                  <TableCell class="font-medium">{{ line.stat }}</TableCell>
-                  <TableCell>
-                    <ToggleGroup
-                      v-if="currentOddsEnchantMethodOptions.length > 1 && line.status === 'new'"
-                      type="single"
-                      orientation="horizontal"
-                      :spacing="1"
-                      :model-value="qualityLineEnchantMethods[line.index]"
-                      class="grid h-11 w-[190px] grid-cols-2 gap-1 rounded-md bg-surface-inset p-1"
-                      :aria-label="`${line.stat} roll method`"
-                      @update:model-value="updateQualityLineEnchantMethod(line.index, $event)"
-                    >
-                      <ToggleGroupItem
-                        v-for="method in currentOddsEnchantMethodOptions"
-                        :key="method.value"
-                        :value="method.value"
-                        class="h-9 min-w-0 flex-1 flex-col gap-0 rounded-sm px-1 text-xs leading-none text-muted-foreground shadow-none hover:bg-surface-raised/70 hover:text-foreground data-[state=on]:bg-surface-raised data-[state=on]:text-foreground data-[state=on]:shadow-sm"
-                        :aria-label="`${method.label}: ${method.successRate * 100}% success rate for ${line.stat}`"
-                      >
-                        <span class="font-medium">{{ method.label }}</span>
-                        <span class="mt-1 text-[11px] text-muted-foreground">{{ method.successRate * 100 }}%</span>
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                    <span v-else :class="getRollStatusClass(line.status)">{{ line.rollText }}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span>{{ line.range }}</span>
-                    <span
-                      v-if="Number.isFinite(line.maxRollPercent)"
-                      class="ml-1 font-medium"
-                      :class="getMaxRollPercentClass(line.maxRollPercent)"
-                    >
-                      [{{ formatMaxRollPercent(line.maxRollPercent) }}]
-                    </span>
-                  </TableCell>
-                </TableRow>
+                        [{{ formatMaxRollPercent(line.maxRollPercent) }}]
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                </TransitionGroup>
               </TableBody>
             </Table>
           </TabsContent>

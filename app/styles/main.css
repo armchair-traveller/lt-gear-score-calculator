@@ -23,8 +23,17 @@
     margin: 0;
     @apply bg-background text-foreground;
     @apply font-sans;
+    -webkit-font-smoothing: antialiased;
     background-image: var(--parade-page-bg);
     background-attachment: fixed;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
 
   button:not(:disabled),
@@ -169,6 +178,12 @@
   --parade-card-highlight: transparent;
   --parade-item-well-bg: linear-gradient(145deg, var(--parade-yellow-soft), var(--surface-raised));
   --parade-item-well-shadow: 0 8px 18px rgb(239 178 26 / 0.14);
+  --motion-duration-micro: 120ms;
+  --motion-duration-state: 180ms;
+  --motion-duration-spatial: 240ms;
+  --motion-ease-standard: ease;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-move: cubic-bezier(0.65, 0, 0.35, 1);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.21 0.006 285.885);
@@ -300,6 +315,7 @@
 
   .parade-metric-value {
     @apply mt-2 text-2xl font-bold tracking-tight;
+    font-variant-numeric: tabular-nums;
   }
 
   .parade-goal-card {
@@ -367,6 +383,10 @@
 
     .parade-bottom-nav {
       @apply flex;
+    }
+
+    body {
+      background-attachment: scroll;
     }
 
   }
@@ -449,4 +469,168 @@
   --parade-card-highlight: oklch(0.78 0.09 230 / 0.035);
   --parade-item-well-bg: linear-gradient(145deg, oklch(0.3 0.08 78), var(--surface-raised));
   --parade-item-well-shadow: 0 10px 24px rgb(0 7 18 / 0.38), 0 0 20px oklch(0.81 0.15 82 / 0.12);
+}
+
+@keyframes motion-feedback {
+  from {
+    opacity: 0.72;
+    transform: scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes motion-tab-panel {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.motion-fade-enter-active,
+.motion-fade-leave-active {
+  transition: opacity var(--motion-duration-micro) var(--motion-ease-out);
+}
+
+.motion-fade-enter-from,
+.motion-fade-leave-to {
+  opacity: 0;
+}
+
+.motion-swap-enter-active,
+.motion-swap-leave-active,
+.motion-list-enter-active,
+.motion-list-leave-active {
+  transition:
+    opacity var(--motion-duration-state) var(--motion-ease-out),
+    transform var(--motion-duration-state) var(--motion-ease-out);
+}
+
+.motion-swap-enter-from,
+.motion-list-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.motion-swap-leave-to,
+.motion-list-leave-to {
+  opacity: 0;
+  transform: translateY(-2px);
+}
+
+.motion-list-move {
+  transition: transform var(--motion-duration-spatial) var(--motion-ease-move);
+}
+
+.motion-list-collapse {
+  position: relative;
+}
+
+.motion-list-collapse > .motion-list-leave-active {
+  position: absolute;
+  inset-inline: 0;
+}
+
+.motion-pop-enter-active,
+.motion-pop-leave-active {
+  transition:
+    opacity var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+
+.motion-pop-enter-from,
+.motion-pop-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.motion-feedback {
+  animation: motion-feedback var(--motion-duration-state) var(--motion-ease-out);
+}
+
+.motion-tab-panel[data-state="active"] {
+  animation: motion-tab-panel var(--motion-duration-micro) var(--motion-ease-out);
+}
+
+.motion-bar {
+  transform-origin: left center;
+  transition: transform var(--motion-duration-state) var(--motion-ease-out);
+  will-change: transform;
+}
+
+.motion-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (pointer: coarse) {
+  .touch-target,
+  [data-slot="button"],
+  [data-slot="input"],
+  [data-slot="input-group"],
+  [data-slot="select-trigger"],
+  [data-slot="tabs-trigger"],
+  [data-slot="toggle-group-item"] {
+    min-height: 2.75rem;
+  }
+
+  .touch-target,
+  [data-slot="button"][data-size^="icon"] {
+    min-width: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .motion-fade-enter-active,
+  .motion-fade-leave-active,
+  .motion-swap-enter-active,
+  .motion-swap-leave-active,
+  .motion-list-enter-active,
+  .motion-list-leave-active,
+  .motion-list-move,
+  .motion-pop-enter-active,
+  .motion-pop-leave-active,
+  .motion-bar {
+    transition: none;
+  }
+
+  .transition-colors,
+  .transition-opacity,
+  .transition-transform,
+  [data-slot="button"],
+  [data-slot="badge"],
+  [data-slot="tabs-trigger"],
+  [data-slot="progress-indicator"] {
+    transition: none;
+  }
+
+  [data-slot="button"] {
+    transform: none;
+  }
+
+  .motion-feedback,
+  .motion-tab-panel,
+  .animate-spin,
+  [data-slot="dialog-content"],
+  [data-slot="dialog-overlay"],
+  [data-slot="sheet-content"],
+  [data-slot="sheet-overlay"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="popover-content"],
+  [data-slot="hover-card-content"],
+  [data-slot="tooltip-content"],
+  [data-slot="select-content"] {
+    animation: none;
+    transition: none;
+  }
 }

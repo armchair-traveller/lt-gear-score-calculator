@@ -141,55 +141,60 @@ async function copyInputLink() {
 
       <div class="min-h-0 min-w-0 overflow-y-auto p-2 sm:p-4">
         <div class="grid place-items-center overflow-hidden rounded-lg border bg-surface-inset p-2 sm:p-5">
-          <div
-            v-if="snapshotIsGenerating"
-            class="flex min-h-56 flex-col items-center justify-center gap-2 text-center text-muted-foreground sm:min-h-[520px]"
-            role="status"
-            aria-live="polite"
-          >
-            <LoaderCircleIcon class="size-6 animate-spin" aria-hidden="true" />
-            <p>Preparing snapshot…</p>
-          </div>
-
-          <a
-            v-else-if="snapshotImageUrl"
-            class="relative mx-auto block max-w-full cursor-zoom-in rounded-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-            :href="snapshotImageUrl"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open snapshot full size"
-            title="Open snapshot full size"
-          >
-            <img
-              class="max-h-[calc(100dvh-12rem)] w-auto max-w-full rounded-lg object-contain"
-              :src="snapshotImageUrl"
-              :alt="snapshotAlt"
-              aria-describedby="snapshot-details"
+          <Transition name="motion-fade" mode="out-in">
+            <div
+              v-if="snapshotIsGenerating"
+              key="generating"
+              class="flex min-h-56 flex-col items-center justify-center gap-2 text-center text-muted-foreground sm:min-h-[520px]"
+              role="status"
+              aria-live="polite"
             >
-            <span
-              class="absolute bottom-2 right-2 grid size-7 place-items-center rounded-full bg-surface-raised/90 text-muted-foreground shadow-sm sm:hidden"
-              aria-hidden="true"
-            >
-              <ExpandIcon class="size-4" />
-            </span>
-          </a>
-
-          <div
-            v-else
-            class="flex min-h-56 max-w-sm flex-col items-center justify-center gap-3 text-center sm:min-h-[520px]"
-            :role="snapshotError ? 'alert' : undefined"
-          >
-            <div>
-              <p class="font-medium">Preview unavailable</p>
-              <p class="mt-1 text-sm text-muted-foreground">
-                {{ snapshotError || 'Try preparing the snapshot again.' }}
-              </p>
+              <LoaderCircleIcon class="size-6 animate-spin" aria-hidden="true" />
+              <p>Preparing snapshot…</p>
             </div>
-            <Button variant="outline" size="sm" @click="refreshSnapshot">
-              <RefreshCwIcon data-icon="inline-start" />
-              Try again
-            </Button>
-          </div>
+
+            <a
+              v-else-if="snapshotImageUrl"
+              key="preview"
+              class="relative mx-auto block max-w-full cursor-zoom-in rounded-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              :href="snapshotImageUrl"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open snapshot full size"
+              title="Open snapshot full size"
+            >
+              <img
+                class="max-h-[calc(100dvh-12rem)] w-auto max-w-full rounded-lg object-contain"
+                :src="snapshotImageUrl"
+                :alt="snapshotAlt"
+                aria-describedby="snapshot-details"
+              >
+              <span
+                class="absolute bottom-2 right-2 grid size-7 place-items-center rounded-full bg-surface-raised/90 text-muted-foreground shadow-sm sm:hidden"
+                aria-hidden="true"
+              >
+                <ExpandIcon class="size-4" />
+              </span>
+            </a>
+
+            <div
+              v-else
+              key="unavailable"
+              class="flex min-h-56 max-w-sm flex-col items-center justify-center gap-3 text-center sm:min-h-[520px]"
+              :role="snapshotError ? 'alert' : undefined"
+            >
+              <div>
+                <p class="font-medium">Preview unavailable</p>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  {{ snapshotError || 'Try preparing the snapshot again.' }}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" @click="refreshSnapshot">
+                <RefreshCwIcon data-icon="inline-start" />
+                Try again
+              </Button>
+            </div>
+          </Transition>
 
           <div id="snapshot-details" class="sr-only">
             <ul>
@@ -206,50 +211,59 @@ async function copyInputLink() {
       <Separator />
 
       <DialogFooter class="flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p
-          v-if="snapshotLinkError || (snapshotError && snapshotImageUrl)"
-          class="w-full text-sm text-destructive sm:min-w-0 sm:flex-1"
-          role="alert"
-        >
-          {{ snapshotLinkError || snapshotError }}
-        </p>
-        <span v-else class="hidden sm:block sm:flex-1" aria-hidden="true" />
+        <Transition name="motion-fade" mode="out-in">
+          <p
+            v-if="snapshotLinkError || (snapshotError && snapshotImageUrl)"
+            key="error"
+            class="w-full text-sm text-destructive sm:min-w-0 sm:flex-1"
+            role="alert"
+          >
+            {{ snapshotLinkError || snapshotError }}
+          </p>
+          <span v-else key="spacer" class="hidden sm:block sm:flex-1" aria-hidden="true" />
+        </Transition>
 
         <ButtonGroup class="w-full sm:w-auto" aria-label="Snapshot actions">
           <Button
             v-if="snapshotCanShare"
-            class="flex-1 sm:flex-none"
+            class="min-w-[8.75rem] flex-1 sm:flex-none"
             :disabled="snapshotIsGenerating || !snapshotImageUrl || Boolean(snapshotExportAction)"
             @click="shareSnapshot"
           >
-            <LoaderCircleIcon v-if="snapshotExportAction === 'share'" class="animate-spin" data-icon="inline-start" />
-            <CheckIcon v-else-if="snapshotShareSucceeded" data-icon="inline-start" />
-            <Share2Icon v-else data-icon="inline-start" />
-            {{ snapshotExportAction === 'share' ? 'Sharing…' : snapshotShareSucceeded ? 'Shared' : 'Share image' }}
+            <Transition name="motion-pop" mode="out-in">
+              <LoaderCircleIcon v-if="snapshotExportAction === 'share'" key="loading" class="animate-spin" data-icon="inline-start" />
+              <CheckIcon v-else-if="snapshotShareSucceeded" key="success" data-icon="inline-start" />
+              <Share2Icon v-else key="idle" data-icon="inline-start" />
+            </Transition>
+            <span>{{ snapshotExportAction === 'share' ? 'Sharing…' : snapshotShareSucceeded ? 'Shared' : 'Share image' }}</span>
           </Button>
 
           <Button
             v-else-if="snapshotCanCopy"
-            class="flex-1 sm:flex-none"
+            class="min-w-[8.25rem] flex-1 sm:flex-none"
             :disabled="snapshotIsGenerating || !snapshotImageUrl || Boolean(snapshotExportAction)"
             @click="copySnapshot"
           >
-            <LoaderCircleIcon v-if="snapshotExportAction === 'copy'" class="animate-spin" data-icon="inline-start" />
-            <CheckIcon v-else-if="snapshotCopySucceeded" data-icon="inline-start" />
-            <ClipboardIcon v-else data-icon="inline-start" />
-            {{ snapshotExportAction === 'copy' ? 'Copying…' : snapshotCopySucceeded ? 'Copied' : 'Copy image' }}
+            <Transition name="motion-pop" mode="out-in">
+              <LoaderCircleIcon v-if="snapshotExportAction === 'copy'" key="loading" class="animate-spin" data-icon="inline-start" />
+              <CheckIcon v-else-if="snapshotCopySucceeded" key="success" data-icon="inline-start" />
+              <ClipboardIcon v-else key="idle" data-icon="inline-start" />
+            </Transition>
+            <span>{{ snapshotExportAction === 'copy' ? 'Copying…' : snapshotCopySucceeded ? 'Copied' : 'Copy image' }}</span>
           </Button>
 
           <Button
             v-else
-            class="flex-1 sm:flex-none"
+            class="min-w-[7.75rem] flex-1 sm:flex-none"
             :disabled="snapshotIsGenerating || !snapshotImageUrl || Boolean(snapshotExportAction)"
             @click="downloadSnapshot"
           >
-            <LoaderCircleIcon v-if="snapshotExportAction === 'download'" class="animate-spin" data-icon="inline-start" />
-            <CheckIcon v-else-if="snapshotDownloadSucceeded" data-icon="inline-start" />
-            <DownloadIcon v-else data-icon="inline-start" />
-            {{ snapshotExportAction === 'download' ? 'Saving…' : snapshotDownloadSucceeded ? 'Saved' : 'Save PNG' }}
+            <Transition name="motion-pop" mode="out-in">
+              <LoaderCircleIcon v-if="snapshotExportAction === 'download'" key="loading" class="animate-spin" data-icon="inline-start" />
+              <CheckIcon v-else-if="snapshotDownloadSucceeded" key="success" data-icon="inline-start" />
+              <DownloadIcon v-else key="idle" data-icon="inline-start" />
+            </Transition>
+            <span>{{ snapshotExportAction === 'download' ? 'Saving…' : snapshotDownloadSucceeded ? 'Saved' : 'Save PNG' }}</span>
           </Button>
 
           <Button
@@ -258,9 +272,12 @@ async function copyInputLink() {
             :disabled="snapshotIsGenerating || !snapshotImageUrl || Boolean(snapshotExportAction)"
             @click="downloadSnapshot"
           >
-            <LoaderCircleIcon v-if="snapshotExportAction === 'download'" class="animate-spin" data-icon="inline-start" />
-            <CheckIcon v-else-if="snapshotDownloadSucceeded" data-icon="inline-start" />
-            {{ snapshotExportAction === 'download' ? 'Saving…' : snapshotDownloadSucceeded ? 'Saved' : 'Save PNG' }}
+            <Transition name="motion-pop" mode="out-in">
+              <LoaderCircleIcon v-if="snapshotExportAction === 'download'" key="loading" class="animate-spin" data-icon="inline-start" />
+              <CheckIcon v-else-if="snapshotDownloadSucceeded" key="success" data-icon="inline-start" />
+              <DownloadIcon v-else key="idle" data-icon="inline-start" />
+            </Transition>
+            <span>{{ snapshotExportAction === 'download' ? 'Saving…' : snapshotDownloadSucceeded ? 'Saved' : 'Save PNG' }}</span>
           </Button>
 
           <DropdownMenu>

@@ -185,7 +185,7 @@ watch(
   <div class="grid gap-2">
     <div
       v-for="(_, index) in statTypes"
-      :key="index"
+      :key="`stat-line-${index}`"
       class="grid gap-2 rounded-2xl border bg-surface-raised p-2"
     >
       <div
@@ -223,7 +223,7 @@ watch(
                   <span class="block truncate">
                     {{ statTypes[index] || 'Select stat...' }}
                   </span>
-                  <span class="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                  <span class="motion-tabular mt-0.5 block truncate text-[10px] text-muted-foreground">
                     {{ getLineMaxSummaryText(index) }}
                     <template v-if="getOptionalLineMaxPercentText(index)">
                       · <span :class="getOptionalLineMaxPercentClass(index)">{{ getOptionalLineMaxPercentText(index) }}</span>
@@ -288,7 +288,7 @@ watch(
               :aria-label="`Line ${index + 1} value`"
               :aria-invalid="isInputOverMax(index)"
               :aria-describedby="isInputOverMax(index) ? `line-${index}-value-error` : undefined"
-              class="min-w-0"
+              class="motion-tabular min-w-0"
               @focus="focusInput(index)"
               @blur="blurInput(index)"
               @update:model-value="updateInput(index, $event)"
@@ -319,13 +319,16 @@ watch(
           </InputGroup>
         </div>
       </div>
-      <p
-        v-if="isInputOverMax(index)"
-        :id="`line-${index}-value-error`"
-        class="text-xs text-destructive"
-      >
-        Value is over the final maximum.
-      </p>
+      <Transition name="motion-fade">
+        <p
+          v-if="isInputOverMax(index)"
+          :id="`line-${index}-value-error`"
+          class="text-xs text-destructive"
+          aria-live="polite"
+        >
+          Value is over the final maximum.
+        </p>
+      </Transition>
     </div>
   </div>
 </template>

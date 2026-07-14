@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from '#app'
 import gears from '@/utils/gear.js'
 import {
@@ -33,6 +33,9 @@ export function useGearPlan() {
   const sortMode = ref('impact')
   const shareCopied = ref(false)
   const shareCopyTimeout = ref(null)
+  const lastSavedSlotId = ref('')
+  const saveFeedbackMessage = ref('')
+  const saveFeedbackTimeout = ref(null)
   const hasAcceptedPlannerNotes = localStorage.getItem('ltGearPlanNotesAccepted') === 'true'
   const plannerNotesOpen = ref(!hasAcceptedPlannerNotes)
   const editorOpen = ref(false)
@@ -266,7 +269,15 @@ export function useGearPlan() {
         },
       },
     }
+    const savedSlot = selectedSlot.value
     localPlan.value = writeStoredGearPlan(nextPlan)
+    clearTimeout(saveFeedbackTimeout.value)
+    lastSavedSlotId.value = savedSlot.id
+    saveFeedbackMessage.value = `${savedSlot.pieceType} saved. Upgrade priority updated.`
+    saveFeedbackTimeout.value = setTimeout(() => {
+      lastSavedSlotId.value = ''
+      saveFeedbackMessage.value = ''
+    }, 1800)
     editorOpen.value = false
     return true
   }
@@ -366,11 +377,18 @@ export function useGearPlan() {
     return 'Unranked'
   }
 
+  onBeforeUnmount(() => {
+    clearTimeout(shareCopyTimeout.value)
+    clearTimeout(saveFeedbackTimeout.value)
+  })
+
   return {
     homeHref,
     upgradeHref,
     sortMode,
     shareCopied,
+    lastSavedSlotId,
+    saveFeedbackMessage,
     plannerNotesOpen,
     editorOpen,
     editorStatType,
