@@ -297,7 +297,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                   <div
                     v-if="rolledLineIndexes.length > 0"
                     key="potential-results"
-                    class="min-h-32 divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset"
+                    class="h-full min-h-32 divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset"
                   >
                     <TransitionGroup
                       name="motion-list"
@@ -343,7 +343,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                   <div
                     v-else
                     key="potential-empty"
-                    class="flex min-h-32 items-center rounded-2xl border border-dashed bg-surface-inset p-5"
+                    class="flex h-full min-h-32 items-center rounded-2xl border border-dashed bg-surface-inset p-5"
                   >
                     <p class="text-sm text-muted-foreground">Your fully upgraded projection will appear here once at least one enchant value is entered.</p>
                   </div>
