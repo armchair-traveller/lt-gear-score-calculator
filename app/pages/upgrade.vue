@@ -15,6 +15,10 @@ import {
 import materials from '@/data/item-enhancement-materials.en.json'
 import hammerImage from '@/assets/hammer.png'
 
+useHead({
+  title: 'Upgrade Material Calculator · LaTale Tools',
+})
+
 const router = useRouter()
 const initialItem = getAvailableItems()[0]
 const itemValue = ref(initialItem?.value ?? '')

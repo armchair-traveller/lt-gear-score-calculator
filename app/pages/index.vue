@@ -1,4 +1,8 @@
 <script setup>
+useHead({
+  title: 'LaTale Enchant Calculator',
+})
+
 const calculator = useGearScoreCalculator()
 provideGearScoreCalculator(calculator)
 </script>

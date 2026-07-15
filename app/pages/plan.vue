@@ -15,6 +15,10 @@ import {
   getGearPlanOpportunityStatusClass,
 } from '@/features/gear-plan/status-styles.js'
 
+useHead({
+  title: 'Planner · LaTale Tools',
+})
+
 const gearPlan = useGearPlan()
 provideGearPlan(gearPlan)
 const planner = reactive(gearPlan)
