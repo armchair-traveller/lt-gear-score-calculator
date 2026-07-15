@@ -1,7 +1,5 @@
 <script setup>
 import {
-  ArrowLeftIcon,
-  CalculatorIcon,
   CheckCircle2Icon,
   CoinsIcon,
   Layers3Icon,
@@ -19,7 +17,6 @@ useHead({
   title: 'Upgrade Material Calculator · LaTale Tools',
 })
 
-const router = useRouter()
 const initialItem = getAvailableItems()[0]
 const itemValue = ref(initialItem?.value ?? '')
 const currentLevel = ref('0')
@@ -32,9 +29,6 @@ const catalogSection = ref(null)
 const catalogSearchControl = ref(null)
 const catalogFocusPending = ref(false)
 const catalogSearchScrollPending = ref(false)
-const homeHref = computed(() => router.resolve('/').href)
-const planHref = computed(() => router.resolve('/plan').href)
-
 const availableItems = computed(() => getAvailableItems())
 const selectedItem = computed(() =>
   availableItems.value.find((item) => item.value === itemValue.value) ?? availableItems.value[0],
@@ -314,15 +308,13 @@ function trimDecimal(value) {
 </script>
 
 <template>
-  <TooltipProvider>
-    <div class="parade-page">
-      <AppShellHeader
-        active="upgrade"
-        eyebrow="Upgrade materials"
-        title="Plan your next upgrade."
-      />
-
-      <main class="parade-workspace grid gap-4 xl:grid-cols-[1.08fr_.92fr]">
+  <div class="parade-route">
+    <main
+      id="main-content"
+      data-route-main="/upgrade"
+      tabindex="-1"
+      class="parade-workspace grid gap-4 xl:grid-cols-[1.08fr_.92fr]"
+    >
         <section class="grid content-start gap-4 xl:col-span-2">
           <Card class="parade-card parade-goal-card relative rounded-[22px] border-info-border">
             <CardHeader>
@@ -490,7 +482,12 @@ function trimDecimal(value) {
                     Materials
                   </CardTitle>
                   <CardDescription>
-                    <span class="motion-tabular">+{{ currentLevelNumber }} to +{{ targetLevelNumber }} / {{ quantityNumber }} item{{ quantityNumber === 1 ? '' : 's' }}</span>
+                    <MotionValue
+                      :motion-key="`${currentLevelNumber}:${targetLevelNumber}:${quantityNumber}`"
+                      class="motion-tabular"
+                    >
+                      +{{ currentLevelNumber }} to +{{ targetLevelNumber }} / {{ quantityNumber }} item{{ quantityNumber === 1 ? '' : 's' }}
+                    </MotionValue>
                   </CardDescription>
                 </div>
 
@@ -524,13 +521,26 @@ function trimDecimal(value) {
                     </span>
                     <div class="min-w-0">
                       <h3 class="truncate text-base font-bold">{{ selectedItem?.summary?.farm }} material</h3>
-                      <p class="motion-tabular text-sm text-muted-foreground">{{ formatNumber(ownedMaterialNumber) }} / {{ formatNumber(requiredMaterials) }}</p>
+                      <MotionValue
+                        :motion-key="`${ownedMaterialNumber}:${requiredMaterials}`"
+                        as="p"
+                        class="motion-tabular text-sm text-muted-foreground"
+                      >
+                        {{ formatNumber(ownedMaterialNumber) }} / {{ formatNumber(requiredMaterials) }}
+                      </MotionValue>
                     </div>
                   </div>
                   <Progress :model-value="completionPercent" class="mt-3 h-2" />
                 </div>
                 <div class="text-right">
-                  <strong class="motion-tabular block text-3xl font-bold" :class="materialStatusClasses.foreground">{{ completionPercent.toFixed(0) }}%</strong>
+                  <MotionValue
+                    :motion-key="completionPercent.toFixed(0)"
+                    as="strong"
+                    class="motion-tabular text-3xl font-bold"
+                    :class="materialStatusClasses.foreground"
+                  >
+                    {{ completionPercent.toFixed(0) }}%
+                  </MotionValue>
                   <span class="text-xs font-semibold" :class="materialStatusClasses.foreground">owned</span>
                 </div>
               </div>
@@ -541,7 +551,13 @@ function trimDecimal(value) {
                     <PackageIcon class="size-4" />
                     Required
                   </div>
-                  <div class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatNumber(requiredMaterials) }}</div>
+                  <MotionValue
+                    :motion-key="requiredMaterials"
+                    as="div"
+                    class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl"
+                  >
+                    {{ formatNumber(requiredMaterials) }}
+                  </MotionValue>
                 </div>
 
                 <div class="hidden">
@@ -564,12 +580,14 @@ function trimDecimal(value) {
                         <SparklesIcon class="size-4" />
                         {{ canEnhance ? 'Extra' : 'Remaining' }}
                       </div>
-                      <div
+                      <MotionValue
+                        :motion-key="canEnhance ? extraMaterials : remainingMaterials"
+                        as="div"
                         class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl"
                         :class="materialStatusClasses.foreground"
                       >
                         {{ formatNumber(canEnhance ? extraMaterials : remainingMaterials) }}
-                      </div>
+                      </MotionValue>
                       <div class="mt-1 text-xs text-muted-foreground">
                         {{ canEnhance ? 'after target' : 'still needed' }}
                       </div>
@@ -582,7 +600,13 @@ function trimDecimal(value) {
                     <CoinsIcon class="size-4" />
                     Fee
                   </div>
-                  <div class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl">{{ formatFee(requiredFeeMillions) }}</div>
+                  <MotionValue
+                    :motion-key="requiredFeeMillions"
+                    as="div"
+                    class="motion-tabular mt-2 text-xl font-bold tracking-tight md:text-3xl"
+                  >
+                    {{ formatFee(requiredFeeMillions) }}
+                  </MotionValue>
                 </div>
               </div>
 
@@ -605,9 +629,13 @@ function trimDecimal(value) {
 
                     <div class="grid gap-1 sm:min-w-36 sm:text-right">
                       <div class="text-xs text-muted-foreground">Required</div>
-                      <div class="motion-tabular text-2xl font-semibold tracking-normal text-info-foreground">
+                      <MotionValue
+                        :motion-key="ascensionMaterial.total"
+                        as="div"
+                        class="motion-tabular text-2xl font-semibold tracking-normal text-info-foreground"
+                      >
                         {{ formatNumber(ascensionMaterial.total) }}
-                      </div>
+                      </MotionValue>
                       <div class="motion-tabular text-xs text-muted-foreground">
                         {{ formatNumber(ascensionMaterial.perItem) }} per item
                       </div>
@@ -748,7 +776,6 @@ function trimDecimal(value) {
             </CardContent>
           </Card>
         </section>
-      </main>
-    </div>
-  </TooltipProvider>
+    </main>
+  </div>
 </template>

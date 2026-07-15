@@ -8,18 +8,21 @@ provideGearScoreCalculator(calculator)
 </script>
 
 <template>
-  <TooltipProvider>
-    <div class="parade-page">
-      <GearScoreHeader />
+  <div class="parade-route">
+    <GearScoreHeader />
 
-      <main class="parade-workspace grid gap-4 xl:grid-cols-[minmax(390px,414px)_minmax(0,1fr)]">
-        <GearScoreInputPanel />
-        <GearScoreResultsPanel />
-      </main>
+    <main
+      id="main-content"
+      data-route-main="/"
+      tabindex="-1"
+      class="parade-workspace grid gap-4 xl:grid-cols-[minmax(390px,414px)_minmax(0,1fr)]"
+    >
+      <GearScoreInputPanel />
+      <GearScoreResultsPanel />
+    </main>
 
-      <GearCatalogSheet />
-      <SnapshotDialog />
-      <DisclaimerDialog />
-    </div>
-  </TooltipProvider>
+    <GearCatalogSheet />
+    <SnapshotDialog />
+    <DisclaimerDialog />
+  </div>
 </template>

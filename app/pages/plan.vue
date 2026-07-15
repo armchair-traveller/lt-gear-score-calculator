@@ -3,7 +3,6 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   ClipboardIcon,
-  InfoIcon,
   MoreHorizontalIcon,
   PlusIcon,
   RotateCcwIcon,
@@ -22,6 +21,12 @@ useHead({
 const gearPlan = useGearPlan()
 provideGearPlan(gearPlan)
 const planner = reactive(gearPlan)
+const appShell = useAppShellContext()
+const unregisterHelpHandler = appShell.registerHelpHandler('planner', () => {
+  planner.plannerNotesOpen = true
+})
+
+onBeforeUnmount(unregisterHelpHandler)
 
 const resetOpen = ref(false)
 const deleteOpen = ref(false)
@@ -52,17 +57,9 @@ function confirmDelete() {
 </script>
 
 <template>
-  <TooltipProvider>
-    <div class="parade-page">
-      <AppShellHeader
-        active="planner"
-        eyebrow="Gear planner"
-        title="See which piece earns your effort next."
-        description="Rank your final pieces against a shared benchmark without losing sight of the actual gear slots."
-        show-help
-        @help="planner.plannerNotesOpen = true"
-      >
-        <template #utilities>
+  <div class="parade-route">
+    <Teleport to="#app-shell-utilities">
+      <div class="contents">
           <Button
             variant="outline"
             size="sm"
@@ -98,17 +95,22 @@ function confirmDelete() {
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-        </template>
-      </AppShellHeader>
+      </div>
+    </Teleport>
 
-      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {{ planner.shareCopied ? 'Planner link copied to clipboard.' : '' }}
-      </p>
-      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {{ planner.saveFeedbackMessage }}
-      </p>
+    <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {{ planner.shareCopied ? 'Planner link copied to clipboard.' : '' }}
+    </p>
+    <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {{ planner.saveFeedbackMessage }}
+    </p>
 
-      <main class="parade-workspace grid gap-4">
+    <main
+      id="main-content"
+      data-route-main="/plan"
+      tabindex="-1"
+      class="parade-workspace grid gap-4"
+    >
         <section
           v-if="planner.isSharedPreview"
           class="flex flex-col gap-3 rounded-lg border border-info-border bg-info-surface p-4 text-info-foreground sm:flex-row sm:items-center sm:justify-between"
@@ -249,9 +251,13 @@ function confirmDelete() {
                 </Transition>
               </div>
               <Tabs v-model="planner.sortMode" class="w-auto">
-                <TabsList aria-label="Rank upgrade priority">
-                  <TabsTrigger value="impact">Impact</TabsTrigger>
-                  <TabsTrigger value="quality">Quality</TabsTrigger>
+                <TabsList
+                  class="motion-segmented grid grid-cols-2 gap-1 overflow-hidden"
+                  aria-label="Rank upgrade priority"
+                >
+                  <MotionSegmentIndicator :count="2" :index="planner.sortMode === 'quality' ? 1 : 0" />
+                  <TabsTrigger value="impact" class="data-active:bg-transparent data-active:shadow-none">Impact</TabsTrigger>
+                  <TabsTrigger value="quality" class="data-active:bg-transparent data-active:shadow-none">Quality</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -352,12 +358,12 @@ function confirmDelete() {
             </div>
           </section>
         </div>
-      </main>
+    </main>
 
-      <GearPlanEditorSheet @request-delete="deleteOpen = true" />
-      <GearPlanNotesDialog />
+    <GearPlanEditorSheet @request-delete="deleteOpen = true" />
+    <GearPlanNotesDialog />
 
-      <Dialog v-model:open="resetOpen">
+    <Dialog v-model:open="resetOpen">
         <DialogContent class="rounded-lg">
           <DialogHeader>
             <DialogTitle>Reset planner?</DialogTitle>
@@ -368,9 +374,9 @@ function confirmDelete() {
             <Button variant="destructive" @click="confirmReset">Reset planner</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+    </Dialog>
 
-      <Dialog v-model:open="deleteOpen">
+    <Dialog v-model:open="deleteOpen">
         <DialogContent class="rounded-lg">
           <DialogHeader>
             <DialogTitle>Delete this gear entry?</DialogTitle>
@@ -381,7 +387,6 @@ function confirmDelete() {
             <Button variant="destructive" @click="confirmDelete">Delete entry</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-    </div>
-  </TooltipProvider>
+    </Dialog>
+  </div>
 </template>

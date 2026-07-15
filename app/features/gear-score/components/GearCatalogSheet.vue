@@ -34,7 +34,7 @@ const {
           <section class="min-h-0 min-w-0 rounded-lg border bg-surface-inset">
             <div class="px-3 py-2">
               <div class="text-sm font-medium">Gear catalog</div>
-              <div class="text-xs text-muted-foreground">Hover to inspect, click to select</div>
+              <div class="text-xs text-muted-foreground">Focus or hover to inspect, activate to select</div>
             </div>
             <ScrollArea class="h-[42vh] p-3 xl:h-[calc(100vh-10rem)]">
               <div class="grid gap-4">
@@ -48,6 +48,7 @@ const {
                       class="h-14 w-full rounded-lg"
                       size="icon"
                       @click="setGear(category, piece)"
+                      @focus="highlightedPiece = [category, piece]"
                       @mouseenter="highlightedPiece = [category, piece]"
                     >
                       <img class="size-8" :src="getItemImage(piece, category)" :alt="piece">

@@ -13,6 +13,7 @@ const props = defineProps({
   },
   asChild: { type: Boolean, required: false },
   as: { type: null, required: false, default: "button" },
+  type: { type: String, required: false, default: "button" },
 });
 </script>
 
@@ -23,6 +24,7 @@ const props = defineProps({
     :data-size="size"
     :as="as"
     :as-child="asChild"
+    :type="!asChild && as === 'button' ? type : undefined"
     :class="cn(buttonVariants({ variant, size }), props.class)"
   >
     <slot />

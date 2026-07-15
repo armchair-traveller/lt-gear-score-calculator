@@ -10,7 +10,7 @@ import {
   ScanTextIcon,
   UploadCloudIcon,
 } from '@lucide/vue'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -32,6 +32,8 @@ const importResult = ref(null)
 const error = ref('')
 const isLoading = ref(false)
 const isDragging = ref(false)
+const lastEditedLineId = ref('')
+let lineFeedbackTimeout
 
 const previewItem = computed(() => {
   if (!importResult.value) {
@@ -128,6 +130,7 @@ watch(openProxy, (open) => {
 onBeforeUnmount(() => {
   removePasteListener()
   revokePreviewUrl()
+  clearTimeout(lineFeedbackTimeout)
 })
 
 function addPasteListener() {
@@ -242,6 +245,7 @@ function updateLineStat(index, stat) {
   if (stat === otherStat && !Number(line.value)) {
     line.value = 1
   }
+  markLineEdited(line)
 }
 
 function setLineValue(index, value) {
@@ -261,6 +265,17 @@ function toggleIgnored(index) {
   if (!line.ignored && line.stat === otherStat && !Number(line.value)) {
     line.value = 1
   }
+  markLineEdited(line)
+}
+
+async function markLineEdited(line) {
+  clearTimeout(lineFeedbackTimeout)
+  lastEditedLineId.value = ''
+  await nextTick()
+  lastEditedLineId.value = line?.id ?? ''
+  lineFeedbackTimeout = setTimeout(() => {
+    lastEditedLineId.value = ''
+  }, 220)
 }
 
 function isLineValid(line) {
@@ -341,6 +356,8 @@ function resetImport() {
   error.value = ''
   isLoading.value = false
   isDragging.value = false
+  lastEditedLineId.value = ''
+  clearTimeout(lineFeedbackTimeout)
   revokePreviewUrl()
 }
 
@@ -500,7 +517,11 @@ function revokePreviewUrl() {
                 <article
                   v-for="(line, index) in importResult.lines"
                   :key="line.id"
-                  :class="['grid gap-3 rounded-lg border p-3 text-sm transition-colors', getLineShellClass(line)]"
+                  :class="[
+                    'grid gap-3 rounded-lg border p-3 text-sm transition-colors',
+                    getLineShellClass(line),
+                    { 'motion-feedback': lastEditedLineId === line.id },
+                  ]"
                 >
                   <div class="flex min-w-0 items-start gap-3">
                     <div
@@ -567,6 +588,7 @@ function revokePreviewUrl() {
                       class="h-9"
                       :aria-label="`Line ${index + 1} value`"
                       @update:model-value="setLineValue(index, $event)"
+                      @change="markLineEdited(line)"
                     />
                   </div>
                 </article>

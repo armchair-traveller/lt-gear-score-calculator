@@ -299,9 +299,8 @@ watch(
                   <InputGroupButton
                     size="icon-xs"
                     variant="ghost"
-                    aria-hidden="true"
+                    :aria-label="`Clear line ${index + 1} value`"
                     class="shrink-0 opacity-80 transition-opacity hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-focus-within/line:opacity-100 sm:group-hover/line:opacity-100"
-                    tabindex="-1"
                     @click="clearInput(index)"
                   >
                     <XIcon />

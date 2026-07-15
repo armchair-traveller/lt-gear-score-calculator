@@ -53,7 +53,8 @@ function getBreakdownScale(value) {
       class="gap-0 p-0 data-[side=right]:!w-full sm:data-[side=right]:!max-w-none md:data-[side=right]:!w-[640px]"
     >
       <template v-if="selectedSlot">
-        <SheetHeader class="border-b bg-surface-raised px-5 py-4 pr-14">
+        <form class="contents" @submit.prevent="saveEditor">
+          <SheetHeader class="border-b bg-surface-raised px-5 py-4 pr-14">
           <div class="flex min-w-0 items-center gap-3">
             <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-warning-border bg-warning-surface">
               <img class="size-10" :src="selectedSlot.image" alt="">
@@ -65,10 +66,10 @@ function getBreakdownScale(value) {
               </SheetDescription>
             </div>
           </div>
-        </SheetHeader>
+          </SheetHeader>
 
-        <div class="min-h-0 flex-1 overflow-y-auto bg-surface">
-          <div class="grid gap-5 p-4 sm:p-5">
+          <div class="min-h-0 flex-1 overflow-y-auto bg-surface">
+            <div class="grid gap-5 p-4 sm:p-5">
             <div
               v-if="isSharedPreview"
               class="rounded-lg border border-info-border bg-info-surface p-3 text-sm text-info-foreground"
@@ -82,26 +83,40 @@ function getBreakdownScale(value) {
                   <GaugeIcon class="size-3.5" />
                   Current DI
                 </div>
-                <div class="motion-tabular mt-1 text-xl font-semibold">{{ editorResult.currentDI.toFixed(2) }}%</div>
+                <MotionValue
+                  :motion-key="editorResult.currentDI.toFixed(2)"
+                  as="div"
+                  class="motion-tabular mt-1 text-xl font-semibold"
+                >
+                  {{ editorResult.currentDI.toFixed(2) }}%
+                </MotionValue>
               </div>
               <div class="parade-metric p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                   <TargetIcon class="size-3.5" />
                   Benchmark
                 </div>
-                <div class="motion-tabular mt-1 text-xl font-semibold">{{ editorResult.benchmarkDI.toFixed(2) }}%</div>
+                <MotionValue
+                  :motion-key="editorResult.benchmarkDI.toFixed(2)"
+                  as="div"
+                  class="motion-tabular mt-1 text-xl font-semibold"
+                >
+                  {{ editorResult.benchmarkDI.toFixed(2) }}%
+                </MotionValue>
               </div>
               <div class="rounded-2xl border border-warning-border bg-warning-surface p-3">
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                   <TrendingUpIcon class="size-3.5" />
                   Potential
                 </div>
-                <div
+                <MotionValue
+                  :motion-key="editorResult.opportunityDI.toFixed(2)"
+                  as="div"
                   class="motion-tabular mt-1 text-xl font-semibold"
                   :class="getGearPlanOpportunityTextClass(editorResult.opportunityDI)"
                 >
                   {{ editorResult.opportunityDI.toFixed(2) }}%
-                </div>
+                </MotionValue>
               </div>
             </div>
 
@@ -188,28 +203,30 @@ function getBreakdownScale(value) {
                 <span>The best stats may vary by class and build. Use this as a general damage benchmark.</span>
               </p>
             </section>
+            </div>
           </div>
-        </div>
 
-        <SheetFooter v-if="!isSharedPreview" class="border-t bg-surface-raised p-4 sm:flex-row sm:justify-between">
-          <Button
-            v-if="selectedSlot.entry"
-            variant="outline"
-            class="text-destructive hover:text-destructive"
-            @click="emit('request-delete')"
-          >
-            <Trash2Icon />
-            Delete
-          </Button>
-          <Button
-            class="sm:ml-auto"
-            :disabled="!editorResult.eligible"
-            :aria-label="`Save ${selectedSlot.pieceType}`"
-            @click="saveEditor"
-          >
-            Save gear piece
-          </Button>
-        </SheetFooter>
+          <SheetFooter v-if="!isSharedPreview" class="border-t bg-surface-raised p-4 sm:flex-row sm:justify-between">
+            <Button
+              v-if="selectedSlot.entry"
+              type="button"
+              variant="outline"
+              class="text-destructive hover:text-destructive"
+              @click="emit('request-delete')"
+            >
+              <Trash2Icon />
+              Delete
+            </Button>
+            <Button
+              type="submit"
+              class="sm:ml-auto"
+              :disabled="!editorResult.eligible"
+              :aria-label="`Save ${selectedSlot.pieceType}`"
+            >
+              Save gear piece
+            </Button>
+          </SheetFooter>
+        </form>
       </template>
     </SheetContent>
   </Sheet>

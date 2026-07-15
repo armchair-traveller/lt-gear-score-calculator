@@ -3,6 +3,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2026-06-13',
+  experimental: {
+    viewTransition: true,
+  },
   components: [
     { path: '~/components', pathPrefix: false, extensions: ['.vue'] },
     { path: '~/features/gear-score/components', pathPrefix: false, extensions: ['.vue'] },
@@ -16,6 +19,10 @@ export default defineNuxtConfig({
   },
   css: ['~/styles/main.css'],
   app: {
+    pageTransition: {
+      name: 'motion-swap',
+      mode: 'out-in',
+    },
     head: {
       htmlAttrs: {
         lang: 'en',

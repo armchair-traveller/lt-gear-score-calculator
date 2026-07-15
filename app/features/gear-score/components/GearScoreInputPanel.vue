@@ -9,7 +9,7 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
 } from '@lucide/vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const {
   gearType,
@@ -44,6 +44,10 @@ const {
 
 const imageImportOpen = ref(false)
 const recommendationsOpen = ref(false)
+const inputEnchantLevelIndex = computed(() => Math.max(
+  0,
+  currentInputEnchantLevelOptions.value.findIndex((option) => option.value === inputEnchantLevel.value),
+))
 
 function setStatInput(index, value) {
   statInput.value[index] = value
@@ -64,23 +68,25 @@ function setStatPickerOpen(index, value) {
           aria-label="Open gear selector"
           @click="gearSheetOpen = true"
         >
-          <div class="flex min-w-0 items-center gap-3">
-            <span class="parade-item-well flex size-14 shrink-0 items-center justify-center rounded-2xl">
-              <img class="size-11" :src="selectedImage" alt="">
+          <MotionValue :motion-key="`${gearType}:${pieceType}`" class="min-w-0 flex-1">
+            <span class="flex min-w-0 items-center gap-3">
+              <span class="parade-item-well flex size-14 shrink-0 items-center justify-center rounded-2xl">
+                <img class="size-11" :src="selectedImage" alt="">
+              </span>
+              <span class="min-w-0">
+                <span class="cn-font-heading block truncate text-base font-medium">
+                  {{ pieceType }} {{ gearType }}
+                </span>
+                <span class="motion-tabular block text-sm text-muted-foreground">
+                  Max rating {{ currentItem?.DI.toFixed(2) }}% / selected stats {{ getSelectedRating().toFixed(2) }}%
+                </span>
+              </span>
             </span>
-            <div class="min-w-0">
-              <CardTitle class="truncate text-base">
-                {{ pieceType }} {{ gearType }}
-              </CardTitle>
-              <CardDescription>
-                Max rating {{ currentItem?.DI.toFixed(2) }}% / selected stats {{ getSelectedRating().toFixed(2) }}%
-              </CardDescription>
-            </div>
-          </div>
+          </MotionValue>
           <div class="flex shrink-0 items-center gap-1.5 rounded-xl border bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-surface-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
             <SearchIcon class="size-3.5" />
             <span class="hidden @min-[30rem]/card-header:inline">Change gear</span>
-            <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5" />
+            <ChevronRightIcon class="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
           </div>
         </button>
       </CardHeader>
@@ -134,19 +140,23 @@ function setStatPickerOpen(index, value) {
 
         <div v-if="supportsInputEnchantLevel()">
           <div
-            class="grid gap-1 rounded-md bg-surface-inset p-1"
+            class="motion-segmented grid gap-1 overflow-hidden rounded-md bg-surface-inset p-1"
             :class="currentInputEnchantLevelOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
             role="group"
             aria-label="Input enchant level"
           >
+            <MotionSegmentIndicator
+              :count="currentInputEnchantLevelOptions.length"
+              :index="inputEnchantLevelIndex"
+            />
             <button
               v-for="option in currentInputEnchantLevelOptions"
               :key="option.value"
               type="button"
               :aria-pressed="inputEnchantLevel === option.value"
-              class="h-9 rounded-sm px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              class="touch-target h-9 rounded-sm px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               :class="inputEnchantLevel === option.value
-                ? 'bg-surface-raised text-foreground shadow-sm'
+                ? 'text-foreground'
                 : 'text-muted-foreground hover:bg-surface-raised/70 hover:text-foreground'"
               @click="setInputEnchantLevel(option.value)"
             >
@@ -167,12 +177,18 @@ function setStatPickerOpen(index, value) {
             type="single"
             variant="outline"
             size="sm"
+            class="motion-segmented grid grid-cols-2 gap-1 overflow-hidden rounded-full border-0 bg-muted p-1"
             aria-labelledby="input-value-mode-label"
             @update:model-value="setInputValueMode"
           >
+            <MotionSegmentIndicator :count="2" :index="inputValueMode === 'percent' ? 1 : 0" />
             <Tooltip>
               <TooltipTrigger as-child>
-                <ToggleGroupItem value="value" aria-label="Actual values">
+                <ToggleGroupItem
+                  value="value"
+                  aria-label="Actual values"
+                  class="rounded-full! border-0! bg-transparent! shadow-none! data-[state=on]:bg-transparent!"
+                >
                   <HashIcon aria-hidden="true" />
                 </ToggleGroupItem>
               </TooltipTrigger>
@@ -180,7 +196,11 @@ function setStatPickerOpen(index, value) {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <ToggleGroupItem value="percent" aria-label="Percent of max">
+                <ToggleGroupItem
+                  value="percent"
+                  aria-label="Percent of max"
+                  class="rounded-full! border-0! bg-transparent! shadow-none! data-[state=on]:bg-transparent!"
+                >
                   <PercentIcon aria-hidden="true" />
                 </ToggleGroupItem>
               </TooltipTrigger>

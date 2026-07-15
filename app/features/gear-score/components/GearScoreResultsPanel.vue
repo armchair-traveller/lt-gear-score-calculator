@@ -122,12 +122,23 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
               type="single"
               variant="outline"
               size="sm"
-              class="sm:order-last"
+              class="motion-segmented grid grid-cols-2 gap-1 overflow-hidden rounded-full border-0 bg-muted p-1 sm:order-last"
               aria-label="Result display mode"
               @update:model-value="setResultMode"
             >
-              <ToggleGroupItem value="score">Score</ToggleGroupItem>
-              <ToggleGroupItem value="rating">Rating</ToggleGroupItem>
+              <MotionSegmentIndicator :count="2" :index="resultMode === 'rating' ? 1 : 0" />
+              <ToggleGroupItem
+                value="score"
+                class="rounded-full! border-0! bg-transparent! shadow-none! data-[state=on]:bg-transparent!"
+              >
+                Score
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="rating"
+                class="rounded-full! border-0! bg-transparent! shadow-none! data-[state=on]:bg-transparent!"
+              >
+                Rating
+              </ToggleGroupItem>
             </ToggleGroup>
 
             <ButtonGroup aria-label="Result actions">
@@ -182,14 +193,20 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
         <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
           <div class="rounded-2xl border border-info-border bg-info-surface p-4">
             <div class="parade-section-kicker">Current strength</div>
-            <div class="mt-1 flex items-end gap-2">
-              <div class="motion-tabular text-5xl font-bold tracking-[-0.06em] text-info-foreground">
-                {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
-              </div>
-              <Badge variant="outline" :class="getTierClass(results.tier)">
-                {{ results.tier }}
-              </Badge>
-            </div>
+            <MotionValue
+              :motion-key="`${resultMode}:${resultMode === 'rating' ? results.DI : results.percent}:${results.tier}`"
+              as="div"
+              class="mt-1"
+            >
+              <span class="flex items-end gap-2">
+                <span class="motion-tabular text-5xl font-bold tracking-[-0.06em] text-info-foreground">
+                  {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
+                </span>
+                <Badge variant="outline" :class="getTierClass(results.tier)">
+                  {{ results.tier }}
+                </Badge>
+              </span>
+            </MotionValue>
             <Progress :model-value="totalProgress" class="mt-4 h-2" />
           </div>
 
@@ -219,12 +236,17 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                           {{ statInput[index] }}
                         </div>
                       </div>
-                      <div class="flex items-center gap-2">
-                        <span class="motion-tabular text-sm font-semibold">{{ getLineScoreText(index) }}</span>
-                        <Badge variant="outline" :class="getTierClass(results.individual[index].tier)">
-                          {{ results.individual[index].tier }}
-                        </Badge>
-                      </div>
+                      <MotionValue
+                        :motion-key="`${getLineScoreText(index)}:${results.individual[index].tier}`"
+                        class="justify-self-end"
+                      >
+                        <span class="flex items-center gap-2">
+                          <span class="motion-tabular text-sm font-semibold">{{ getLineScoreText(index) }}</span>
+                          <Badge variant="outline" :class="getTierClass(results.individual[index].tier)">
+                            {{ results.individual[index].tier }}
+                          </Badge>
+                        </span>
+                      </MotionValue>
                     </div>
                     <Progress :model-value="clamp(Number(results.individual[index].percent), 0, 100)" class="h-1.5" />
                   </div>
@@ -280,15 +302,23 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
               <div class="parade-projection-card rounded-2xl border border-warning-border p-4">
                 <div class="text-sm text-muted-foreground">Projected</div>
-                <div class="mt-1 flex items-end gap-2">
-                  <div class="motion-tabular text-4xl font-bold tracking-[-0.05em] text-warning-foreground">
-                    {{ resultMode === 'rating' ? results.potentialDI : results.potentialScore }}
-                  </div>
-                  <Badge variant="outline" :class="getTierClass(results.potentialTier)">
-                    {{ results.potentialTier }}
-                  </Badge>
-                </div>
-                <div class="motion-tabular mt-2 text-sm text-success-foreground">{{ potentialGainText }} gain</div>
+                <MotionValue
+                  :motion-key="`${resultMode}:${resultMode === 'rating' ? results.potentialDI : results.potentialScore}:${results.potentialTier}`"
+                  as="div"
+                  class="mt-1"
+                >
+                  <span class="flex items-end gap-2">
+                    <span class="motion-tabular text-4xl font-bold tracking-[-0.05em] text-warning-foreground">
+                      {{ resultMode === 'rating' ? results.potentialDI : results.potentialScore }}
+                    </span>
+                    <Badge variant="outline" :class="getTierClass(results.potentialTier)">
+                      {{ results.potentialTier }}
+                    </Badge>
+                  </span>
+                </MotionValue>
+                <MotionValue :motion-key="potentialGainText" as="div" class="motion-tabular mt-2 text-sm text-success-foreground">
+                  {{ potentialGainText }} gain
+                </MotionValue>
                 <Progress :model-value="potentialProgress" class="mt-4 h-2" />
               </div>
 
@@ -323,12 +353,17 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
                               </span>
                             </div>
                           </div>
-                          <div class="flex items-center gap-2">
-                            <span class="motion-tabular text-sm font-semibold">{{ getPotentialLineText(index) }}</span>
-                            <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
-                              {{ getPotentialLineTier(index) }}
-                            </Badge>
-                          </div>
+                          <MotionValue
+                            :motion-key="`${getPotentialLineText(index)}:${getPotentialLineTier(index)}`"
+                            class="justify-self-end"
+                          >
+                            <span class="flex items-center gap-2">
+                              <span class="motion-tabular text-sm font-semibold">{{ getPotentialLineText(index) }}</span>
+                              <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
+                                {{ getPotentialLineTier(index) }}
+                              </Badge>
+                            </span>
+                          </MotionValue>
                         </div>
                         <Progress :model-value="clamp(Number(results.individual[index].potentialMinPerc), 0, 100)" class="h-1.5" />
                       </div>
@@ -388,7 +423,13 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] sm:items-end">
               <div class="min-w-0">
                 <div class="text-sm text-muted-foreground">Chance to reach target</div>
-                <div class="motion-tabular mt-1 text-3xl font-semibold tracking-normal">{{ results.qualityOdds.totalChanceText }}</div>
+                <MotionValue
+                  :motion-key="results.qualityOdds.totalChanceText"
+                  as="div"
+                  class="motion-tabular mt-1 text-3xl font-semibold tracking-normal"
+                >
+                  {{ results.qualityOdds.totalChanceText }}
+                </MotionValue>
               </div>
 
               <div class="min-w-0">
@@ -438,19 +479,27 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
             >
               <div class="px-3 py-3">
                 <dt class="text-xs text-muted-foreground">Quality</dt>
-                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.qualityText }}</dd>
+                <MotionValue :motion-key="results.qualityOdds.qualityText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
+                  {{ results.qualityOdds.qualityText }}
+                </MotionValue>
               </div>
               <div v-if="results.qualityOdds.showProjectedQuality" class="px-3 py-3">
                 <dt class="text-xs text-muted-foreground">Projected quality</dt>
-                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.plannedQualityText }}</dd>
+                <MotionValue :motion-key="results.qualityOdds.plannedQualityText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
+                  {{ results.qualityOdds.plannedQualityText }}
+                </MotionValue>
               </div>
               <div class="px-3 py-3">
                 <dt class="text-xs text-muted-foreground">Base rolls</dt>
-                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.baseRollText }}</dd>
+                <MotionValue :motion-key="results.qualityOdds.baseRollText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
+                  {{ results.qualityOdds.baseRollText }}
+                </MotionValue>
               </div>
               <div class="px-3 py-3 md:last:pr-0">
                 <dt class="text-xs text-muted-foreground">Full survival</dt>
-                <dd class="motion-tabular mt-1 text-lg font-semibold">{{ results.qualityOdds.survivalChanceText }}</dd>
+                <MotionValue :motion-key="results.qualityOdds.survivalChanceText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
+                  {{ results.qualityOdds.survivalChanceText }}
+                </MotionValue>
               </div>
             </dl>
 

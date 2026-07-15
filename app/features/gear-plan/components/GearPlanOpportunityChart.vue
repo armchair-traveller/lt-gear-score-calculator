@@ -147,6 +147,12 @@ function getScale(value) {
                   </div>
                 </div>
 
+                <span class="sr-only">
+                  Current {{ slot.result.currentDI.toFixed(2) }}% DI;
+                  roll-value gap {{ slot.result.rollGapDI.toFixed(2) }}%;
+                  piece gap {{ slot.result.pieceGapDI.toFixed(2) }}%.
+                </span>
+
                 <div class="flex items-center justify-between gap-3 sm:justify-end">
                   <Badge
                     v-if="slot.result.opportunityDI <= 0.0001"

@@ -37,12 +37,39 @@ const navItems = [
   { value: 'upgrade', label: 'Upgrade', to: '/upgrade', icon: DiamondIcon },
   { value: 'planner', label: 'Planner', to: '/plan', icon: Rows3Icon },
 ]
+
+const primaryNavSegments = [
+  { offset: 0, width: 6.75 },
+  { offset: 6.75, width: 5.9375 },
+  { offset: 12.6875, width: 5.6875 },
+]
+
+const activeNavIndex = computed(() => {
+  const index = navItems.findIndex(item => item.value === props.active)
+  return index === -1 ? 0 : index
+})
+
+const primaryNavStyle = computed(() => {
+  const segment = primaryNavSegments[activeNavIndex.value]
+
+  return {
+    '--parade-primary-nav-pill-offset': `${segment.offset}rem`,
+    '--parade-primary-nav-pill-width': `${segment.width}rem`,
+  }
+})
 </script>
 
 <template>
   <header class="parade-app-header">
+    <a class="parade-skip-link" href="#main-content">Skip to main content</a>
+
     <div class="parade-appbar">
-      <NuxtLink to="/" class="parade-brand" aria-label="LaTale Gear Toolkit home">
+      <NuxtLink
+        to="/"
+        class="parade-brand"
+        aria-label="LaTale Gear Toolkit home"
+        aria-current-value="false"
+      >
         <span class="parade-brand-mark">
           <img src="/favicon.ico" alt="">
         </span>
@@ -52,20 +79,37 @@ const navItems = [
         </span>
       </NuxtLink>
 
-      <nav class="parade-primary-nav" aria-label="Primary navigation">
+      <nav
+        class="parade-primary-nav"
+        aria-label="Primary navigation"
+        :style="primaryNavStyle"
+      >
+        <span class="parade-primary-nav-pill" aria-hidden="true" />
+
         <Button
           v-for="item in navItems"
           :key="item.value"
-          :variant="props.active === item.value ? 'default' : 'ghost'"
+          variant="ghost"
           size="sm"
-          class="rounded-full"
+          class="parade-primary-nav-item rounded-full"
           as-child
         >
           <NuxtLink :to="item.to" :aria-current="props.active === item.value ? 'page' : undefined">
             <component :is="item.icon" data-icon="inline-start" />
-            {{ item.label }}
+            <span>{{ item.label }}</span>
           </NuxtLink>
         </Button>
+
+        <span class="parade-primary-nav-active-labels" aria-hidden="true">
+          <span
+            v-for="item in navItems"
+            :key="`active-${item.value}`"
+            class="parade-primary-nav-active-label"
+          >
+            <component :is="item.icon" />
+            <span>{{ item.label }}</span>
+          </span>
+        </span>
       </nav>
 
       <div class="parade-utilities">

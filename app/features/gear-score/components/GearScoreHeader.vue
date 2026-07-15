@@ -8,27 +8,23 @@ import {
 
 const {
   gears,
-  upgradeHref,
-  planHref,
   gearType,
-  pieceType,
-  resultMode,
   disclaimerOpen,
   clipboardTooltip,
   generateURL,
 } = useGearScoreCalculatorContext()
+
+const appShell = useAppShellContext()
+const unregisterHelpHandler = appShell.registerHelpHandler('calculator', () => {
+  disclaimerOpen.value = true
+})
+
+onBeforeUnmount(unregisterHelpHandler)
 </script>
 
 <template>
-  <AppShellHeader
-    active="calculator"
-    eyebrow="Gear score · live calculation"
-    title="A clearer path to your next upgrade."
-    description="Enter the rolls you have now, compare their strength, and see what the fully upgraded piece could become."
-    show-help
-    @help="disclaimerOpen = true"
-  >
-    <template #utilities>
+  <Teleport to="#app-shell-utilities">
+    <div class="contents">
       <Tooltip>
         <TooltipTrigger as-child>
           <Button variant="outline" size="sm" class="min-w-[6.5rem]" @click="generateURL">
@@ -66,6 +62,6 @@ const {
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-    </template>
-  </AppShellHeader>
+    </div>
+  </Teleport>
 </template>
