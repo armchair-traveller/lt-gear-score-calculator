@@ -7,6 +7,7 @@ the score of a completed item.
 ## Enchant flow
 
 - All supported gear uses Platinum Hammers for enchanting.
+  - Worth 150 million Ely.
 - Every enchant attempt targets one stat line; lines are never enchanted in a
   batch.
 - A failed enchant destroys the item.
@@ -26,10 +27,10 @@ lines only.
 
 Costs are per attempted line.
 
-| Method | Success rate | Ely | Platinum Hammers |
-| --- | ---: | ---: | ---: |
-| Normal | 50% | 50,000,000 | 1 |
-| Super | 60% | 100,000,000 | 2 |
+| Method | Success rate |         Ely | Platinum Hammers |
+| ------ | -----------: | ----------: | ---------------: |
+| Normal |          50% |  50,000,000 |                1 |
+| Super  |          60% | 100,000,000 |                2 |
 
 Super doubles both costs of Normal.
 
@@ -39,21 +40,19 @@ Special enchant has 100% success and is available only on eligible sLv gear.
 The only eligible family currently represented is Rikimo gear,
 `[sLv5] Accessories`.
 
-| Variant | Success rate | Ely | Platinum Hammers |
-| --- | ---: | ---: | ---: |
-| Untradeable | 100% | Not specified | 10 |
-| Tradable | 100% | Not specified | 30 |
-
-The Special-enchant Ely cost is not specified; do not record it as zero.
+| Variant     | Success rate | Ely | Platinum Hammers |
+| ----------- | -----------: | --: | ---------------: |
+| Untradeable |         100% |   0 |               10 |
+| Tradable    |         100% |   0 |               30 |
 
 ## Badge 6 rates and costs
 
 Badge 6 uses its own profile instead of the main-gear profile.
 
-| Method | Success rate | Ely | Platinum Hammers |
-| --- | ---: | ---: | ---: |
-| 40% option | 40% | 50,000,000 | 1 |
-| 50% option | 50% | 100,000,000 | 2 |
+| Method     | Success rate |         Ely | Platinum Hammers |
+| ---------- | -----------: | ----------: | ---------------: |
+| 40% option |          40% |  50,000,000 |                1 |
+| 50% option |          50% | 100,000,000 |                2 |
 
 The 50% option doubles both costs of the 40% option.
 
