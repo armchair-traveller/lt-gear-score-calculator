@@ -252,12 +252,10 @@ function confirmDelete() {
               </div>
               <Tabs v-model="planner.sortMode" class="w-auto">
                 <TabsList
-                  class="motion-segmented grid grid-cols-2 gap-1 overflow-hidden"
                   aria-label="Rank upgrade priority"
                 >
-                  <MotionSegmentIndicator :count="2" :index="planner.sortMode === 'quality' ? 1 : 0" />
-                  <TabsTrigger value="impact" class="data-active:bg-transparent data-active:shadow-none">Impact</TabsTrigger>
-                  <TabsTrigger value="quality" class="data-active:bg-transparent data-active:shadow-none">Quality</TabsTrigger>
+                  <TabsTrigger value="impact">Impact</TabsTrigger>
+                  <TabsTrigger value="quality">Quality</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>

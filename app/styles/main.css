@@ -827,6 +827,37 @@
   z-index: 1;
 }
 
+.motion-tabs-indicator {
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  border-radius: 9999px;
+  background: var(--surface-raised);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  transition:
+    width var(--motion-duration-state) var(--motion-ease-move),
+    height var(--motion-duration-state) var(--motion-ease-move),
+    transform var(--motion-duration-state) var(--motion-ease-move);
+  will-change: width, height, transform;
+}
+
+[data-slot="tabs-list"][aria-orientation="horizontal"] > .motion-tabs-indicator {
+  left: 0;
+  top: 50%;
+  width: var(--reka-tabs-indicator-size);
+  height: var(--reka-tabs-indicator-thickness);
+  transform: translate(var(--reka-tabs-indicator-position), -50%);
+}
+
+[data-slot="tabs-list"][aria-orientation="vertical"] > .motion-tabs-indicator {
+  left: 50%;
+  top: 0;
+  width: var(--reka-tabs-indicator-thickness);
+  height: var(--reka-tabs-indicator-size);
+  transform: translate(-50%, var(--reka-tabs-indicator-position));
+}
+
 @media (pointer: coarse) {
   [data-slot="tabs-list"] {
     height: auto;
@@ -877,6 +908,7 @@
   .motion-pop-leave-active,
   .motion-bar,
   .motion-segment-indicator,
+  .motion-tabs-indicator,
   .parade-primary-nav-pill,
   .parade-primary-nav-active-labels,
   .parade-bottom-nav a,
@@ -900,7 +932,7 @@
   }
 
   .motion-feedback,
-  .motion-tab-panel,
+  .motion-tab-panel[data-state="active"],
   .animate-spin,
   [data-slot="dialog-content"],
   [data-slot="dialog-overlay"],

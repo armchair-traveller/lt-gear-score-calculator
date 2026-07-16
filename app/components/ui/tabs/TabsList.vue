@@ -1,6 +1,6 @@
 <script setup>
 import { reactiveOmit } from "@vueuse/core";
-import { TabsList } from "reka-ui";
+import { TabsIndicator, TabsList } from "reka-ui";
 import { cn } from "@/lib/utils";
 import { tabsListVariants } from ".";
 
@@ -23,9 +23,16 @@ const delegatedProps = reactiveOmit(props, "class", "variant");
   <TabsList
     data-slot="tabs-list"
     :data-variant="variant"
+    :data-motion-indicator="variant === 'default' && !asChild ? '' : undefined"
     v-bind="delegatedProps"
     :class="cn(tabsListVariants({ variant }), props.class)"
   >
+    <TabsIndicator
+      v-if="variant === 'default' && !asChild"
+      as="span"
+      aria-hidden="true"
+      class="motion-tabs-indicator"
+    />
     <slot />
   </TabsList>
 </template>

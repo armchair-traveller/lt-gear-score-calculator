@@ -73,10 +73,17 @@ const emptyLineSummary = computed(() =>
 )
 
 const qualityTargetDraft = ref('')
+const projectionTab = ref('summary')
 
 watch(qualityTargetPercent, (value) => {
   qualityTargetDraft.value = Number(value).toFixed(2)
 }, { immediate: true })
+
+watch(() => results.value.qualityOdds.available, (available) => {
+  if (!available && projectionTab.value === 'quality') {
+    projectionTab.value = 'summary'
+  }
+})
 
 function restoreQualityTargetDraft() {
   qualityTargetDraft.value = Number(qualityTargetPercent.value).toFixed(2)
@@ -276,7 +283,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
     </Card>
 
     <Card v-if="getFinalUpgrade(gearType) !== ''" class="parade-card rounded-[22px]">
-      <Tabs default-value="summary" class="min-w-0 gap-6">
+      <Tabs v-model="projectionTab" class="min-w-0 gap-6">
         <CardHeader>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
@@ -289,7 +296,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
               </CardDescription>
             </div>
 
-            <TabsList class="w-fit max-w-full">
+            <TabsList class="w-fit max-w-full" aria-label="Projection views">
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="lines">Lines</TabsTrigger>
               <TabsTrigger v-if="results.qualityOdds.available" value="quality">Quality odds</TabsTrigger>
