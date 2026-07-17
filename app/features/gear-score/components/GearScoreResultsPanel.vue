@@ -8,8 +8,6 @@ import {
   CheckIcon,
   RotateCcwIcon,
   SparklesIcon,
-  SwordsIcon,
-  TablePropertiesIcon,
 } from '@lucide/vue'
 import {
   formatMaxRollPercent,
@@ -24,9 +22,6 @@ const {
   statInput,
   qualityLineEnchantMethods,
   results,
-  tierGuideRows,
-  selectedTierRows,
-  totalProgress,
   potentialProgress,
   potentialGainText,
   currentOddsEnchantMethodOptions,
@@ -200,21 +195,7 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
         <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
           <div class="rounded-2xl border border-info-border bg-info-surface p-4">
             <div class="parade-section-kicker">Current strength</div>
-            <MotionValue
-              :motion-key="`${resultMode}:${resultMode === 'rating' ? results.DI : results.percent}:${results.tier}`"
-              as="div"
-              class="mt-1"
-            >
-              <span class="flex items-end gap-2">
-                <span class="motion-tabular text-5xl font-bold tracking-[-0.06em] text-info-foreground">
-                  {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
-                </span>
-                <Badge variant="outline" :class="getTierClass(results.tier)">
-                  {{ results.tier }}
-                </Badge>
-              </span>
-            </MotionValue>
-            <Progress :model-value="totalProgress" class="mt-4 h-2" />
+            <GearTierGuide />
           </div>
 
           <div class="min-h-32">
@@ -594,80 +575,5 @@ function updateQualityLineEnchantMethod(lineIndex, method) {
       </Tabs>
     </Card>
 
-    <div class="grid gap-4 2xl:grid-cols-2">
-      <Card class="parade-card rounded-[22px]">
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2 text-base">
-            <SwordsIcon class="size-4" />
-            Tier Evaluation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table container-class="rounded-lg border bg-surface-raised">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tier</TableHead>
-                <TableHead>Comment</TableHead>
-                <TableHead>Upgrade</TableHead>
-                <TableHead>Enchants</TableHead>
-                <TableHead>Cost</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="row in tierGuideRows" :key="row.tier">
-                <TableCell>
-                  <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
-                </TableCell>
-                <TableCell>{{ row.comment }}</TableCell>
-                <TableCell>{{ row.upgrade }}</TableCell>
-                <TableCell>{{ row.enchants }}</TableCell>
-                <TableCell>{{ row.cost }}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card class="parade-card rounded-[22px]">
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2 text-base">
-            <TablePropertiesIcon class="size-4" />
-            Tier Equivalence
-          </CardTitle>
-          <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table
-            container-class="max-h-[360px] min-w-0 rounded-lg border bg-surface-raised"
-            class="min-w-[720px] [&_td]:py-2.5 [&_th]:h-10"
-          >
-            <TableHeader>
-              <TableRow>
-                <TableHead>Score</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead>Single</TableHead>
-                <TableHead>Duo</TableHead>
-                <TableHead>Trio</TableHead>
-                <TableHead>Quad</TableHead>
-                <TableHead>Penta</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="row in selectedTierRows" :key="row.tier">
-                <TableCell>{{ row.Score }}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
-                </TableCell>
-                <TableCell>{{ row.Single }}</TableCell>
-                <TableCell>{{ row.Duo }}</TableCell>
-                <TableCell>{{ row.Trio }}</TableCell>
-                <TableCell>{{ row.Quad }}</TableCell>
-                <TableCell>{{ row.Penta }}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
   </section>
 </template>
