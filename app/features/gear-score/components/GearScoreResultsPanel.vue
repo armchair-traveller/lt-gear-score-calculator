@@ -1,18 +1,16 @@
 <script setup>
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
   BookmarkPlusIcon,
-  CalculatorIcon,
   CameraIcon,
   CheckIcon,
-  RotateCcwIcon,
-  SparklesIcon,
+  ChevronDownIcon,
+  CircleAlertIcon,
+  CirclePlusIcon,
 } from '@lucide/vue'
-import {
-  formatMaxRollPercent,
-  getMaxRollPercentClass,
-} from '@/features/gear-score/helpers.js'
+import { computed, ref, watch } from 'vue'
+import { decimalStats } from '@/features/gear-score/data.js'
+import { assignTraitNotesToLines } from '@/features/gear-score/stat-notes.js'
+import { cn } from '@/lib/utils'
 
 const {
   gearType,
@@ -20,560 +18,697 @@ const {
   resultMode,
   statType,
   statInput,
-  qualityLineEnchantMethods,
   results,
-  potentialProgress,
+  selectedTraitRows,
   potentialGainText,
-  currentOddsEnchantMethodOptions,
-  qualityTargetPercent,
   supportsGearPlan,
   canSaveToGearPlan,
   gearPlanSaveSucceeded,
   hasRolledValue,
+  supportsInputEnchantLevel,
+  getInputMaxValueText,
+  getInputEnchantLevelNumber,
   getProjectionEnchantLevel,
+  hasSnapshotProjection,
   setResultMode,
-  moveQualityOddsLine,
-  setQualityLineEnchantMethod,
-  setQualityTargetPercent,
-  resetQualityTarget,
   getFinalUpgrade,
   openSnapshot,
   saveCurrentGearToPlan,
-  clamp,
-  getLineScoreText,
   isInputOverMax,
-  getPotentialLineText,
   getPotentialLineTier,
   getTierClass,
-  getRollStatusClass,
 } = useGearScoreCalculatorContext()
+
+const resultView = ref('comparison')
+const missingLinesOpen = ref(false)
+
+const numberFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 2,
+})
+const decimalNumberFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
 
 const rolledLineIndexes = computed(() =>
   statType.value
     .map((_, index) => index)
     .filter((index) => hasRolledValue(index)),
 )
-const hasInvalidSnapshotLine = computed(() => rolledLineIndexes.value.some((index) => isInputOverMax(index)))
-const canShareSnapshot = computed(() => rolledLineIndexes.value.length > 0 && !hasInvalidSnapshotLine.value)
-const snapshotRequirement = computed(() => {
-  if (hasInvalidSnapshotLine.value) {
-    return 'Correct values above the item maximum before sharing.'
+const traitNotesByLineIndex = computed(() => assignTraitNotesToLines({
+  traits: selectedTraitRows.value,
+  statTypes: statType.value,
+  lineIndexes: rolledLineIndexes.value,
+}))
+const missingLineIndexes = computed(() =>
+  statType.value
+    .map((_, index) => index)
+    .filter((index) => !hasRolledValue(index)),
+)
+const hasResults = computed(() => rolledLineIndexes.value.length > 0)
+const hasProjection = computed(() => hasSnapshotProjection())
+const hasInvalidSnapshotLine = computed(() =>
+  rolledLineIndexes.value.some((index) => isInputOverMax(index)),
+)
+const showOutcomeProjection = computed(() =>
+  hasProjection.value && !hasInvalidSnapshotLine.value,
+)
+const canShareSnapshot = computed(() =>
+  hasResults.value && !hasInvalidSnapshotLine.value,
+)
+const currentLevelLabel = computed(() => {
+  if (!getFinalUpgrade(gearType.value)) {
+    return 'Current'
   }
+
+  const level = supportsInputEnchantLevel()
+    ? getInputEnchantLevelNumber()
+    : 2
+  return `Lv.${level}`
+})
+const currentEndpointLabel = computed(() =>
+  currentLevelLabel.value === 'Current'
+    ? 'Now'
+    : `Now · ${currentLevelLabel.value}`,
+)
+const projectedEndpointLabel = computed(() =>
+  `Upgraded · Lv.${getProjectionEnchantLevel()}`,
+)
+const panelTitle = computed(() =>
+  `${pieceType.value} ${hasProjection.value ? 'upgrade' : 'result'}`,
+)
+const currentOverallValue = computed(() =>
+  resultMode.value === 'rating'
+    ? results.value.DI
+    : results.value.percent,
+)
+const currentOverallIsCompact = computed(() =>
+  shouldCompactOverallValue(currentOverallValue.value),
+)
+const projectedOverallValue = computed(() =>
+  resultMode.value === 'rating'
+    ? results.value.potentialDI
+    : results.value.potentialScore,
+)
+const projectedOverallIsRange = computed(() =>
+  String(projectedOverallValue.value).includes('~'),
+)
+const projectedOverallIsCompact = computed(() =>
+  shouldCompactOverallValue(projectedOverallValue.value),
+)
+const projectedOverallCompactRange = computed(() => {
+  const values = String(projectedOverallValue.value)
+    .split(' ~ ')
+    .map((value) => value.replaceAll('%', ''))
+
+  return `${values[0]}–${values.at(-1)}%`
+})
+const gainPointsText = computed(() => {
+  const values = String(potentialGainText.value || '+0%')
+    .split(' ~ ')
+    .map((value) => value.replaceAll('%', ''))
+
+  if (values.length === 1) {
+    return `${values[0]} pts`
+  }
+
+  return `${values[0]}–${values.at(-1).replace(/^\+/, '')} pts`
+})
+const qualityOddsAvailable = computed(() => results.value.qualityOdds.available)
+const linesNeededForPlan = computed(() =>
+  Math.max(0, 3 - rolledLineIndexes.value.length),
+)
+const missingLinesLabel = computed(() => {
+  const count = missingLineIndexes.value.length
+  return `${count} ${count === 1 ? 'line' : 'lines'} not entered`
+})
+const pausedResultTitle = computed(() =>
+  hasProjection.value ? 'Projection paused' : 'Result needs attention',
+)
+const footerNote = computed(() => {
+  if (hasInvalidSnapshotLine.value) {
+    return supportsGearPlan.value
+      ? 'Correct over-cap values before sharing or saving this item.'
+      : 'Correct over-cap values before sharing this item.'
+  }
+
+  if (!hasResults.value) {
+    return supportsGearPlan.value
+      ? 'Enter one line to share, or three to save this item to your plan.'
+      : 'Enter one line to share this item.'
+  }
+
+  if (supportsGearPlan.value && !canSaveToGearPlan.value && linesNeededForPlan.value > 0) {
+    const count = linesNeededForPlan.value
+    return `Add ${count} more ${count === 1 ? 'line' : 'lines'} to save this item to your plan.`
+  }
+
   return ''
 })
 
-const emptyLineCount = computed(() => statType.value.length - rolledLineIndexes.value.length)
-const emptyLineSummary = computed(() =>
-  emptyLineCount.value === 1 ? '1 unfilled line' : `${emptyLineCount.value} unfilled lines`,
-)
-
-const qualityTargetDraft = ref('')
-const projectionTab = ref('summary')
-
-watch(qualityTargetPercent, (value) => {
-  qualityTargetDraft.value = Number(value).toFixed(2)
-}, { immediate: true })
-
-watch(() => results.value.qualityOdds.available, (available) => {
-  if (!available && projectionTab.value === 'quality') {
-    projectionTab.value = 'summary'
+watch(qualityOddsAvailable, (available) => {
+  if (!available && resultView.value === 'quality') {
+    resultView.value = 'comparison'
   }
 })
 
-function restoreQualityTargetDraft() {
-  qualityTargetDraft.value = Number(qualityTargetPercent.value).toFixed(2)
+watch(() => missingLineIndexes.value.length, (count) => {
+  if (!count) {
+    missingLinesOpen.value = false
+  }
+})
+
+function formatNumber(value, stat = '') {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) {
+    return String(value || '—')
+  }
+
+  if (decimalStats.includes(stat)) {
+    return decimalNumberFormatter.format(numericValue)
+  }
+
+  return numberFormatter.format(numericValue)
 }
 
-function commitQualityTarget() {
-  if (!setQualityTargetPercent(qualityTargetDraft.value)) {
-    restoreQualityTargetDraft()
-  }
-  else {
-    qualityTargetDraft.value = Number(qualityTargetPercent.value).toFixed(2)
-  }
+function formatRange(minValue, maxValue, formatter) {
+  const minText = formatter(minValue)
+  const maxText = formatter(maxValue)
+  return minText === maxText ? minText : `${minText}–${maxText}`
 }
 
-function cancelQualityTargetEdit(event) {
-  restoreQualityTargetDraft()
-  event?.currentTarget?.blur()
+function formatOverallValue(value) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return '—'
+  }
+
+  const rangeText = text.replaceAll(' ~ ', '–')
+  return rangeText.includes('%') ? rangeText : `${rangeText}%`
 }
 
-function updateQualityLineEnchantMethod(lineIndex, method) {
-  if (typeof method === 'string') {
-    setQualityLineEnchantMethod(lineIndex, method)
-  }
+function formatTierLabel(tier) {
+  return String(tier || '—').replaceAll(' ~ ', '–')
+}
+
+function shouldCompactOverallValue(value) {
+  return formatOverallValue(value).length >= 4
+}
+
+function getPotentialValueText(index) {
+  const row = results.value.individual[index]
+  const stat = statType.value[index]
+  return formatRange(
+    row.potentialMin,
+    row.potentialMax,
+    (value) => formatNumber(value, stat),
+  )
+}
+
+function getInvalidRowText(index) {
+  const stat = statType.value[index]
+  const level = currentLevelLabel.value === 'Current'
+    ? 'item'
+    : currentLevelLabel.value
+  return `Exceeds the ${level} maximum of ${formatNumber(getInputMaxValueText(stat), stat)}.`
 }
 </script>
 
 <template>
-  <section class="grid content-start gap-4">
-    <Card class="parade-card rounded-[22px]">
-      <CardHeader>
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle class="flex items-center gap-2 text-base">
-              <CalculatorIcon class="size-4" />
-              Results
-            </CardTitle>
-            <CardDescription>{{ pieceType }} {{ gearType }}</CardDescription>
-          </div>
+  <section class="grid content-start">
+    <Card class="parade-card gap-0 rounded-[22px] py-0">
+      <CardHeader class="px-5 py-5 sm:px-6 sm:py-6">
+        <CardTitle class="text-lg sm:text-xl">
+          <h2 id="gear-result-title">{{ panelTitle }}</h2>
+        </CardTitle>
 
-          <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-            <ToggleGroup
-              :model-value="resultMode"
-              type="single"
-              variant="outline"
-              size="sm"
-              class="motion-segmented grid grid-cols-2 gap-1 overflow-hidden rounded-full border-0 bg-muted p-1 sm:order-last"
-              aria-label="Result display mode"
-              @update:model-value="setResultMode"
+        <CardAction class="self-center">
+          <ToggleGroup
+            :model-value="resultMode"
+            type="single"
+            size="sm"
+            class="motion-segmented grid grid-cols-2 gap-1 overflow-hidden rounded-lg bg-muted p-1"
+            aria-label="Result display"
+            @update:model-value="setResultMode"
+          >
+            <MotionSegmentIndicator :count="2" :index="resultMode === 'rating' ? 1 : 0" />
+            <ToggleGroupItem
+              value="score"
+              class="rounded-md! border-0! bg-transparent! px-2.5 shadow-none! data-[state=on]:bg-transparent!"
             >
-              <MotionSegmentIndicator :count="2" :index="resultMode === 'rating' ? 1 : 0" />
-              <ToggleGroupItem
-                value="score"
-                class="rounded-full! border-0! bg-transparent! shadow-none! data-[state=on]:bg-transparent!"
-              >
-                Score
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="rating"
-                class="rounded-full! border-0! bg-transparent! shadow-none! data-[state=on]:bg-transparent!"
-              >
-                Rating
-              </ToggleGroupItem>
-            </ToggleGroup>
-
-            <ButtonGroup aria-label="Result actions">
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="!canShareSnapshot"
-                :title="snapshotRequirement || undefined"
-                :aria-describedby="snapshotRequirement ? 'snapshot-requirement' : undefined"
-                @click="openSnapshot($event.currentTarget)"
-              >
-                <CameraIcon data-icon="inline-start" />
-                Share snapshot
-              </Button>
-
-              <Button
-                v-if="supportsGearPlan"
-                variant="outline"
-                size="sm"
-                class="min-w-24"
-                :disabled="!canSaveToGearPlan"
-                @click="saveCurrentGearToPlan"
-              >
-                <Transition name="motion-swap" mode="out-in">
-                  <span
-                    :key="gearPlanSaveSucceeded ? 'saved' : 'save'"
-                    class="inline-flex items-center gap-1"
-                  >
-                    <CheckIcon v-if="gearPlanSaveSucceeded" data-icon="inline-start" />
-                    <BookmarkPlusIcon v-else data-icon="inline-start" />
-                    {{ gearPlanSaveSucceeded ? 'Added' : 'Add to plan' }}
-                  </span>
-                </Transition>
-              </Button>
-            </ButtonGroup>
-
-            <Transition name="motion-fade">
-              <p
-                v-if="snapshotRequirement"
-                id="snapshot-requirement"
-                class="w-full text-xs text-muted-foreground sm:text-right"
-                aria-live="polite"
-              >
-                {{ snapshotRequirement }}
-              </p>
-            </Transition>
-          </div>
-        </div>
+              Score
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="rating"
+              class="rounded-md! border-0! bg-transparent! px-2.5 shadow-none! data-[state=on]:bg-transparent!"
+            >
+              Rating
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </CardAction>
       </CardHeader>
 
-      <CardContent class="grid gap-4">
-        <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
-          <div class="rounded-2xl border border-info-border bg-info-surface p-4">
-            <div class="parade-section-kicker">Current strength</div>
-            <GearTierGuide />
-          </div>
-
-          <div class="min-h-32">
-            <Transition name="motion-swap" mode="out-in">
+      <Tabs v-model="resultView" class="min-w-0 gap-0">
+        <CardContent class="min-w-0 px-5 pb-0 sm:px-6">
+          <template v-if="hasResults">
+            <div
+              :class="cn(
+                'relative grid overflow-hidden rounded-2xl bg-gradient-to-br from-surface-inset to-info-surface/70',
+                showOutcomeProjection
+                  ? 'min-h-56 grid-cols-2 min-[360px]:min-h-44 min-[360px]:grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_8rem_minmax(0,1fr)]'
+                  : 'min-h-44 grid-cols-1 sm:grid-cols-2',
+              )"
+              role="group"
+              aria-label="Overall item result"
+            >
               <div
-                v-if="rolledLineIndexes.length > 0"
-                key="current-results"
-                class="min-h-32 divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset"
+                :class="cn(
+                  'relative flex min-w-0 flex-col justify-center px-2 py-5 min-[360px]:px-4 min-[360px]:py-7 sm:px-7 sm:py-8',
+                  !showOutcomeProjection && 'items-center text-center sm:items-start sm:text-left',
+                )"
               >
-                <TransitionGroup
-                  name="motion-list"
-                  tag="div"
-                  class="motion-list-collapse divide-y divide-border/60"
-                >
-                  <div
-                    v-for="index in rolledLineIndexes"
-                    :key="`result-${index}`"
-                    class="grid gap-2 bg-surface-raised/45 p-3"
-                  >
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                      <div class="min-w-0">
-                        <div class="truncate text-sm font-medium">
-                          {{ statType[index] }}
-                        </div>
-                        <div class="motion-tabular text-xs text-muted-foreground">
-                          {{ statInput[index] }}
-                        </div>
-                      </div>
-                      <MotionValue
-                        :motion-key="`${getLineScoreText(index)}:${results.individual[index].tier}`"
-                        class="justify-self-end"
-                      >
-                        <span class="flex items-center gap-2">
-                          <span class="motion-tabular text-sm font-semibold">{{ getLineScoreText(index) }}</span>
-                          <Badge variant="outline" :class="getTierClass(results.individual[index].tier)">
-                            {{ results.individual[index].tier }}
-                          </Badge>
-                        </span>
-                      </MotionValue>
-                    </div>
-                    <Progress :model-value="clamp(Number(results.individual[index].percent), 0, 100)" class="h-1.5" />
-                  </div>
-                </TransitionGroup>
+                <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                  {{ currentEndpointLabel }}
+                </span>
                 <div
-                  v-if="emptyLineCount > 0"
-                  class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
+                  v-if="hasInvalidSnapshotLine"
+                  class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-destructive sm:text-3xl"
                 >
-                  {{ emptyLineSummary }}
+                  Invalid
+                </div>
+                <div
+                  v-else
+                  class="mt-2 flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3"
+                >
+                  <MotionValue
+                    :motion-key="`${resultMode}:${currentOverallValue}`"
+                    as="div"
+                    class="min-w-0"
+                  >
+                    <span
+                      :class="cn(
+                        'motion-tabular font-bold tracking-[-0.055em] sm:text-5xl',
+                        currentOverallIsCompact ? 'text-2xl' : 'text-3xl',
+                      )"
+                    >
+                      {{ formatOverallValue(currentOverallValue) }}
+                    </span>
+                  </MotionValue>
+                  <GearTierGuide
+                    id-prefix="current"
+                    state-label="Current"
+                  />
                 </div>
               </div>
+
+              <div
+                v-if="showOutcomeProjection"
+                class="relative col-span-2 row-start-2 flex min-w-0 flex-col items-center justify-center px-4 pb-5 text-center min-[360px]:col-span-1 min-[360px]:row-start-auto min-[360px]:px-1 min-[360px]:pb-0 sm:px-3"
+                role="group"
+                aria-label="Projected gain"
+              >
+                <Badge
+                  variant="outline"
+                  class="motion-tabular h-7 border-success-border bg-success-surface px-2.5 font-bold text-success-foreground shadow-sm"
+                >
+                  {{ gainPointsText }}
+                </Badge>
+                <div class="mt-3 flex w-full items-center" aria-hidden="true">
+                  <span class="size-1.5 shrink-0 rounded-full bg-primary/55"></span>
+                  <Separator class="h-px flex-1 bg-primary/35" />
+                  <span class="size-1.5 shrink-0 rounded-full bg-primary"></span>
+                </div>
+              </div>
+
+              <div
+                v-if="showOutcomeProjection"
+                class="relative col-start-2 row-start-1 flex min-w-0 flex-col items-end justify-center px-2 py-5 text-right min-[360px]:col-start-auto min-[360px]:row-start-auto min-[360px]:px-4 min-[360px]:py-7 sm:px-7 sm:py-8"
+              >
+                <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                  {{ projectedEndpointLabel }}
+                </span>
+                <div class="mt-2 flex min-w-0 flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+                  <MotionValue
+                    :motion-key="`${resultMode}:${projectedOverallValue}`"
+                    as="div"
+                    class="min-w-0"
+                  >
+                    <span
+                      :class="cn(
+                        'motion-tabular font-bold tracking-[-0.06em] text-info-foreground',
+                        projectedOverallIsRange
+                          ? 'text-2xl sm:text-4xl'
+                          : projectedOverallIsCompact
+                            ? 'text-2xl sm:text-5xl'
+                            : 'text-3xl sm:text-5xl',
+                      )"
+                    >
+                      <template v-if="projectedOverallIsRange">
+                        <span class="hidden sm:inline">
+                          {{ formatOverallValue(projectedOverallValue) }}
+                        </span>
+                        <span
+                          :class="cn(
+                            'inline-block whitespace-nowrap leading-none sm:hidden',
+                            resultMode === 'rating' ? 'text-[1.05rem]' : 'text-2xl',
+                          )"
+                          :aria-label="formatOverallValue(projectedOverallValue)"
+                        >
+                          <span aria-hidden="true">{{ projectedOverallCompactRange }}</span>
+                        </span>
+                      </template>
+                      <template v-else>
+                        {{ formatOverallValue(projectedOverallValue) }}
+                      </template>
+                    </span>
+                  </MotionValue>
+                  <GearTierGuide
+                    id-prefix="projected"
+                    state-label="Projected"
+                    :tier="results.potentialTier"
+                    :score-percent="results.potentialScore"
+                    align="end"
+                  />
+                </div>
+              </div>
+
               <div
                 v-else
-                key="current-empty"
-                class="flex min-h-32 items-center gap-4 rounded-2xl border border-dashed bg-surface-inset p-5"
+                class="flex min-h-24 items-center justify-center gap-3 border-t border-border/60 px-5 py-5 sm:justify-start sm:border-l sm:border-t-0"
+                :role="hasInvalidSnapshotLine ? 'alert' : undefined"
               >
-                <img class="size-16 shrink-0 object-contain" src="/smart_priring.png" alt="">
+                <span
+                  :class="cn(
+                    'flex size-9 shrink-0 items-center justify-center rounded-full',
+                    hasInvalidSnapshotLine
+                      ? 'bg-destructive/10 text-destructive'
+                      : 'bg-success-surface text-success-foreground',
+                  )"
+                >
+                  <CircleAlertIcon
+                    v-if="hasInvalidSnapshotLine"
+                    class="size-4"
+                    aria-hidden="true"
+                  />
+                  <CheckIcon v-else class="size-4" aria-hidden="true" />
+                </span>
                 <div>
-                  <h3 class="font-bold">Add your first enchant value</h3>
-                  <p class="mt-1 max-w-md text-sm text-muted-foreground">Results update immediately as you enter each line. Start with the values shown on your item.</p>
+                  <div class="font-semibold">
+                    {{ hasInvalidSnapshotLine ? pausedResultTitle : 'Final state' }}
+                  </div>
+                  <div class="mt-0.5 text-xs text-muted-foreground">
+                    {{ hasInvalidSnapshotLine ? 'Fix the over-cap value below.' : 'No upgrades remaining.' }}
+                  </div>
                 </div>
               </div>
-            </Transition>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card v-if="getFinalUpgrade(gearType) !== ''" class="parade-card rounded-[22px]">
-      <Tabs v-model="projectionTab" class="min-w-0 gap-6">
-        <CardHeader>
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-              <CardTitle class="flex items-center gap-2 text-base">
-                <SparklesIcon class="size-4" />
-                {{ getFinalUpgrade(gearType) }} Projection
-              </CardTitle>
-              <CardDescription>
-                Lv.{{ getProjectionEnchantLevel() }} {{ pieceType }} {{ gearType }}
-              </CardDescription>
             </div>
+          </template>
 
-            <TabsList class="w-fit max-w-full" aria-label="Projection views">
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="lines">Lines</TabsTrigger>
-              <TabsTrigger v-if="results.qualityOdds.available" value="quality">Quality odds</TabsTrigger>
+          <Empty
+            v-else
+            class="min-h-40 flex-row justify-start bg-surface-inset px-5 py-6 text-left"
+          >
+            <EmptyMedia class="mb-0">
+              <img class="size-14 shrink-0 object-contain" src="/smart_priring.png" alt="">
+            </EmptyMedia>
+            <EmptyHeader class="items-start gap-1">
+              <EmptyTitle class="text-base">Add your first enchant value</EmptyTitle>
+              <EmptyDescription>
+                Enter a value from your item to see its result.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+
+          <div class="mt-6 flex min-w-0 items-end justify-between gap-3 border-b">
+            <TabsList
+              variant="line"
+              class="h-10 min-w-0 bg-transparent p-0"
+              aria-label="Result details"
+            >
+              <TabsTrigger value="comparison">Lines</TabsTrigger>
+              <TabsTrigger v-if="qualityOddsAvailable" value="quality">Quality odds</TabsTrigger>
             </TabsList>
+
+            <span
+              v-if="hasResults"
+              class="hidden pb-3 text-xs text-muted-foreground sm:inline"
+            >
+              {{ rolledLineIndexes.length }} of {{ statType.length }} entered
+            </span>
           </div>
-        </CardHeader>
 
-        <CardContent class="min-w-0">
-          <TabsContent value="summary" class="motion-tab-panel m-0">
-            <div class="grid gap-3 lg:grid-cols-[220px_1fr]">
-              <div class="parade-projection-card rounded-2xl border border-warning-border p-4">
-                <div class="text-sm text-muted-foreground">Projected</div>
-                <MotionValue
-                  :motion-key="`${resultMode}:${resultMode === 'rating' ? results.potentialDI : results.potentialScore}:${results.potentialTier}`"
-                  as="div"
-                  class="mt-1"
-                >
-                  <span class="flex items-end gap-2">
-                    <span class="motion-tabular text-4xl font-bold tracking-[-0.05em] text-warning-foreground">
-                      {{ resultMode === 'rating' ? results.potentialDI : results.potentialScore }}
-                    </span>
-                    <Badge variant="outline" :class="getTierClass(results.potentialTier)">
-                      {{ results.potentialTier }}
-                    </Badge>
-                  </span>
-                </MotionValue>
-                <MotionValue :motion-key="potentialGainText" as="div" class="motion-tabular mt-2 text-sm text-success-foreground">
-                  {{ potentialGainText }} gain
-                </MotionValue>
-                <Progress :model-value="potentialProgress" class="mt-4 h-2" />
-              </div>
+          <TabsContent
+            value="comparison"
+            class="motion-tab-panel m-0 min-w-0 pb-5"
+          >
+            <section v-if="hasResults" aria-label="Entered stat lines">
+              <Table
+                container-class="min-w-0"
+                class="block table-fixed md:table"
+                aria-label="Entered stat line results"
+              >
+                <colgroup v-if="hasProjection">
+                  <col class="w-[36%]">
+                  <col class="w-[27%]">
+                  <col class="w-[37%]">
+                </colgroup>
+                <colgroup v-else>
+                  <col class="w-[45%]">
+                  <col class="w-[55%]">
+                </colgroup>
 
-              <div class="min-h-32">
-                <Transition name="motion-swap" mode="out-in">
-                  <div
-                    v-if="rolledLineIndexes.length > 0"
-                    key="potential-results"
-                    class="h-full min-h-32 divide-y divide-border/60 overflow-hidden rounded-2xl border bg-surface-inset"
+                <TableHeader class="block md:table-header-group">
+                  <TableRow
+                    :class="cn(
+                      'grid border-b hover:bg-transparent md:table-row',
+                      hasProjection ? 'grid-cols-2' : 'grid-cols-1',
+                    )"
                   >
-                    <TransitionGroup
-                      name="motion-list"
-                      tag="div"
-                      class="motion-list-collapse divide-y divide-border/60"
+                    <TableHead
+                      id="stat-heading"
+                      scope="col"
+                      class="hidden h-11 px-0 text-[10px] uppercase tracking-[0.08em] text-muted-foreground md:table-cell"
+                    >
+                      Stat
+                    </TableHead>
+                    <TableHead
+                      id="current-endpoint-heading"
+                      scope="col"
+                      class="block h-auto px-0 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground md:table-cell md:h-11 md:py-0 md:font-medium"
+                    >
+                      {{ currentEndpointLabel }}
+                    </TableHead>
+                    <TableHead
+                      v-if="hasProjection"
+                      id="projected-endpoint-heading"
+                      scope="col"
+                      class="block h-auto px-0 py-3 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground md:table-cell md:h-11 md:py-0 md:text-left md:font-medium"
+                    >
+                      {{ projectedEndpointLabel }}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody class="block md:table-row-group">
+                  <TableRow
+                    v-for="index in rolledLineIndexes"
+                    :key="`comparison-${index}`"
+                    class="grid grid-cols-2 gap-x-6 border-b py-4 hover:bg-transparent md:table-row md:py-0"
+                    :data-invalid="isInputOverMax(index) || undefined"
+                  >
+                    <TableCell
+                      role="rowheader"
+                      headers="stat-heading"
+                      class="col-span-2 block min-w-0 whitespace-normal p-0 md:table-cell md:py-5 md:pr-5"
+                    >
+                      <div class="flex min-w-0 items-center gap-1 font-medium leading-tight">
+                        <span class="min-w-0">
+                          {{ statType[index] || `Stat line ${index + 1}` }}
+                        </span>
+                        <GearStatNoteDisclosure
+                          v-if="traitNotesByLineIndex.has(index)"
+                          :stat="statType[index]"
+                          :notes="traitNotesByLineIndex.get(index)"
+                        />
+                      </div>
+                      <p
+                        v-if="isInputOverMax(index)"
+                        class="mt-1.5 text-xs leading-relaxed text-destructive"
+                      >
+                        {{ getInvalidRowText(index) }}
+                      </p>
+                    </TableCell>
+
+                    <TableCell
+                      headers="current-endpoint-heading"
+                      :class="cn(
+                        'block min-w-0 whitespace-normal p-0 pt-3 md:table-cell md:py-5',
+                        hasProjection ? 'md:pr-5' : 'col-span-2',
+                      )"
+                    >
+                      <div class="motion-tabular flex min-w-0 flex-wrap items-center gap-2">
+                        <span
+                          :class="cn(
+                            'font-semibold',
+                            isInputOverMax(index) && 'text-destructive',
+                          )"
+                        >
+                          {{ formatNumber(statInput[index], statType[index]) }}
+                        </span>
+                        <span class="sr-only">Current tier:</span>
+                        <Badge
+                          v-if="!isInputOverMax(index)"
+                          variant="outline"
+                          :class="getTierClass(results.individual[index].tier)"
+                        >
+                          {{ formatTierLabel(results.individual[index].tier) }}
+                        </Badge>
+                      </div>
+                    </TableCell>
+
+                    <TableCell
+                      v-if="hasProjection"
+                      headers="projected-endpoint-heading"
+                      class="block min-w-0 whitespace-normal p-0 pt-3 text-right md:table-cell md:py-5 md:text-left"
                     >
                       <div
-                        v-for="index in rolledLineIndexes"
-                        :key="`potential-${index}`"
-                        class="grid gap-2 bg-surface-raised/45 p-3"
+                        v-if="!isInputOverMax(index)"
+                        class="motion-tabular flex min-w-0 flex-wrap items-center justify-end gap-2 md:justify-start"
                       >
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                          <div class="min-w-0">
-                            <div class="truncate text-sm font-medium">
-                              {{ statType[index] }}:
-                              <span class="motion-tabular">
-                                <template v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
-                                  {{ results.individual[index].potentialMin }}
-                                </template>
-                                <template v-else>
-                                  {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
-                                </template>
-                              </span>
-                            </div>
-                          </div>
-                          <MotionValue
-                            :motion-key="`${getPotentialLineText(index)}:${getPotentialLineTier(index)}`"
-                            class="justify-self-end"
-                          >
-                            <span class="flex items-center gap-2">
-                              <span class="motion-tabular text-sm font-semibold">{{ getPotentialLineText(index) }}</span>
-                              <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
-                                {{ getPotentialLineTier(index) }}
-                              </Badge>
-                            </span>
-                          </MotionValue>
-                        </div>
-                        <Progress :model-value="clamp(Number(results.individual[index].potentialMinPerc), 0, 100)" class="h-1.5" />
+                        <span class="min-w-0 font-semibold text-info-foreground">
+                          {{ getPotentialValueText(index) }}
+                        </span>
+                        <span class="sr-only">Projected tier:</span>
+                        <Badge
+                          variant="outline"
+                          :class="getTierClass(getPotentialLineTier(index))"
+                        >
+                          {{ formatTierLabel(getPotentialLineTier(index)) }}
+                        </Badge>
                       </div>
-                    </TransitionGroup>
-                    <div
-                      v-if="emptyLineCount > 0"
-                      class="bg-surface-inset px-3 py-2 text-xs text-muted-foreground"
-                    >
-                      {{ emptyLineSummary }}
-                    </div>
-                  </div>
-                  <div
-                    v-else
-                    key="potential-empty"
-                    class="flex h-full min-h-32 items-center rounded-2xl border border-dashed bg-surface-inset p-5"
-                  >
-                    <p class="text-sm text-muted-foreground">Your fully upgraded projection will appear here once at least one enchant value is entered.</p>
-                  </div>
-                </Transition>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="lines" class="motion-tab-panel m-0 min-w-0">
-            <Table container-class="max-h-[360px] min-w-0 rounded-lg border bg-surface-raised" class="min-w-[520px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Stat</TableHead>
-                  <TableHead>Current</TableHead>
-                  <TableHead>Max upgrade</TableHead>
-                  <TableHead>Tier</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-for="(_, index) in statType" :key="`line-table-${index}`">
-                  <TableCell class="font-medium">{{ statType[index] }}</TableCell>
-                  <TableCell>{{ statInput[index] || '-' }}</TableCell>
-                  <TableCell>
-                    <span v-if="results.individual[index].potentialMin === results.individual[index].potentialMax">
-                      {{ results.individual[index].potentialMin || '-' }}
-                    </span>
-                    <span v-else>
-                      {{ results.individual[index].potentialMin }} ~ {{ results.individual[index].potentialMax }}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" :class="getTierClass(getPotentialLineTier(index))">
-                      {{ getPotentialLineTier(index) }}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TabsContent>
-
-          <TabsContent v-if="results.qualityOdds.available" value="quality" class="motion-tab-panel m-0 grid min-w-0 gap-4">
-            <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] sm:items-end">
-              <div class="min-w-0">
-                <div class="text-sm text-muted-foreground">Chance to reach target</div>
-                <MotionValue
-                  :motion-key="results.qualityOdds.totalChanceText"
-                  as="div"
-                  class="motion-tabular mt-1 text-3xl font-semibold tracking-normal"
-                >
-                  {{ results.qualityOdds.totalChanceText }}
-                </MotionValue>
-              </div>
-
-              <div class="min-w-0">
-                <div class="text-xs text-muted-foreground">Target quality</div>
-                <div class="mt-1 flex items-center gap-1.5">
-                  <InputGroup class="h-9 min-w-0">
-                    <InputGroupInput
-                      v-model="qualityTargetDraft"
-                      type="number"
-                      inputmode="decimal"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      aria-label="Quality target percentage"
-                      class="motion-tabular"
-                      @blur="commitQualityTarget"
-                      @keydown.enter.prevent="$event.currentTarget.blur()"
-                      @keydown.esc.prevent="cancelQualityTargetEdit"
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>%</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="size-9 shrink-0"
-                        aria-label="Reset to SSS-equivalent target"
-                        @click="resetQualityTarget"
-                      >
-                        <RotateCcwIcon class="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Reset to SSS equivalent</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-
-            <dl
-              class="grid divide-y divide-border/60 overflow-hidden rounded-xl border bg-surface-inset md:divide-x md:divide-y-0"
-              :class="results.qualityOdds.showProjectedQuality
-                ? 'md:grid-cols-[1fr_1.4fr_1fr_1fr]'
-                : 'md:grid-cols-3'"
-            >
-              <div class="px-3 py-3">
-                <dt class="text-xs text-muted-foreground">Quality</dt>
-                <MotionValue :motion-key="results.qualityOdds.qualityText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
-                  {{ results.qualityOdds.qualityText }}
-                </MotionValue>
-              </div>
-              <div v-if="results.qualityOdds.showProjectedQuality" class="px-3 py-3">
-                <dt class="text-xs text-muted-foreground">Projected quality</dt>
-                <MotionValue :motion-key="results.qualityOdds.plannedQualityText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
-                  {{ results.qualityOdds.plannedQualityText }}
-                </MotionValue>
-              </div>
-              <div class="px-3 py-3">
-                <dt class="text-xs text-muted-foreground">Base rolls</dt>
-                <MotionValue :motion-key="results.qualityOdds.baseRollText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
-                  {{ results.qualityOdds.baseRollText }}
-                </MotionValue>
-              </div>
-              <div class="px-3 py-3 md:last:pr-0">
-                <dt class="text-xs text-muted-foreground">Full survival</dt>
-                <MotionValue :motion-key="results.qualityOdds.survivalChanceText" as="dd" class="motion-tabular mt-1 text-lg font-semibold">
-                  {{ results.qualityOdds.survivalChanceText }}
-                </MotionValue>
-              </div>
-            </dl>
-
-            <Table container-class="max-h-[320px] min-w-0 rounded-lg border bg-surface-raised" class="min-w-[660px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead class="w-[104px]">Order</TableHead>
-                  <TableHead>Stat</TableHead>
-                  <TableHead class="w-[210px]">
-                    {{ currentOddsEnchantMethodOptions.length > 1 ? 'Roll method / state' : 'Roll state' }}
-                  </TableHead>
-                  <TableHead>Fully upgraded value</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TransitionGroup name="motion-list">
-                  <TableRow v-for="(line, position) in results.qualityOdds.lines" :key="`quality-line-${line.index}`">
-                    <TableCell>
-                      <div class="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="touch-target size-7"
-                          :disabled="position === 0"
-                          title="Move earlier"
-                          aria-label="Move earlier"
-                          @click="moveQualityOddsLine(position, -1)"
-                        >
-                          <ArrowUpIcon class="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="touch-target size-7"
-                          :disabled="position === results.qualityOdds.lines.length - 1"
-                          title="Move later"
-                          aria-label="Move later"
-                          @click="moveQualityOddsLine(position, 1)"
-                        >
-                          <ArrowDownIcon class="size-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell class="font-medium">{{ line.stat }}</TableCell>
-                    <TableCell>
-                      <ToggleGroup
-                        v-if="currentOddsEnchantMethodOptions.length > 1 && line.status === 'new'"
-                        type="single"
-                        orientation="horizontal"
-                        :spacing="1"
-                        :model-value="qualityLineEnchantMethods[line.index]"
-                        class="grid h-11 w-[190px] grid-cols-2 gap-1 rounded-md bg-surface-inset p-1"
-                        :aria-label="`${line.stat} roll method`"
-                        @update:model-value="updateQualityLineEnchantMethod(line.index, $event)"
-                      >
-                        <ToggleGroupItem
-                          v-for="method in currentOddsEnchantMethodOptions"
-                          :key="method.value"
-                          :value="method.value"
-                          class="h-9 min-w-0 flex-1 flex-col gap-0 rounded-sm px-1 text-xs leading-none text-muted-foreground shadow-none hover:bg-surface-raised/70 hover:text-foreground data-[state=on]:bg-surface-raised data-[state=on]:text-foreground data-[state=on]:shadow-sm"
-                          :aria-label="`${method.label}: ${method.successRate * 100}% success rate for ${line.stat}`"
-                        >
-                          <span class="font-medium">{{ method.label }}</span>
-                          <span class="motion-tabular mt-1 text-[11px] text-muted-foreground">{{ method.successRate * 100 }}%</span>
-                        </ToggleGroupItem>
-                      </ToggleGroup>
-                      <span v-else :class="getRollStatusClass(line.status)">{{ line.rollText }}</span>
-                    </TableCell>
-                    <TableCell class="motion-tabular">
-                      <span>{{ line.range }}</span>
-                      <span
-                        v-if="Number.isFinite(line.maxRollPercent)"
-                        class="ml-1 font-medium"
-                        :class="getMaxRollPercentClass(line.maxRollPercent)"
-                      >
-                        [{{ formatMaxRollPercent(line.maxRollPercent) }}]
-                      </span>
+                      <span v-else class="text-muted-foreground">—</span>
                     </TableCell>
                   </TableRow>
-                </TransitionGroup>
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+
+              <Collapsible
+                v-if="missingLineIndexes.length"
+                v-model:open="missingLinesOpen"
+                class="border-t"
+              >
+                <CollapsibleTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    class="h-auto w-full justify-start rounded-none px-0 py-3 text-left"
+                  >
+                    <CirclePlusIcon data-icon="inline-start" aria-hidden="true" />
+                    <span class="min-w-0 flex-1 text-xs font-semibold">
+                      {{ missingLinesLabel }}
+                    </span>
+                    <ChevronDownIcon
+                      data-icon="inline-end"
+                      :class="cn('transition-transform', missingLinesOpen && 'rotate-180')"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent class="rounded-xl bg-surface-inset">
+                  <template
+                    v-for="(index, missingIndex) in missingLineIndexes"
+                    :key="`missing-${index}`"
+                  >
+                    <Separator v-if="missingIndex" />
+                    <div class="flex min-w-0 items-center gap-3 px-3 py-2.5">
+                      <span class="motion-tabular w-5 shrink-0 text-xs text-muted-foreground">
+                        {{ index + 1 }}
+                      </span>
+                      <span class="truncate text-xs font-medium">
+                        {{ statType[index] || `Stat line ${index + 1}` }}
+                      </span>
+                    </div>
+                  </template>
+                </CollapsibleContent>
+              </Collapsible>
+            </section>
+          </TabsContent>
+
+          <TabsContent
+            v-if="qualityOddsAvailable"
+            value="quality"
+            class="motion-tab-panel m-0 min-w-0 py-5"
+          >
+            <GearScoreQualityOdds />
           </TabsContent>
         </CardContent>
       </Tabs>
-    </Card>
 
+      <CardFooter
+        class="rounded-b-none flex-col items-stretch justify-between gap-3 border-t bg-surface-inset px-5 py-4 sm:flex-row sm:items-center sm:px-6"
+      >
+        <p
+          v-if="footerNote"
+          id="result-footer-note"
+          :class="cn(
+            'max-w-md text-xs leading-relaxed',
+            hasInvalidSnapshotLine ? 'text-destructive' : 'text-muted-foreground',
+          )"
+          aria-live="polite"
+        >
+          {{ footerNote }}
+        </p>
+
+        <div
+          :class="cn(
+            'flex w-full items-center gap-2 sm:w-auto',
+            !footerNote && 'sm:ml-auto',
+          )"
+          role="group"
+          aria-label="Result actions"
+        >
+          <Button
+            :variant="canShareSnapshot ? 'default' : 'outline'"
+            size="sm"
+            class="flex-1 sm:flex-none"
+            :disabled="!canShareSnapshot"
+            :aria-describedby="footerNote ? 'result-footer-note' : undefined"
+            @click="openSnapshot($event.currentTarget)"
+          >
+            <CameraIcon data-icon="inline-start" aria-hidden="true" />
+            Share
+          </Button>
+
+          <Button
+            v-if="supportsGearPlan"
+            variant="outline"
+            size="sm"
+            class="min-w-28 flex-1 sm:flex-none"
+            :disabled="!canSaveToGearPlan"
+            :aria-describedby="footerNote ? 'result-footer-note' : undefined"
+            @click="saveCurrentGearToPlan"
+          >
+            <Transition name="motion-swap" mode="out-in">
+              <span
+                :key="gearPlanSaveSucceeded ? 'saved' : 'save'"
+                class="inline-flex items-center gap-1"
+              >
+                <CheckIcon
+                  v-if="gearPlanSaveSucceeded"
+                  data-icon="inline-start"
+                  aria-hidden="true"
+                />
+                <BookmarkPlusIcon
+                  v-else
+                  data-icon="inline-start"
+                  aria-hidden="true"
+                />
+                {{ gearPlanSaveSucceeded ? 'Saved' : 'Save to plan' }}
+              </span>
+            </Transition>
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   </section>
 </template>

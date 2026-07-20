@@ -325,7 +325,7 @@ watch(
           class="text-xs text-destructive"
           aria-live="polite"
         >
-          Value is over the final maximum.
+          Value is over the selected level maximum.
         </p>
       </Transition>
     </div>

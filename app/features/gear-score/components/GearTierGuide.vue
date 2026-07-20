@@ -1,32 +1,73 @@
 <script setup>
 import {
-  formatTierProgressText,
-  getTierGuideDetails,
-} from '@/features/gear-score/tier-guide.js'
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  watch,
+} from 'vue'
+import { getTierGuideDetails } from '@/features/gear-score/tier-guide.js'
+
+const props = defineProps({
+  idPrefix: {
+    type: String,
+    default: 'current',
+  },
+  stateLabel: {
+    type: String,
+    default: 'Current',
+  },
+  tier: {
+    type: String,
+    default: '',
+  },
+  scorePercent: {
+    type: [String, Number],
+    default: null,
+  },
+  align: {
+    type: String,
+    default: 'start',
+  },
+})
 
 const {
   gearType,
   pieceType,
-  resultMode,
   results,
   tierGuideRows,
   selectedTierRows,
-  totalProgress,
   getTierClass,
 } = useGearScoreCalculatorContext()
 
 const tierPreviewOpen = ref(false)
 const tierGuideOpen = ref(false)
 const tierGuideTab = ref('evaluation')
+const tierTrigger = ref(null)
+const suppressTierPreview = ref(false)
+let previewSuppressionTimeout = null
 
-let triggerPointerType = ''
-let previewWasOpenOnPointerDown = false
+const dialogId = computed(() => `${props.idPrefix}-tier-guide-dialog`)
+const displayTier = computed(() => props.tier || results.value.tier || '—')
+const displayTierLabel = computed(() =>
+  String(displayTier.value).replaceAll(' ~ ', '–'),
+)
+const activeTier = computed(() => String(displayTier.value).split(/\s+/)[0])
+const hasTierRange = computed(() => String(displayTier.value).includes('~'))
+const markerLabel = computed(() => props.stateLabel === 'Current' ? 'Current' : 'Projected')
+const tierAriaLabel = computed(() =>
+  `${markerLabel.value} overall tier ${String(displayTier.value).replaceAll(' ~ ', ' to ')}. Open tier guide.`,
+)
+
+const displayScorePercent = computed(() =>
+  formatPercent(props.scorePercent ?? results.value.percent).replaceAll(' ~ ', '–'),
+)
 
 const tierDetails = computed(() => getTierGuideDetails({
   tierRows: selectedTierRows.value,
   guideRows: tierGuideRows,
-  currentTier: results.value.tier,
-  currentPercent: results.value.percent,
+  currentTier: activeTier.value,
+  currentPercent: Number.parseFloat(String(props.scorePercent ?? results.value.percent)),
 }))
 
 const pointsToNextText = computed(() => {
@@ -39,148 +80,148 @@ const pointsToNextText = computed(() => {
 })
 
 const nextTierText = computed(() => {
-  const { nextTierRow, nextTierThreshold } = tierDetails.value
-  if (!nextTierRow || nextTierThreshold === null) {
+  if (hasTierRange.value) {
+    return 'The projected tier range reflects the possible fully upgraded roll values.'
+  }
+
+  const { currentTierRow, nextTierRow, nextTierThreshold } = tierDetails.value
+  if (!currentTierRow) {
+    return 'Tier progress unavailable'
+  }
+
+  if (!nextTierRow) {
     return 'Highest listed tier reached'
+  }
+
+  if (nextTierThreshold === null) {
+    return `${nextTierRow.tier} threshold unavailable`
   }
 
   return `${nextTierRow.tier} starts at ${nextTierThreshold}% · ${pointsToNextText.value}`
 })
 
-const tierProgressText = computed(() => formatTierProgressText(tierDetails.value))
-
-function handleTierPointerDown(event) {
-  triggerPointerType = event.pointerType
-  previewWasOpenOnPointerDown = tierPreviewOpen.value
-}
-
-function resetTierPointerState() {
-  triggerPointerType = ''
-  previewWasOpenOnPointerDown = false
-}
-
-function handleTierTriggerClick(event) {
-  const isKeyboardActivation = event.detail === 0
-  const shouldOnlyPreview = !isKeyboardActivation
-    && triggerPointerType === 'touch'
-    && !previewWasOpenOnPointerDown
-  resetTierPointerState()
-
-  if (shouldOnlyPreview) {
-    return
+function formatPercent(value) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return '—'
   }
 
+  return text.includes('%') ? text : `${text}%`
+}
+
+function formatScoreBand(value) {
+  return String(value ?? '—').replaceAll(' - ', '–')
+}
+
+function openTierGuide() {
   tierPreviewOpen.value = false
   tierGuideOpen.value = true
 }
 
 function handleTierPreviewOpen(open) {
-  if (open && tierGuideOpen.value) {
+  if (open && (tierGuideOpen.value || suppressTierPreview.value)) {
     return
   }
 
   tierPreviewOpen.value = open
 }
 
-watch(tierGuideOpen, (isOpen) => {
+watch(tierGuideOpen, async (isOpen, wasOpen) => {
   if (isOpen) {
     tierPreviewOpen.value = false
+    return
   }
+
+  if (wasOpen) {
+    suppressTierPreview.value = true
+    await nextTick()
+    tierTrigger.value?.focus({ preventScroll: true })
+
+    clearTimeout(previewSuppressionTimeout)
+    previewSuppressionTimeout = setTimeout(() => {
+      suppressTierPreview.value = false
+    }, 350)
+  }
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(previewSuppressionTimeout)
 })
 </script>
 
 <template>
-  <div>
-    <MotionValue
-      :motion-key="`${resultMode}:${resultMode === 'rating' ? results.DI : results.percent}:${results.tier}`"
-      as="div"
-      class="mt-1"
+  <div class="inline-flex">
+    <HoverCard
+      :open="tierPreviewOpen"
+      :open-delay="250"
+      :close-delay="100"
+      :enable-touch="false"
+      @update:open="handleTierPreviewOpen"
     >
-      <span class="flex items-end gap-2">
-        <span class="motion-tabular text-5xl font-bold tracking-[-0.06em] text-info-foreground">
-          {{ resultMode === 'rating' ? `${results.DI}%` : `${results.percent}%` }}
-        </span>
-
-        <HoverCard
-          :open="tierPreviewOpen"
-          :open-delay="250"
-          :close-delay="100"
-          :enable-touch="true"
-          @update:open="handleTierPreviewOpen"
+      <HoverCardTrigger as-child>
+        <Button
+          as-child
+          variant="ghost"
+          size="icon"
+          class="h-11 w-auto min-w-11 rounded-full p-0 sm:h-8 sm:min-w-0 sm:px-1.5"
         >
-          <HoverCardTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              class="rounded-full"
-              :aria-label="`Tier ${results.tier} details and guide`"
-              aria-haspopup="dialog"
-              :aria-expanded="tierGuideOpen"
-              aria-controls="tier-guide-dialog"
-              aria-describedby="tier-progress-summary"
-              @pointerdown="handleTierPointerDown"
-              @pointercancel="resetTierPointerState"
-              @click="handleTierTriggerClick"
-            >
-              <Badge variant="outline" :class="getTierClass(results.tier)">
-                {{ results.tier }}
-              </Badge>
-            </Button>
-          </HoverCardTrigger>
-
-          <HoverCardContent
-            side="bottom"
-            align="start"
-            :side-offset="8"
-            :collision-padding="12"
-            class="w-80 p-3"
+          <button
+            ref="tierTrigger"
+            type="button"
+            :aria-label="tierAriaLabel"
+            aria-haspopup="dialog"
+            :aria-expanded="tierGuideOpen"
+            :aria-controls="dialogId"
+            @click="openTierGuide"
           >
-            <div class="flex flex-col gap-3">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="font-semibold">Tier {{ results.tier }}</div>
-                  <div class="motion-tabular text-xs text-muted-foreground">
-                    {{ results.percent }}% score
-                    <template v-if="tierDetails.currentTierRow">
-                      · {{ tierDetails.currentTierRow.Score }} band
-                    </template>
-                  </div>
-                </div>
-                <Badge variant="outline" :class="getTierClass(results.tier)">
-                  {{ results.tier }}
-                </Badge>
-              </div>
+            <Badge
+              variant="outline"
+              class="h-6 px-2.5 font-semibold"
+              :class="getTierClass(displayTier)"
+            >
+              Tier {{ displayTierLabel }}
+            </Badge>
+          </button>
+        </Button>
+      </HoverCardTrigger>
 
-              <Separator />
-
-              <div>
-                <div class="font-medium">
-                  {{ tierDetails.currentGuideRow?.comment || 'Current item tier' }}
-                </div>
-                <div class="mt-1 text-xs text-muted-foreground">{{ nextTierText }}</div>
-              </div>
-
-              <p class="text-xs text-muted-foreground">
-                Overall item tier uses the five-line (Penta) threshold. Activate for the full guide; on touch, tap the tier again.
-              </p>
+      <HoverCardContent
+        side="bottom"
+        :align="align"
+        :side-offset="8"
+        :collision-padding="12"
+        class="w-80 p-3"
+      >
+        <div class="flex flex-col gap-3">
+          <div>
+            <div class="font-semibold">{{ markerLabel }} overall tier {{ displayTierLabel }}</div>
+            <div class="motion-tabular text-xs text-muted-foreground">
+              {{ displayScorePercent }} score
+              <template v-if="tierDetails.currentTierRow && !hasTierRange">
+                · {{ formatScoreBand(tierDetails.currentTierRow.Score) }} band
+              </template>
             </div>
-          </HoverCardContent>
-        </HoverCard>
-      </span>
-    </MotionValue>
+          </div>
 
-    <Progress :model-value="totalProgress" class="mt-4 h-2" />
-    <p id="tier-progress-summary" class="motion-tabular mt-3 text-xs text-muted-foreground">
-      {{ tierProgressText }}
-    </p>
+          <Separator />
+
+          <div>
+            <div class="font-medium">
+              {{ tierDetails.currentGuideRow?.comment || `${stateLabel} item tier` }}
+            </div>
+            <div class="mt-1 text-xs text-muted-foreground">{{ nextTierText }}</div>
+          </div>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
 
     <Dialog v-model:open="tierGuideOpen">
       <DialogContent
-        id="tier-guide-dialog"
+        :id="dialogId"
         class="max-h-[calc(100dvh-1rem)] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:!max-w-5xl"
       >
         <DialogHeader class="px-5 py-4 pr-16 sm:px-6 sm:pr-16">
-          <DialogTitle>Tier guide</DialogTitle>
+          <DialogTitle>{{ stateLabel }} tier guide</DialogTitle>
           <DialogDescription>
             {{ pieceType }} {{ gearType }} · overall tier uses the five-line threshold
           </DialogDescription>
@@ -188,14 +229,14 @@ watch(tierGuideOpen, (isOpen) => {
 
         <div class="min-h-0 min-w-0 overflow-y-auto px-4 pb-5 sm:px-6 sm:pb-6">
           <div class="grid gap-3 rounded-2xl border bg-surface-inset p-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
-            <Badge variant="outline" :class="getTierClass(results.tier)">
-              Tier {{ results.tier }}
+            <Badge variant="outline" :class="getTierClass(displayTier)">
+              Tier {{ displayTierLabel }}
             </Badge>
             <div class="min-w-0">
               <div class="motion-tabular font-medium">
-                {{ results.percent }}% score
-                <template v-if="tierDetails.currentTierRow">
-                  · {{ tierDetails.currentTierRow.Score }} band
+                {{ displayScorePercent }} score
+                <template v-if="tierDetails.currentTierRow && !hasTierRange">
+                  · {{ formatScoreBand(tierDetails.currentTierRow.Score) }} band
                 </template>
               </div>
               <div class="mt-1 text-sm text-muted-foreground">{{ nextTierText }}</div>
@@ -235,7 +276,9 @@ watch(tierGuideOpen, (isOpen) => {
                       <TableCell>
                         <div class="flex items-center gap-2">
                           <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
-                          <span v-if="tierDetails.currentGuideRow === row" class="text-xs text-muted-foreground">Current</span>
+                          <span v-if="tierDetails.currentGuideRow === row" class="text-xs text-muted-foreground">
+                            {{ markerLabel }}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>{{ row.comment }}</TableCell>
@@ -255,37 +298,48 @@ watch(tierGuideOpen, (isOpen) => {
                 </p>
                 <Table
                   container-class="max-h-[52vh] min-w-0 rounded-lg border bg-surface-raised"
-                  class="min-w-[720px] [&_td]:py-2.5 [&_th]:h-10"
+                  class="table-fixed min-w-[640px] [&_td]:py-2.5 [&_th]:h-10"
                 >
+                  <colgroup>
+                    <col class="w-28">
+                    <col class="w-24">
+                    <col class="w-28">
+                    <col class="w-20">
+                    <col class="w-20">
+                    <col class="w-20">
+                    <col class="w-20">
+                  </colgroup>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Score</TableHead>
                       <TableHead>Tier</TableHead>
+                      <TableHead>Penta (used)</TableHead>
                       <TableHead>Single</TableHead>
                       <TableHead>Duo</TableHead>
                       <TableHead>Trio</TableHead>
                       <TableHead>Quad</TableHead>
-                      <TableHead>Penta (used)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     <TableRow
                       v-for="row in selectedTierRows"
                       :key="row.tier"
-                      :data-state="row.tier === results.tier ? 'selected' : undefined"
+                      :data-state="row.tier === activeTier ? 'selected' : undefined"
                     >
                       <TableCell>{{ row.Score }}</TableCell>
                       <TableCell>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
                           <Badge variant="outline" :class="getTierClass(row.tier)">{{ row.tier }}</Badge>
-                          <span v-if="row.tier === results.tier" class="text-xs text-muted-foreground">Current</span>
+                          <span v-if="row.tier === activeTier" class="text-xs text-muted-foreground">
+                            {{ markerLabel }}
+                          </span>
                         </div>
                       </TableCell>
+                      <TableCell>{{ row.Penta }}</TableCell>
                       <TableCell>{{ row.Single }}</TableCell>
                       <TableCell>{{ row.Duo }}</TableCell>
                       <TableCell>{{ row.Trio }}</TableCell>
                       <TableCell>{{ row.Quad }}</TableCell>
-                      <TableCell>{{ row.Penta }}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>

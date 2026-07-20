@@ -6,7 +6,6 @@ import {
   RefreshCcwIcon,
   ScanTextIcon,
   SearchIcon,
-  ShieldCheckIcon,
   SparklesIcon,
 } from '@lucide/vue'
 import { computed, ref } from 'vue'
@@ -25,10 +24,8 @@ const {
   currentItem,
   statOptions,
   selectedImage,
-  selectedTraitRows,
   currentRecommendations,
   currentInputEnchantLevelOptions,
-  getAsset,
   isStatSelectedOnOtherLine,
   selectStatType,
   supportsInputEnchantLevel,
@@ -297,32 +294,5 @@ function setStatPickerOpen(index, value) {
     </Card>
 
     <GearImageImportDialog v-model:open="imageImportOpen" />
-
-    <Card class="parade-card rounded-[22px]">
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2 text-base">
-          <ShieldCheckIcon class="size-4" />
-          Stat Notes
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div v-if="selectedTraitRows.length" class="grid gap-2">
-          <div
-            v-for="trait in selectedTraitRows"
-            :key="trait.id"
-            class="flex gap-3 rounded-lg border bg-surface-inset p-3"
-          >
-            <img class="size-8 shrink-0" :src="getAsset(trait.image)" alt="">
-            <div>
-              <div class="text-sm font-medium">{{ trait.label }}</div>
-              <div class="text-sm text-muted-foreground">{{ trait.text }}</div>
-            </div>
-          </div>
-        </div>
-        <div v-else class="rounded-lg border border-dashed bg-surface-inset p-4 text-sm text-muted-foreground">
-          No special stat notes for the current rolled lines.
-        </div>
-      </CardContent>
-    </Card>
   </section>
 </template>

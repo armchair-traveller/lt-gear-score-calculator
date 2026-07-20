@@ -87,6 +87,7 @@ export const traitCatalog = [
     image: 'Note_Back.png',
     label: 'Back attack',
     text: 'Back Attack Damage only works with direct damage and asks for reliable positioning.',
+    appliesTo: ['Back Attack Damage'],
     test: (stats) => stats.includes('Back Attack Damage'),
   },
   {
@@ -94,6 +95,7 @@ export const traitCatalog = [
     image: 'Note_Penetration.png',
     label: 'Penetration',
     text: 'Defense Penetration does not function with summons and depends on your status-window penetration.',
+    appliesTo: ['Defense Penetration'],
     test: (stats) => stats.includes('Defense Penetration'),
   },
   {
@@ -101,6 +103,7 @@ export const traitCatalog = [
     image: 'Note_Attack.png',
     label: 'Attack',
     text: 'Multiple Attack/Intensity lines usually favor direct-hit classes.',
+    appliesTo: ['Attack/Intensity', 'Attack/Intensity %'],
     test: (stats) => stats.includes('Attack/Intensity') + stats.includes('Attack/Intensity %') > 1,
   },
   {
@@ -108,6 +111,7 @@ export const traitCatalog = [
     image: 'Note_Strength.png',
     label: 'Strength',
     text: 'Multiple Strength/Magic lines usually favor summon-heavy classes.',
+    appliesTo: ['Basic Stats %', 'Strength/Magic', 'Basic Stats'],
     test: (stats) =>
       stats.includes('Basic Stats %') + stats.includes('Strength/Magic') + stats.includes('Basic Stats') > 1,
   },
@@ -116,6 +120,7 @@ export const traitCatalog = [
     image: 'Note_Minimum.png',
     label: 'Minimum',
     text: 'Minimum Damage only helps while your minimum damage is below your maximum damage.',
+    appliesTo: ['Minimum Damage'],
     test: (stats) => stats.includes('Minimum Damage'),
   },
   {
@@ -123,6 +128,7 @@ export const traitCatalog = [
     image: 'Note_HP.png',
     label: 'HP',
     text: 'HP and stamina lines add survivability but no offensive score.',
+    appliesTo: ['Maximum HP %', 'Basic Stats', 'Basic Stats %', 'Stamina'],
     test: (stats) =>
       stats.includes('Maximum HP %') ||
       stats.includes('Basic Stats') ||
