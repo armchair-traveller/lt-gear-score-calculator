@@ -474,7 +474,9 @@ export function useGearScoreCalculator() {
 
     const options = Object.keys(item.Stats ?? {})
     const usedStats = new Set()
-    const importLines = Array.isArray(importResult.lines) ? importResult.lines.slice(0, 5) : []
+    const importLines = Array.isArray(importResult.lines)
+      ? importResult.lines.filter((line) => !line.ignored).slice(0, 5)
+      : []
     const nextStatType = []
     const nextStatInput = []
 

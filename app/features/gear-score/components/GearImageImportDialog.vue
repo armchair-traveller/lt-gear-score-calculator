@@ -21,6 +21,9 @@ const emit = defineEmits(['update:open'])
 const { gears, gearType, pieceType, applyGearImageImport } = useGearScoreCalculatorContext()
 
 const otherStat = 'Other (Non-damaging)'
+const maxPreparedImageBytes = 8 * 1024 * 1024
+const maxPreparedImageEdge = 2048
+const maxImageScale = 4
 const openProxy = computed({
   get: () => props.open,
   set: (value) => emit('update:open', value),
@@ -198,8 +201,10 @@ async function parseImage() {
   error.value = ''
 
   try {
+    const selectedImage = selectedFile.value
+    const preparedImage = await prepareImageForImport(selectedImage)
     const body = new FormData()
-    body.append('image', selectedFile.value)
+    body.append('image', preparedImage, selectedImage.name)
     body.append('gearType', gearType.value)
     body.append('pieceType', pieceType.value)
 
@@ -231,6 +236,7 @@ function normalizeClientResult(result) {
       value: line.value || '',
       stat: statOptions.includes(line.stat) ? line.stat : '',
       ignored: Boolean(line.ignored),
+      userEdited: false,
     })),
   }
 }
@@ -242,6 +248,7 @@ function updateLineStat(index, stat) {
   }
 
   line.stat = stat
+  line.userEdited = true
   if (stat === otherStat && !Number(line.value)) {
     line.value = 1
   }
@@ -252,6 +259,7 @@ function setLineValue(index, value) {
   const line = importResult.value?.lines?.[index]
   if (line) {
     line.value = value
+    line.userEdited = true
   }
 }
 
@@ -279,7 +287,11 @@ async function markLineEdited(line) {
 }
 
 function isLineValid(line) {
-  return previewStatOptions.value.includes(line.stat) && Number(line.value) > 0
+  return (
+    previewStatOptions.value.includes(line.stat) &&
+    Number(line.value) > 0 &&
+    (line.status !== 'needs_review' || line.userEdited)
+  )
 }
 
 function isLineDuplicate(line) {
@@ -339,6 +351,56 @@ function getLineShellClass(line) {
 
 function getRollText(line) {
   return Number(line.rollPercent) > 0 ? `${line.rollPercent}%` : '-'
+}
+
+function getLineSourceText(line) {
+  const sourceText = line.rawText || 'No source text'
+  if (line.status === 'needs_review' && !line.userEdited && line.reason) {
+    return `${sourceText} · ${line.reason}`
+  }
+
+  return line.rawText || line.reason || sourceText
+}
+
+async function prepareImageForImport(file) {
+  if (!import.meta.client || !file || typeof createImageBitmap !== 'function') {
+    return file
+  }
+
+  let bitmap
+  try {
+    bitmap = await createImageBitmap(file)
+    const longestEdge = Math.max(bitmap.width, bitmap.height)
+    const scale = Math.max(1, Math.min(maxImageScale, Math.floor(maxPreparedImageEdge / longestEdge)))
+    if (scale <= 1) {
+      return file
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width * scale
+    canvas.height = bitmap.height * scale
+    const context = canvas.getContext('2d')
+    if (!context) {
+      return file
+    }
+
+    context.imageSmoothingEnabled = false
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+
+    const preparedImage = await getCanvasBlob(canvas, file.type)
+    return preparedImage && preparedImage.size <= maxPreparedImageBytes ? preparedImage : file
+  }
+  catch {
+    return file
+  }
+  finally {
+    bitmap?.close()
+  }
+}
+
+function getCanvasBlob(canvas, type) {
+  const quality = ['image/jpeg', 'image/webp'].includes(type) ? 1 : undefined
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality))
 }
 
 function applyImport() {
@@ -541,7 +603,7 @@ function revokePreviewUrl() {
                         <Badge v-if="getRollText(line) !== '-'" variant="outline"> Roll {{ getRollText(line) }} </Badge>
                       </div>
                       <div class="mt-1 truncate text-xs text-muted-foreground">
-                        {{ line.rawText || line.reason || 'No source text' }}
+                        {{ getLineSourceText(line) }}
                       </div>
                     </div>
 
