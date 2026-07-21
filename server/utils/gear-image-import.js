@@ -88,6 +88,7 @@ export function getExtractorPrompt() {
     'Keep the lines items in the same top-to-bottom order as the image.',
     'Read every value character literally. A percent sign immediately after a value is a unit, not the digit 8: "+9%" must never become "+98".',
     'Keep every digit in large values, including repeated or trailing digits in five-digit values such as "+24011".',
+    'Count the digits in each value and verify the full digit sequence against the image before responding; do not drop a narrow or faint digit between other digits.',
     'The percentage in square brackets is a separate roll percentage; never merge it into the stat value.',
     'Ignore base item stats, durability, enchant limit, seals, awakening lines, titles, and unrelated UI text.',
     'If the full equipment tooltip is visible, infer the gear category and piece from title, required level, and piece wording.',
@@ -171,6 +172,71 @@ export function getExtractorSchema(gearCatalog) {
   }
 }
 
+export function getValueVerificationRequests(extracted, rowNumbers) {
+  const lines = Array.isArray(extracted?.lines) ? extracted.lines : []
+  return rowNumbers.map((rowNumber) => ({
+    rowNumber,
+    level: normalizeNumber(lines[rowNumber - 1]?.level),
+    statText: String(lines[rowNumber - 1]?.statText || '').trim(),
+    previousStatText: String(lines[rowNumber - 2]?.statText || '').trim(),
+    nextStatText: String(lines[rowNumber]?.statText || '').trim(),
+  }))
+}
+
+export function getValueVerificationPrompt() {
+  return [
+    'Re-read only the requested LaTale enchant option rows from the image.',
+    'Count every visible row that begins with "Lv." from top to bottom, starting at 1, including any Lv. 1 unenchanted placeholder.',
+    'Use the row anchors in the user message to locate each requested row.',
+    'For each requested row, transcribe the complete visible row character-for-character in rawText.',
+    'Read the digits between the plus sign and the opening square bracket independently from the percentage inside square brackets.',
+    'Do not infer or correct a value from the stat name, roll percentage, expected range, or any previous reading.',
+    'Return each requested row exactly once and in ascending row-number order.',
+  ].join('\n')
+}
+
+export function getValueVerificationRequestText(requestedRows) {
+  const rowAnchors = requestedRows.map((row) => {
+    const neighbors = [
+      row.previousStatText ? `immediately below "${row.previousStatText}"` : '',
+      row.nextStatText ? `immediately above "${row.nextStatText}"` : '',
+    ].filter(Boolean).join(' and ')
+    const location = neighbors ? `, and is ${neighbors}` : ''
+
+    return `Requested row ${row.rowNumber} has visible level Lv. ${row.level} and stat wording "${row.statText}"${location}.`
+  })
+
+  return rowAnchors.join('\n')
+}
+
+export function getValueVerificationSchema(rowNumbers) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['lines'],
+    properties: {
+      lines: {
+        type: 'array',
+        maxItems: rowNumbers.length,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['rowNumber', 'rawText'],
+          properties: {
+            rowNumber: {
+              type: 'integer',
+              enum: rowNumbers,
+            },
+            rawText: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+  }
+}
+
 export function normalizeExtraction(extracted, fallbackGearType, fallbackPieceType, gearCatalog) {
   const { gearType, pieceType } = resolveExtractionEquipment(
     extracted,
@@ -192,6 +258,44 @@ export function normalizeExtraction(extracted, fallbackGearType, fallbackPieceTy
     confidence: Math.min(clampNumber(extracted?.confidence, 0, 1), validationConfidence),
     inputEnchantLevel: getImportEnchantLevel(lines),
     lines,
+  }
+}
+
+export function getValueReviewRowNumbers(normalizedExtraction) {
+  return (Array.isArray(normalizedExtraction?.lines) ? normalizedExtraction.lines : [])
+    .flatMap((line, index) =>
+      line?.status === 'needs_review' && /^Value does not match the visible \d+% roll$/.test(line?.reason)
+        ? [index + 1]
+        : [],
+    )
+}
+
+export function mergeVerifiedLineReads(extracted, verifiedReads, rowNumbers) {
+  const requestedRows = new Set(rowNumbers)
+  const readsByRow = new Map(
+    (Array.isArray(verifiedReads) ? verifiedReads : [])
+      .filter((read) => requestedRows.has(read?.rowNumber))
+      .map((read) => [read.rowNumber, parseVerifiedRawLine(read.rawText)])
+      .filter(([, read]) => read),
+  )
+
+  return {
+    ...extracted,
+    lines: (Array.isArray(extracted?.lines) ? extracted.lines : []).map((line, index) => {
+      const verified = readsByRow.get(index + 1)
+      const expectedStatKey = canonicalizeStat(getStatNameText(line?.statText || line?.rawText))
+      return verified
+        && expectedStatKey
+        && expectedStatKey === verified.statKey
+        && Number(line?.level) === verified.level
+        ? {
+            ...line,
+            rawText: verified.rawText,
+            value: verified.value,
+            rollPercent: verified.rollPercent,
+          }
+        : line
+    }),
   }
 }
 
@@ -530,7 +634,10 @@ function normalizeStat(statText, item, rawText = '', percentOverride) {
     return preferredContainsStat
   }
 
-  return options.includes(otherStat) ? otherStat : ''
+  const isKnownNonOffensiveOption =
+    isNonOffensiveStat(key, otherStat) || isNonOffensiveStat(rawKey, otherStat)
+
+  return options.includes(otherStat) && isKnownNonOffensiveOption ? otherStat : ''
 }
 
 function getPreferredPercentStat(stat, options, statValueIsPercent) {
@@ -669,6 +776,40 @@ function normalizeStatPrecision(statInfo, value) {
 function normalizeNumber(value) {
   const number = Number(value)
   return Number.isFinite(number) ? number : 0
+}
+
+function parseVerifiedRawLine(rawText) {
+  const text = String(rawText || '').trim()
+  const levelMatch = text.match(/\blv\.?\s*(\d+)\b/i)
+  const valueMatch = text.match(/[+＋]\s*(\d+(?:[.,]\d+)?)\s*%?/u)
+  const rollMatch = text.match(/\[\s*(\d{1,3})\s*%\s*\]/u)
+  if (!levelMatch || !valueMatch || !rollMatch) {
+    return null
+  }
+
+  const level = Number(levelMatch[1])
+  const value = Number(valueMatch[1].replace(',', '.'))
+  const rollPercent = Number(rollMatch[1])
+  if (
+    !Number.isInteger(level)
+    || level < 1
+    || level > 5
+    || !Number.isFinite(value)
+    || value <= 0
+    || !Number.isInteger(rollPercent)
+    || rollPercent < 1
+    || rollPercent > 100
+  ) {
+    return null
+  }
+
+  return {
+    rawText: text,
+    level,
+    statKey: canonicalizeStat(getStatNameText(text)),
+    value,
+    rollPercent,
+  }
 }
 
 function clampNumber(value, min, max) {

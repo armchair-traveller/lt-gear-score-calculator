@@ -5,6 +5,11 @@ import {
   getExtractorPrompt,
   getDisplayedRollPercent,
   getLineMaxValue,
+  getValueReviewRowNumbers,
+  getValueVerificationPrompt,
+  getValueVerificationRequestText,
+  getValueVerificationRequests,
+  mergeVerifiedLineReads,
   normalizeExtraction,
 } from '../server/utils/gear-image-import.js'
 
@@ -34,6 +39,19 @@ const grendelHelmetExtraction = {
   ],
 }
 
+const annihilationWeaponExtraction = {
+  gearType: '[8000] Weapons',
+  pieceType: 'Weapon',
+  confidence: 0.99,
+  lines: [
+    createLine('Lv. 1 Dual Back Attack Damage +1', 'Dual Back Attack Damage', 1, 0, 1),
+    createLine('Lv. 2 Basic Stats +15% [100%]', 'Basic Stats', 15, 100, 2),
+    createLine('Lv. 2 Dual Critical Damage +147 [97%]', 'Dual Critical Damage', 147, 97, 2),
+    createLine('Lv. 2 Basic Stats +1553 [80%]', 'Basic Stats', 1553, 80, 2),
+    createLine('Lv. 2 Dual Maximum Damage +144 [65%]', 'Dual Maximum Damage', 144, 65, 2),
+  ],
+}
+
 test('normalizes every enchant line from the supplied Chestplate screenshot', () => {
   const result = normalizeExtraction(screenshotExtraction, '[sLv5] Accessories', 'Cloak', gears)
 
@@ -60,6 +78,7 @@ test('requires one extraction result for every visible Lv. row', () => {
   assert.match(prompt, /exactly one lines item for every visible row that begins with "Lv\."/)
   assert.match(prompt, /Never skip a row between two other enchant rows/)
   assert.match(prompt, /lines\.length equals the number of visible rows that begin with "Lv\."/)
+  assert.match(prompt, /Count the digits in each value and verify the full digit sequence/)
 })
 
 test('normalizes all five rows from the supplied Grendel Helmet screenshot', () => {
@@ -140,6 +159,119 @@ test('repairs a uniquely provable percent glyph error and rejects an ambiguous d
   assert.equal(result.confidence, 0.8)
 })
 
+test('requests an independent re-read and repairs the supplied Weapon screenshot value', () => {
+  const firstPass = normalizeExtraction(annihilationWeaponExtraction, '[8000] Weapons', 'Weapon', gears)
+  const reviewRows = getValueReviewRowNumbers(firstPass)
+  const verificationRequests = getValueVerificationRequests(annihilationWeaponExtraction, reviewRows)
+  const verifiedExtraction = mergeVerifiedLineReads(
+    annihilationWeaponExtraction,
+    [{ rowNumber: 4, rawText: 'Lv. 2 Basic Stats +14553 [80%]' }],
+    reviewRows,
+  )
+  const result = normalizeExtraction(verifiedExtraction, '[8000] Weapons', 'Weapon', gears)
+
+  assert.deepEqual(reviewRows, [4])
+  assert.deepEqual(verificationRequests, [
+    {
+      rowNumber: 4,
+      level: 2,
+      statText: 'Basic Stats',
+      previousStatText: 'Dual Critical Damage',
+      nextStatText: 'Dual Maximum Damage',
+    },
+  ])
+  const verificationPrompt = getValueVerificationPrompt()
+  const verificationRequestText = getValueVerificationRequestText(verificationRequests)
+  assert.match(verificationPrompt, /including any Lv\. 1 unenchanted placeholder/)
+  assert.match(verificationPrompt, /Do not infer or correct a value from the stat name, roll percentage/)
+  assert.match(verificationRequestText, /Requested row 4 has visible level Lv\. 2 and stat wording "Basic Stats"/)
+  assert.doesNotMatch(`${verificationPrompt}\n${verificationRequestText}`, /1553|80%/)
+  assert.equal(result.gearType, '[8000] Weapons')
+  assert.equal(result.pieceType, 'Weapon')
+  assert.equal(result.inputEnchantLevel, 2)
+  assert.equal(result.confidence, 0.99)
+  assert.deepEqual(
+    result.lines.map(({ stat, value, rollPercent, status }) => ({ stat, value, rollPercent, status })),
+    [
+      { stat: 'Back Attack Damage', value: 1, rollPercent: 0, status: 'ignored' },
+      { stat: 'Basic Stats %', value: 15, rollPercent: 100, status: 'matched' },
+      { stat: 'Critical Damage', value: 147, rollPercent: 97, status: 'matched' },
+      { stat: 'Basic Stats', value: 14553, rollPercent: 80, status: 'matched' },
+      { stat: 'Maximum Damage', value: 144, rollPercent: 65, status: 'matched' },
+    ],
+  )
+  assert.equal(result.lines[3].rawText, 'Lv. 2 Basic Stats +14553 [80%]')
+  assert.equal(result.lines[3].reason, 'Ready to apply')
+})
+
+test('does not invent a missing value digit when the visible roll may be wrong', () => {
+  const extraction = {
+    gearType: '[sLv5] Accessories',
+    pieceType: 'Cloak',
+    confidence: 0.98,
+    lines: [
+      createLine('Lv. 2 Strength / Magic +201 [6%]', 'Strength / Magic', 201, 6, 2),
+    ],
+  }
+
+  const [line] = normalizeExtraction(extraction, '[sLv5] Accessories', 'Cloak', gears).lines
+
+  assert.deepEqual(pickLine(line), {
+    stat: 'Strength/Magic',
+    value: 201,
+    status: 'needs_review',
+    reason: 'Value does not match the visible 6% roll',
+  })
+})
+
+test('rejects a verification read from a different neighboring stat row', () => {
+  const merged = mergeVerifiedLineReads(
+    annihilationWeaponExtraction,
+    [{ rowNumber: 4, rawText: 'Lv. 2 Dual Maximum Damage +144 [65%]' }],
+    [4],
+  )
+
+  assert.equal(merged.lines[3].rawText, 'Lv. 2 Basic Stats +1553 [80%]')
+  assert.equal(merged.lines[3].value, 1553)
+  assert.equal(merged.lines[3].rollPercent, 80)
+})
+
+test('rejects an adjacent stat even when its value and roll fit the requested stat cap', () => {
+  const extraction = {
+    gearType: '[9999] Armor',
+    pieceType: 'Helmet',
+    confidence: 0.98,
+    lines: [
+      createLine('Lv. 2 Dual Critical Damage +21 [68%]', 'Dual Critical Damage', 21, 68, 2),
+    ],
+  }
+  const merged = mergeVerifiedLineReads(
+    extraction,
+    [{ rowNumber: 1, rawText: 'Lv. 2 Dual Back Attack Damage +83 [68%]' }],
+    [1],
+  )
+  const [line] = normalizeExtraction(merged, '[9999] Armor', 'Helmet', gears).lines
+
+  assert.deepEqual(pickLine(line), {
+    stat: 'Critical Damage',
+    value: 21,
+    status: 'needs_review',
+    reason: 'Value does not match the visible 68% roll',
+  })
+})
+
+test('rejects a verification read from the wrong enchant level', () => {
+  const merged = mergeVerifiedLineReads(
+    annihilationWeaponExtraction,
+    [{ rowNumber: 4, rawText: 'Lv. 3 Basic Stats +14553 [80%]' }],
+    [4],
+  )
+
+  assert.equal(merged.lines[3].rawText, 'Lv. 2 Basic Stats +1553 [80%]')
+  assert.equal(merged.lines[3].level, 2)
+  assert.equal(merged.lines[3].value, 1553)
+})
+
 test('repairs the supplied Crystal screenshot single-digit OCR substitution', () => {
   const extraction = {
     gearType: '[9000] Accessories',
@@ -190,6 +322,71 @@ test('does not guess unrelated OCR digit substitutions', () => {
     value: 18000,
     status: 'needs_review',
     reason: 'Value does not match the visible 75% roll',
+  })
+})
+
+test('sends unknown attack or damage wording to review instead of silently ignoring it', () => {
+  const weaponExtraction = {
+    gearType: '[8000] Weapons',
+    pieceType: 'Weapon',
+    confidence: 1,
+    lines: [
+      createLine('Lv. 2 Dual Minimal Damage +144 [65%]', 'Dual Minimal Damage', 144, 65, 2),
+    ],
+  }
+  const helmetExtraction = {
+    gearType: '[9999] Armor',
+    pieceType: 'Helmet',
+    confidence: 1,
+    lines: [
+      createLine('Lv. 2 Dual Basic Attack Damage +83 [68%]', 'Dual Basic Attack Damage', 83, 68, 2),
+    ],
+  }
+
+  const [weaponLine] = normalizeExtraction(
+    weaponExtraction,
+    '[8000] Weapons',
+    'Weapon',
+    gears,
+  ).lines
+  const [helmetLine] = normalizeExtraction(
+    helmetExtraction,
+    '[9999] Armor',
+    'Helmet',
+    gears,
+  ).lines
+
+  assert.deepEqual(pickLine(weaponLine), {
+    stat: '',
+    value: 0,
+    status: 'needs_review',
+    reason: 'Choose a matching stat or ignore this line',
+  })
+  assert.deepEqual(pickLine(helmetLine), {
+    stat: '',
+    value: 0,
+    status: 'needs_review',
+    reason: 'Choose a matching stat or ignore this line',
+  })
+})
+
+test('still maps clearly non-damaging option wording to Other', () => {
+  const extraction = {
+    gearType: '[8000] Weapons',
+    pieceType: 'Weapon',
+    confidence: 1,
+    lines: [
+      createLine('Lv. 2 Physical Defense +144 [65%]', 'Physical Defense', 144, 65, 2),
+    ],
+  }
+
+  const [line] = normalizeExtraction(extraction, '[8000] Weapons', 'Weapon', gears).lines
+
+  assert.deepEqual(pickLine(line), {
+    stat: 'Other (Non-damaging)',
+    value: 1,
+    status: 'other',
+    reason: 'Mapped to non-damaging option',
   })
 })
 

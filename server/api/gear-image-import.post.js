@@ -1,4 +1,5 @@
 import { createError, defineEventHandler, readMultipartFormData } from 'h3'
+import sharp from 'sharp'
 import gears from '@/utils/gear.js'
 import {
   getExtractorPrompt,
@@ -7,11 +8,22 @@ import {
   getRequestContext,
   getValidGearType,
   getValidPieceType,
+  getValueReviewRowNumbers,
+  getValueVerificationPrompt,
+  getValueVerificationRequestText,
+  getValueVerificationRequests,
+  getValueVerificationSchema,
+  mergeVerifiedLineReads,
   normalizeExtraction,
 } from '../utils/gear-image-import.js'
 
 const imageImportModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.4-mini'
+const imageVerificationModel = process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL || 'gpt-4.1-mini'
 const maxImageBytes = 8 * 1024 * 1024
+const maxImagePixels = 20_000_000
+const maxImageDimension = 8192
+const verificationImageTargetSize = 1900
+const maxVerificationImageScale = 3
 const allowedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
 
 export default defineEventHandler(async (event) => {
@@ -52,6 +64,117 @@ export default defineEventHandler(async (event) => {
   const fallbackPieceType =
     getValidPieceType(fallbackGearType, fields.pieceType?.value, gears) || getPieceNames(fallbackGearType, gears)[0]
   const imageUrl = `data:${image.type};base64,${Buffer.from(image.data).toString('base64')}`
+  const extracted = await requestImageModel({
+    apiKey,
+    imageUrl,
+    developerText: getExtractorPrompt(),
+    userText: getRequestContext(fallbackGearType, fallbackPieceType, gears),
+    formatName: 'gear_image_import',
+    schema: getExtractorSchema(gears),
+  })
+  const normalized = normalizeExtraction(extracted, fallbackGearType, fallbackPieceType, gears)
+  const reviewRowNumbers = getValueReviewRowNumbers(normalized)
+  if (!reviewRowNumbers.length) {
+    return normalized
+  }
+
+  try {
+    const verificationRequests = getValueVerificationRequests(extracted, reviewRowNumbers)
+    const verificationImageUrl = await getVerificationImageUrl(image, imageUrl)
+    const verification = await requestImageModel({
+      apiKey,
+      imageUrl: verificationImageUrl,
+      model: imageVerificationModel,
+      reasoning: null,
+      verbosity: 'medium',
+      developerText: getValueVerificationPrompt(),
+      userText: getValueVerificationRequestText(verificationRequests),
+      formatName: 'gear_image_value_verification',
+      schema: getValueVerificationSchema(reviewRowNumbers),
+    })
+    const verifiedExtraction = mergeVerifiedLineReads(extracted, verification?.lines, reviewRowNumbers)
+    const verifiedNormalized = normalizeExtraction(
+      verifiedExtraction,
+      fallbackGearType,
+      fallbackPieceType,
+      gears,
+    )
+    const improvedRowNumbers = reviewRowNumbers.filter(
+      (rowNumber) => {
+        const originalLine = normalized.lines[rowNumber - 1]
+        const verifiedLine = verifiedNormalized.lines[rowNumber - 1]
+        return verifiedLine?.status === 'matched'
+          && verifiedLine.stat === originalLine?.stat
+          && verifiedLine.level === originalLine?.level
+      },
+    )
+
+    if (improvedRowNumbers.length) {
+      return normalizeExtraction(
+        mergeVerifiedLineReads(extracted, verification?.lines, improvedRowNumbers),
+        fallbackGearType,
+        fallbackPieceType,
+        gears,
+      )
+    }
+  } catch {
+    // Keep the original review state when the focused re-read is unavailable.
+  }
+
+  return normalized
+})
+
+async function getVerificationImageUrl(image, fallbackImageUrl) {
+  try {
+    const transformer = sharp(image.data, {
+      failOn: 'none',
+      limitInputPixels: maxImagePixels,
+    })
+    const metadata = await transformer.metadata()
+    const width = metadata.width || 0
+    const height = metadata.height || 0
+    const pixelCount = width * height
+    if (
+      !width
+      || !height
+      || width > maxImageDimension
+      || height > maxImageDimension
+      || pixelCount > maxImagePixels
+    ) {
+      return fallbackImageUrl
+    }
+
+    const longestSide = Math.max(metadata.width || 0, metadata.height || 0)
+    const scale = Math.min(maxVerificationImageScale, verificationImageTargetSize / longestSide)
+    if (scale <= 1) {
+      return fallbackImageUrl
+    }
+
+    const resizedWidth = Math.round(width * scale)
+    const enlarged = await transformer
+      .resize({ width: resizedWidth, kernel: sharp.kernel.nearest })
+      .png({ compressionLevel: 9 })
+      .toBuffer()
+
+    return enlarged.length <= maxImageBytes
+      ? `data:image/png;base64,${enlarged.toString('base64')}`
+      : fallbackImageUrl
+  } catch {
+    return fallbackImageUrl
+  }
+}
+
+async function requestImageModel({
+  apiKey,
+  imageUrl,
+  developerText,
+  userText,
+  formatName,
+  schema,
+  model = imageImportModel,
+  reasoning = { effort: 'none' },
+  verbosity = 'low',
+}) {
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
@@ -59,16 +182,16 @@ export default defineEventHandler(async (event) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: imageImportModel,
+      model,
       store: false,
-      reasoning: { effort: 'none' },
+      ...(reasoning ? { reasoning } : {}),
       input: [
         {
           role: 'developer',
           content: [
             {
               type: 'input_text',
-              text: getExtractorPrompt(),
+              text: developerText,
             },
           ],
         },
@@ -77,7 +200,7 @@ export default defineEventHandler(async (event) => {
           content: [
             {
               type: 'input_text',
-              text: getRequestContext(fallbackGearType, fallbackPieceType, gears),
+              text: userText,
             },
             {
               type: 'input_image',
@@ -88,12 +211,12 @@ export default defineEventHandler(async (event) => {
         },
       ],
       text: {
-        verbosity: 'low',
+        verbosity,
         format: {
           type: 'json_schema',
-          name: 'gear_image_import',
+          name: formatName,
           strict: true,
-          schema: getExtractorSchema(gears),
+          schema,
         },
       },
     }),
@@ -108,8 +231,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const extracted = parseOutput(payload)
-  return normalizeExtraction(extracted, fallbackGearType, fallbackPieceType, gears)
-})
+  return extracted
+}
 
 function getMultipartFields(parts = []) {
   return parts.reduce((fields, part) => {
