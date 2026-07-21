@@ -376,6 +376,21 @@ function reconcileStatAndValue({
     }
   }
 
+  const pixelFontDigitCorrection = getPixelFontDigitCorrection({
+    value: extractedValue,
+    stats: statCandidates,
+    item,
+    gearType,
+    level,
+    rollPercent,
+  })
+  if (pixelFontDigitCorrection) {
+    return {
+      ...pixelFontDigitCorrection,
+      rollStatus: 'corrected',
+    }
+  }
+
   return {
     stat: primaryStat,
     value: extractedValue,
@@ -427,6 +442,40 @@ function getTrailingPercentGlyphCorrection(value) {
 
   const text = String(numericValue)
   return text.endsWith('8') ? Number(text.slice(0, -1)) : 0
+}
+
+function getPixelFontDigitCorrection({ value, stats, item, gearType, level, rollPercent }) {
+  const candidateValues = getEightMisreadAsSixCandidates(value)
+  const matches = stats.flatMap((stat) =>
+    candidateValues
+      .filter((candidateValue) =>
+        isRollConsistent(item?.Stats?.[stat], gearType, level, candidateValue, rollPercent),
+      )
+      .map((candidateValue) => ({ stat, value: candidateValue })),
+  )
+
+  return matches.length === 1 ? matches[0] : null
+}
+
+function getEightMisreadAsSixCandidates(value) {
+  const numericValue = Number(value)
+  if (!Number.isSafeInteger(numericValue)) {
+    return []
+  }
+
+  const digits = String(numericValue)
+  if (digits.length < 5) {
+    return []
+  }
+
+  const candidates = new Set()
+  for (let index = 0; index < digits.length; index += 1) {
+    if (digits[index] === '6') {
+      candidates.add(Number(`${digits.slice(0, index)}8${digits.slice(index + 1)}`))
+    }
+  }
+
+  return Array.from(candidates)
 }
 
 function normalizeStat(statText, item, rawText = '', percentOverride) {
