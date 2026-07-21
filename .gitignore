@@ -20,6 +20,9 @@ coverage
 /cypress/videos/
 /cypress/screenshots/
 
+# Local Codex state
+/.codex/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
