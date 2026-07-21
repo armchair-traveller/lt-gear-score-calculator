@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import gears from '../app/utils/gear.js'
 import {
+  getExtractorPrompt,
   getDisplayedRollPercent,
   getLineMaxValue,
   normalizeExtraction,
@@ -17,6 +18,19 @@ const screenshotExtraction = {
     createLine('Lv. 5 Attack / Elemental Intensity +303 [91%]', 'Attack / Elemental Intensity', 303, 91),
     createLine('Lv. 5 Attack / Elemental Intensity +21% [91%]', 'Attack / Elemental Intensity', 21, 91),
     createLine('Lv. 5 Basic Stats +24011 [92%]', 'Basic Stats', 24011, 92),
+  ],
+}
+
+const grendelHelmetExtraction = {
+  gearType: '[9999] Armor',
+  pieceType: 'Helmet',
+  confidence: 0.99,
+  lines: [
+    createLine('Lv. 2 Dual Critical Damage +21 [17%]', 'Dual Critical Damage', 21, 17, 2),
+    createLine('Lv. 2 Strength / Magic +15250 [63%]', 'Strength / Magic', 15250, 63, 2),
+    createLine('Lv. 2 Dual Back Attack Damage +83 [68%]', 'Dual Back Attack Damage', 83, 68, 2),
+    createLine('Lv. 2 Attack / Elemental Intensity +162 [67%]', 'Attack / Elemental Intensity', 162, 67, 2),
+    createLine('Lv. 2 Dual Accuracy +153 [89%]', 'Dual Accuracy', 153, 89, 2),
   ],
 }
 
@@ -38,6 +52,47 @@ test('normalizes every enchant line from the supplied Chestplate screenshot', ()
     ],
   )
   assert.equal(new Set(result.lines.map((line) => line.stat)).size, 5)
+})
+
+test('requires one extraction result for every visible Lv. row', () => {
+  const prompt = getExtractorPrompt()
+
+  assert.match(prompt, /exactly one lines item for every visible row that begins with "Lv\."/)
+  assert.match(prompt, /Never skip a row between two other enchant rows/)
+  assert.match(prompt, /lines\.length equals the number of visible rows that begin with "Lv\."/)
+})
+
+test('normalizes all five rows from the supplied Grendel Helmet screenshot', () => {
+  const result = normalizeExtraction(grendelHelmetExtraction, '[9999] Armor', 'Helmet', gears)
+
+  assert.equal(result.gearType, '[9999] Armor')
+  assert.equal(result.pieceType, 'Helmet')
+  assert.equal(result.inputEnchantLevel, 2)
+  assert.equal(result.confidence, 0.99)
+  assert.deepEqual(
+    result.lines.map(({ stat, value, rollPercent, status }) => ({ stat, value, rollPercent, status })),
+    [
+      { stat: 'Critical Damage', value: 21, rollPercent: 17, status: 'matched' },
+      { stat: 'Strength/Magic', value: 15250, rollPercent: 63, status: 'matched' },
+      { stat: 'Back Attack Damage', value: 83, rollPercent: 68, status: 'matched' },
+      { stat: 'Attack/Intensity', value: 162, rollPercent: 67, status: 'matched' },
+      { stat: 'Accuracy', value: 153, rollPercent: 89, status: 'matched' },
+    ],
+  )
+  assert.equal(new Set(result.lines.map((line) => line.stat)).size, 5)
+})
+
+test('does not let extractor metadata hide a valid level 2 row', () => {
+  const extraction = structuredClone(grendelHelmetExtraction)
+  extraction.lines[1].ignored = true
+  extraction.lines[1].ignoreReason = 'Unenchanted placeholder'
+
+  const result = normalizeExtraction(extraction, '[9999] Armor', 'Helmet', gears)
+
+  assert.equal(result.lines[1].stat, 'Strength/Magic')
+  assert.equal(result.lines[1].ignored, false)
+  assert.equal(result.lines[1].status, 'matched')
+  assert.equal(result.lines[1].reason, 'Ready to apply')
 })
 
 test('uses level-aware stat caps as a checksum for the visible rolls', () => {

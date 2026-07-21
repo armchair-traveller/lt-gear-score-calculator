@@ -82,6 +82,10 @@ export function getExtractorPrompt() {
   return [
     'Extract LaTale gear enchant option lines from the image.',
     'Return only visible enchant option lines, usually formatted like "Lv. 5 Stat Name +123 [74%]".',
+    'Scan the enchant block from top to bottom and emit exactly one lines item for every visible row that begins with "Lv.".',
+    'Never skip a row between two other enchant rows.',
+    'Before responding, scan the enchant block from bottom to top and verify that lines.length equals the number of visible rows that begin with "Lv.".',
+    'Keep the lines items in the same top-to-bottom order as the image.',
     'Read every value character literally. A percent sign immediately after a value is a unit, not the digit 8: "+9%" must never become "+98".',
     'Keep every digit in large values, including repeated or trailing digits in five-digit values such as "+24011".',
     'The percentage in square brackets is a separate roll percentage; never merge it into the stat value.',
@@ -270,8 +274,8 @@ function normalizeLine(line, item, gearType, index) {
   const extractedValue = normalizeNumber(line?.value)
   const rollPercent = normalizeNumber(line?.rollPercent)
   const level = Math.max(0, Math.min(5, parseInt(line?.level) || 0))
-  const unenchantedPlaceholder = level <= 1 && (extractedValue <= 1 || rollPercent === 1)
-  const ignored = Boolean(line?.ignored) || unenchantedPlaceholder
+  const unenchantedPlaceholder = level <= 1 && extractedValue <= 1
+  const ignored = unenchantedPlaceholder
   const reconciled = reconcileStatAndValue({
     detectedStat,
     rawText,
