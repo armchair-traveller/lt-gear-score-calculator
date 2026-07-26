@@ -7,18 +7,42 @@ export const qualityOddsGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[900
 export const inputEnchantGearTypes = ['[sLv5] Accessories', '[9999] Armor', '[9000] Accessories', '[8000] Weapons']
 
 export const defaultOddsEnchantMethod = 'standard'
+export const platinumHammerElyValue = 150_000_000
+
+const qualityTargetPresetValues = {
+  '[sLv5] Accessories': [75, 80, 85],
+  '[9999] Armor': [75, 77.5],
+}
 
 export const oddsEnchantMethods = {
+  normal: {
+    value: 'normal',
+    label: 'Normal',
+    successRate: 0.5,
+    elyCost: 50_000_000,
+    hammerCostMin: 1,
+    hammerCostMax: 1,
+  },
   standard: {
     value: 'standard',
     label: 'Super',
     successRate: 0.6,
+    elyCost: 100_000_000,
+    hammerCostMin: 2,
+    hammerCostMax: 2,
   },
   special: {
     value: 'special',
     label: 'Special',
     successRate: 1,
+    elyCost: 0,
+    hammerCostMin: 10,
+    hammerCostMax: 30,
   },
+}
+
+export function getQualityTargetPresetValues(gearType) {
+  return qualityTargetPresetValues[gearType] ?? []
 }
 
 export function supportsSpecialOddsEnchant(gearType) {
@@ -26,9 +50,14 @@ export function supportsSpecialOddsEnchant(gearType) {
 }
 
 export function getOddsEnchantMethodOptions(gearType) {
+  const mainMethods = [
+    oddsEnchantMethods.standard,
+    oddsEnchantMethods.normal,
+  ]
+
   return supportsSpecialOddsEnchant(gearType)
-    ? Object.values(oddsEnchantMethods)
-    : [oddsEnchantMethods.standard]
+    ? [...mainMethods, oddsEnchantMethods.special]
+    : mainMethods
 }
 
 export function getOddsEnchantMethod(gearType, method) {

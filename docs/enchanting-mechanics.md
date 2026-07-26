@@ -60,8 +60,28 @@ The 50% option doubles both costs of the 40% option.
 
 - For multiple new lines on one item, attempts are sequential. The chance that
   the item survives all of them is the product of their success rates.
-- A completion-budget feature must include the cost of replacing destroyed
-  items; the per-attempt costs above are not a complete expected budget.
+- One copy means another piece with the same entered lines before the remaining
+  blank lines are attempted. It is not necessarily untouched.
+- The odds plan stops attempting lines once the target is reached or the
+  maximum remaining rolls can no longer reach it.
+- A full completion budget must include acquiring replacement items and
+  recreating their entered lines. The panel reports those copy counts
+  separately and labels only the calculated attempt costs as the enchanting
+  budget.
+
+## Planner target guidance
+
+- SSS remains the default benchmark. It is a difficult but reasonable target
+  for a player willing to settle for a decent piece rather than an exceptional
+  one.
+- For `[sLv5] Accessories`, the practical quick targets are 75%, 80%, and
+  85%. Reaching 90% is exceptional and generally not pursued with
+  conventional methods; 100% is not a practical target.
+- For `[9999] Armor`, 75% is a finished/endgame target and 77.5% is an
+  exceptional upper quick target.
+- Quick targets are recommendations only. The exact target input remains
+  available for unusual plans. Gear families without documented practical
+  targets do not show speculative quick-target percentages.
 
 ## Sources
 

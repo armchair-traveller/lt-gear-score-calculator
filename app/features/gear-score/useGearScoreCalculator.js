@@ -8,6 +8,7 @@ import {
   getOddsEnchantMethodOptions,
   repeatableStats,
   inputEnchantGearTypes,
+  platinumHammerElyValue,
   tierGuideRows,
   traitCatalog,
   recommendedOptionGuide,
@@ -23,6 +24,7 @@ import {
 import {
   calculateGearScore,
   createEmptyGearScoreResult,
+  findBestQualityOddsOrder,
   getDefaultQualityTargetPercent,
   getFinalStatValue,
   getInputValue as getScoreInputValue,
@@ -367,6 +369,15 @@ export function useGearScoreCalculator() {
       : defaultOddsEnchantMethod
   }
 
+  function setAllQualityLineEnchantMethods(method) {
+    const validMethods = currentOddsEnchantMethodOptions.value.map((option) => option.value)
+    if (!validMethods.includes(method)) {
+      return
+    }
+
+    qualityLineEnchantMethods.value = statType.value.map(() => method)
+  }
+
   function moveQualityOddsLine(position, direction) {
     const order = getQualityOddsOrder()
     const nextPosition = position + direction
@@ -379,6 +390,78 @@ export function useGearScoreCalculator() {
     ;[nextOrder[position], nextOrder[nextPosition]] = [nextOrder[nextPosition], nextOrder[position]]
     qualityOddsOrder.value = nextOrder
     updateValues()
+  }
+
+  function movePendingQualityOddsLine(lineIndex, direction) {
+    const pendingIndexes = results.value.qualityOdds.lines
+      .filter((line) => line.status === 'new')
+      .map((line) => line.index)
+    const pendingPosition = pendingIndexes.indexOf(lineIndex)
+    const nextPendingIndex = pendingIndexes[pendingPosition + direction]
+    if (pendingPosition < 0 || nextPendingIndex === undefined) {
+      return
+    }
+
+    const order = getQualityOddsOrder()
+    const currentPosition = order.indexOf(lineIndex)
+    const nextPosition = order.indexOf(nextPendingIndex)
+    if (currentPosition < 0 || nextPosition < 0) {
+      return
+    }
+
+    const nextOrder = order.slice()
+    ;[nextOrder[currentPosition], nextOrder[nextPosition]] = [nextOrder[nextPosition], nextOrder[currentPosition]]
+    qualityOddsOrder.value = nextOrder
+    updateValues()
+  }
+
+  function optimizeQualityOddsOrder() {
+    const currentOrder = getQualityOddsOrder()
+    const pendingIndexes = results.value.qualityOdds.lines
+      .filter((line) => line.status === 'new')
+      .map((line) => line.index)
+    if (pendingIndexes.length < 2) {
+      return {
+        changed: false,
+        beforeChance: results.value.qualityOdds.totalChance,
+        afterChance: results.value.qualityOdds.totalChance,
+      }
+    }
+
+    const beforeChance = results.value.qualityOdds.totalChance
+    const calculationInput = getCalculationInput(currentOrder)
+    const optimized = findBestQualityOddsOrder({
+      gearType: calculationInput.gearType,
+      item: calculationInput.item,
+      statTypes: calculationInput.statTypes,
+      statInputs: calculationInput.statInputs,
+      lineOrder: calculationInput.qualityOddsOrder,
+      lineEnchantMethods: calculationInput.qualityLineEnchantMethods,
+      qualityTargetPercent: calculationInput.qualityTargetPercent,
+      remainingPotentialMultiplier: calculationInput.remainingPotentialMultiplier,
+      futurePotentialMultiplier: calculationInput.futurePotentialMultiplier,
+    })
+    const bestChance = optimized.totalChance
+    const pendingIndexSet = new Set(pendingIndexes)
+    let optimizedPosition = 0
+    const bestOrder = currentOrder.map((lineIndex) =>
+      pendingIndexSet.has(lineIndex)
+        ? optimized.pendingOrder[optimizedPosition++]
+        : lineIndex,
+    )
+
+    const changed = bestChance > beforeChance + Number.EPSILON
+      && bestOrder.some((lineIndex, index) => lineIndex !== currentOrder[index])
+    if (changed) {
+      qualityOddsOrder.value = bestOrder
+      updateValues()
+    }
+
+    return {
+      changed,
+      beforeChance,
+      afterChance: bestChance,
+    }
   }
 
   function setQualityTargetPercent(value) {
@@ -409,27 +492,37 @@ export function useGearScoreCalculator() {
     qualityTargets.value = writeStoredQualityTargets(nextTargets)
   }
 
-  function updateValues() {
+  function getCalculationInput(qualityOrder = getQualityOddsOrder()) {
     const item = currentItem.value
     if (!item) {
-      return
+      return null
     }
 
     const remainingPotentialMultiplier = getRemainingPotentialMultiplier()
     const futurePotentialMultiplier = getPotentialMultiplier()
     const tierEquivalence = tiers[gearType.value][item.Type]
-    const calculated = calculateGearScore({
+
+    return {
       gearType: gearType.value,
       item,
       tierEquivalence,
       statTypes: statType.value,
       statInputs: statInput.value,
-      qualityOddsOrder: getQualityOddsOrder(),
+      qualityOddsOrder: qualityOrder,
       qualityLineEnchantMethods: qualityLineEnchantMethods.value,
       qualityTargetPercent: qualityTargetPercent.value,
       remainingPotentialMultiplier,
       futurePotentialMultiplier,
-    })
+    }
+  }
+
+  function updateValues() {
+    const calculationInput = getCalculationInput()
+    if (!calculationInput) {
+      return
+    }
+
+    const calculated = calculateGearScore(calculationInput)
     results.value = calculated.result
     validStats.value = calculated.validStats
   }
@@ -817,6 +910,7 @@ export function useGearScoreCalculator() {
     currentRecommendations,
     currentInputEnchantLevelOptions,
     currentOddsEnchantMethodOptions,
+    platinumHammerElyValue,
     defaultQualityTargetPercent,
     hasCustomQualityTarget,
     qualityTargetPercent,
@@ -842,7 +936,10 @@ export function useGearScoreCalculator() {
     setInputValueMode,
     setResultMode,
     setQualityLineEnchantMethod,
+    setAllQualityLineEnchantMethods,
     moveQualityOddsLine,
+    movePendingQualityOddsLine,
+    optimizeQualityOddsOrder,
     setQualityTargetPercent,
     resetQualityTarget,
     clearStatInputs,

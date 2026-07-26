@@ -95,7 +95,9 @@ const projectedEndpointLabel = computed(() =>
   `Upgraded · Lv.${getProjectionEnchantLevel()}`,
 )
 const panelTitle = computed(() =>
-  `${pieceType.value} ${hasProjection.value ? 'upgrade' : 'result'}`,
+  resultView.value === 'quality'
+    ? `${pieceType.value} quality plan`
+    : `${pieceType.value} ${hasProjection.value ? 'upgrade' : 'result'}`,
 )
 const currentOverallValue = computed(() =>
   resultMode.value === 'rating'
@@ -242,7 +244,7 @@ function getInvalidRowText(index) {
           <h2 id="gear-result-title">{{ panelTitle }}</h2>
         </CardTitle>
 
-        <CardAction class="self-center">
+        <CardAction v-if="resultView === 'comparison'" class="self-center">
           <ToggleGroup
             :model-value="resultMode"
             type="single"
@@ -269,11 +271,11 @@ function getInvalidRowText(index) {
       </CardHeader>
 
       <Tabs v-model="resultView" class="min-w-0 gap-0">
-        <CardContent class="min-w-0 px-5 pb-0 sm:px-6">
-          <template v-if="hasResults">
+        <CardContent class="flex min-w-0 flex-col px-5 pb-0 sm:px-6">
+          <template v-if="resultView === 'comparison' && hasResults">
             <div
               :class="cn(
-                'relative grid overflow-hidden rounded-2xl bg-gradient-to-br from-surface-inset to-info-surface/70',
+                'relative mt-5 grid overflow-hidden rounded-2xl bg-gradient-to-br from-surface-inset to-info-surface/70',
                 showOutcomeProjection
                   ? 'min-h-56 grid-cols-2 min-[360px]:min-h-44 min-[360px]:grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_8rem_minmax(0,1fr)]'
                   : 'min-h-44 grid-cols-1 sm:grid-cols-2',
@@ -425,8 +427,8 @@ function getInvalidRowText(index) {
           </template>
 
           <Empty
-            v-else
-            class="min-h-40 flex-row justify-start bg-surface-inset px-5 py-6 text-left"
+            v-else-if="resultView === 'comparison'"
+            class="mt-5 min-h-40 flex-row justify-start bg-surface-inset px-5 py-6 text-left"
           >
             <EmptyMedia class="mb-0">
               <img class="size-14 shrink-0 object-contain" src="/smart_priring.png" alt="">
@@ -439,7 +441,7 @@ function getInvalidRowText(index) {
             </EmptyHeader>
           </Empty>
 
-          <div class="mt-6 flex min-w-0 items-end justify-between gap-3 border-b">
+          <div class="order-first flex min-w-0 items-end justify-between gap-3 border-b">
             <TabsList
               variant="line"
               class="h-10 min-w-0 bg-transparent p-0"

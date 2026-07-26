@@ -1,7 +1,7 @@
 import {
   decimalStats,
   ratingScale,
-} from '@/features/gear-score/data.js'
+} from './data.js'
 
 export function createEmptyIndividualResult() {
   return {

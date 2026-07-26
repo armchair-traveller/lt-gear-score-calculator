@@ -3,7 +3,7 @@ import {
   getOddsEnchantMethod,
   qualityOddsGearTypes,
   ratingScale,
-} from '@/features/gear-score/data.js'
+} from './data.js'
 import {
   createEmptyIndividualResult,
   formatBaseRollSummary,
@@ -12,7 +12,7 @@ import {
   formatStatValue,
   getRollDistribution,
   getTierForPercent,
-} from '@/features/gear-score/helpers.js'
+} from './helpers.js'
 
 export function createEmptyGearScoreResult() {
   return {
@@ -38,6 +38,10 @@ export function getEmptyQualityOdds() {
     available: false,
     totalChance: 0,
     totalChanceText: '',
+    survivedMissChance: 0,
+    survivedMissChanceText: '',
+    destroyedChance: 0,
+    destroyedChanceText: '',
     survivalChance: 0,
     survivalChanceText: '',
     futureRolls: 0,
@@ -48,11 +52,34 @@ export function getEmptyQualityOdds() {
     qualityMin: 0,
     qualityMax: 0,
     qualityText: '—',
+    plannedQualityMin: 0,
+    plannedQualityMax: 0,
     plannedQualityText: '',
     showProjectedQuality: true,
     benchmarkDI: 0,
     baseRollText: '',
+    isAlreadyComplete: false,
+    isTargetReachable: false,
+    targetState: 'unavailable',
+    expectedStarts: null,
+    expectedDestroyedItems: null,
+    expectedKeptMisses: null,
+    startsForEvenChance: null,
+    startsForHighConfidence: null,
+    materials: {
+      perStart: getEmptyMaterialEstimate(),
+      perTarget: getEmptyMaterialEstimate(null),
+      fullSequence: getEmptyMaterialEstimate(),
+    },
     lines: [],
+  }
+}
+
+function getEmptyMaterialEstimate(emptyValue = 0) {
+  return {
+    ely: emptyValue,
+    hammersMin: emptyValue,
+    hammersMax: emptyValue,
   }
 }
 
@@ -403,7 +430,7 @@ function createEmptyGearPlanResult() {
   }
 }
 
-function calculateQualityOdds({
+export function calculateQualityOdds({
   gearType,
   item,
   statTypes,
@@ -464,6 +491,8 @@ function calculateQualityOdds({
       rolledMaxRating += lineMaxValue / maxValue * maxDI
     }
 
+    let enchantMethod = null
+
     if (!shouldRollLine) {
       // Non-damaging lines are ignored for SSS attempts, so they add no survival risk.
     }
@@ -473,8 +502,9 @@ function calculateQualityOdds({
     }
     else {
       futureBaseLines += 1
-      const enchantMethod = getOddsEnchantMethod(gearType, lineEnchantMethods?.[lineIndex])
+      enchantMethod = getOddsEnchantMethod(gearType, lineEnchantMethods?.[lineIndex])
       rollableFutureLines.push({
+        index: lineIndex,
         upgradeScore,
         enchantMethod,
         distribution: getRollDistribution(step, maxValue, step, maxValue, maxDI),
@@ -491,18 +521,60 @@ function calculateQualityOdds({
       rollText: !shouldRollLine ? 'not rolled' : hasValue ? linePotentialMultiplier > 0 ? 'already rolled' : 'complete' : 'needs base roll',
       status: !shouldRollLine ? 'ignored' : hasValue ? 'upgrade' : 'new',
       maxRollPercent: hasValue && finalMaxValue > 0 ? projectedValue / finalMaxValue * 100 : null,
+      enchantMethod: enchantMethod?.value ?? null,
+      enchantMethodLabel: enchantMethod?.label ?? '',
+      successRate: enchantMethod?.successRate ?? null,
+      elyCost: enchantMethod?.elyCost ?? 0,
+      hammerCostMin: enchantMethod?.hammerCostMin ?? 0,
+      hammerCostMax: enchantMethod?.hammerCostMax ?? 0,
     })
+  }
+
+  const maximumRemainingScores = Array(rollableFutureLines.length + 1).fill(0)
+  for (let index = rollableFutureLines.length - 1; index >= 0; index--) {
+    const line = rollableFutureLines[index]
+    const maxRollScore = line.distribution.reduce(
+      (maximum, roll) => Math.max(maximum, roll.score),
+      0,
+    )
+    maximumRemainingScores[index] = maximumRemainingScores[index + 1]
+      + line.upgradeScore
+      + maxRollScore
   }
 
   let activeOutcomes = fixedScore >= targetScore ? new Map() : new Map([[fixedScore, 1]])
   let totalChance = fixedScore >= targetScore ? 1 : 0
+  let abandonedMissChance = 0
+  let expectedElyPerStart = 0
+  let expectedHammersMinPerStart = 0
+  let expectedHammersMaxPerStart = 0
+  const lineOutcomeDetails = new Map()
 
-  for (const line of rollableFutureLines) {
+  for (let index = 0; index < rollableFutureLines.length; index++) {
+    const line = rollableFutureLines[index]
+
+    const reachableOutcomes = new Map()
+    activeOutcomes.forEach((probability, currentScore) => {
+      if (currentScore + maximumRemainingScores[index] >= targetScore) {
+        reachableOutcomes.set(currentScore, probability)
+      }
+      else {
+        abandonedMissChance += probability
+      }
+    })
+    activeOutcomes = reachableOutcomes
+
     if (activeOutcomes.size === 0) {
       break
     }
 
+    const targetChanceBefore = totalChance
+    const attemptChance = sumOutcomeProbabilities(activeOutcomes)
     const nextOutcomes = new Map()
+
+    expectedElyPerStart += attemptChance * line.enchantMethod.elyCost
+    expectedHammersMinPerStart += attemptChance * line.enchantMethod.hammerCostMin
+    expectedHammersMaxPerStart += attemptChance * line.enchantMethod.hammerCostMax
 
     activeOutcomes.forEach((currentProbability, currentScore) => {
       const survivedProbability = currentProbability * line.enchantMethod.successRate
@@ -521,15 +593,29 @@ function calculateQualityOdds({
     })
 
     activeOutcomes = nextOutcomes
+    const aliveBelowTargetChanceAfter = abandonedMissChance
+      + sumOutcomeProbabilities(activeOutcomes)
+    const cumulativeSurvivalChance = totalChance + aliveBelowTargetChanceAfter
+    lineOutcomeDetails.set(line.index, {
+      pendingStep: index + 1,
+      attemptChance,
+      attemptChanceText: formatProbability(attemptChance),
+      finishChance: totalChance - targetChanceBefore,
+      finishChanceText: formatProbability(totalChance - targetChanceBefore),
+      targetChanceAfter: totalChance,
+      targetChanceAfterText: formatProbability(totalChance),
+      aliveBelowTargetChanceAfter,
+      cumulativeSurvivalChance,
+      cumulativeSurvivalChanceText: formatProbability(cumulativeSurvivalChance),
+    })
   }
 
   const isAlreadyComplete = fixedScore >= targetScore
-  const survivalChance = isAlreadyComplete
-    ? 1
-    : rollableFutureLines.reduce(
-        (probability, line) => probability * line.enchantMethod.successRate,
-        1,
-      )
+  const survivedMissChance = isAlreadyComplete
+    ? 0
+    : abandonedMissChance + sumOutcomeProbabilities(activeOutcomes)
+  const survivalChance = clampProbability(totalChance + survivedMissChance)
+  const destroyedChance = clampProbability(1 - totalChance - survivedMissChance)
   const plannedMinQuality = benchmarkDI > 0 ? plannedMinRating / benchmarkDI * 100 : 0
   const plannedMaxQuality = benchmarkDI > 0 ? plannedMaxRating / benchmarkDI * 100 : 0
   const qualityMin = benchmarkDI > 0 ? rolledMinRating / benchmarkDI * 100 : 0
@@ -537,11 +623,61 @@ function calculateQualityOdds({
   const qualityText = hasRolledLines ? formatQualityRange(qualityMin, qualityMax) : '—'
   const plannedQualityText = formatQualityRange(plannedMinQuality, plannedMaxQuality)
   const showProjectedQuality = qualityText !== plannedQualityText
+  const isTargetReachable = isAlreadyComplete || totalChance > 0
+  const targetState = isAlreadyComplete
+    ? 'secured'
+    : isTargetReachable
+      ? 'active'
+      : rollableFutureLines.length
+        ? 'impossible'
+        : 'no-rolls'
+  const expectedStarts = totalChance > 0 ? 1 / totalChance : null
+  const expectedDestroyedItems = totalChance > 0 ? destroyedChance / totalChance : null
+  const expectedKeptMisses = totalChance > 0 ? survivedMissChance / totalChance : null
+  const fullSequenceMaterials = rollableFutureLines.reduce((materials, line) => {
+    materials.ely += line.enchantMethod.elyCost
+    materials.hammersMin += line.enchantMethod.hammerCostMin
+    materials.hammersMax += line.enchantMethod.hammerCostMax
+    return materials
+  }, getEmptyMaterialEstimate())
+  const perStartMaterials = {
+    ely: expectedElyPerStart,
+    hammersMin: expectedHammersMinPerStart,
+    hammersMax: expectedHammersMaxPerStart,
+  }
+  const perTargetMaterials = totalChance > 0
+    ? {
+        ely: expectedElyPerStart / totalChance,
+        hammersMin: expectedHammersMinPerStart / totalChance,
+        hammersMax: expectedHammersMaxPerStart / totalChance,
+      }
+    : getEmptyMaterialEstimate(null)
+  const detailedLines = lines.map((line) => ({
+    ...line,
+    ...(lineOutcomeDetails.get(line.index) ?? {
+      pendingStep: line.status === 'new'
+        ? rollableFutureLines.findIndex((rollableLine) => rollableLine.index === line.index) + 1
+        : null,
+      attemptChance: line.status === 'new' ? 0 : null,
+      attemptChanceText: line.status === 'new' ? '0%' : '',
+      finishChance: line.status === 'new' ? 0 : null,
+      finishChanceText: line.status === 'new' ? '0%' : '',
+      targetChanceAfter: line.status === 'new' ? totalChance : null,
+      targetChanceAfterText: line.status === 'new' ? formatProbability(totalChance) : '',
+      aliveBelowTargetChanceAfter: line.status === 'new' ? survivedMissChance : null,
+      cumulativeSurvivalChance: line.status === 'new' ? survivalChance : null,
+      cumulativeSurvivalChanceText: line.status === 'new' ? formatProbability(survivalChance) : '',
+    }),
+  }))
 
   return {
     available: true,
     totalChance,
     totalChanceText: formatProbability(totalChance),
+    survivedMissChance,
+    survivedMissChanceText: formatProbability(survivedMissChance),
+    destroyedChance,
+    destroyedChanceText: formatProbability(destroyedChance),
     survivalChance,
     survivalChanceText: formatProbability(survivalChance),
     futureRolls: futureBaseLines,
@@ -556,9 +692,206 @@ function calculateQualityOdds({
     qualityMin,
     qualityMax,
     qualityText,
+    plannedQualityMin: plannedMinQuality,
+    plannedQualityMax: plannedMaxQuality,
     plannedQualityText,
     showProjectedQuality,
     benchmarkDI,
-    lines,
+    isAlreadyComplete,
+    isTargetReachable,
+    targetState,
+    expectedStarts,
+    expectedDestroyedItems,
+    expectedKeptMisses,
+    startsForEvenChance: getStartsForConfidence(totalChance, 0.5),
+    startsForHighConfidence: getStartsForConfidence(totalChance, 0.9),
+    materials: {
+      perStart: perStartMaterials,
+      perTarget: perTargetMaterials,
+      fullSequence: fullSequenceMaterials,
+    },
+    lines: detailedLines,
   }
+}
+
+export function findBestQualityOddsOrder({
+  gearType,
+  item,
+  statTypes,
+  statInputs,
+  lineOrder,
+  lineEnchantMethods,
+  qualityTargetPercent,
+  remainingPotentialMultiplier,
+  futurePotentialMultiplier,
+}) {
+  if (!qualityOddsGearTypes.includes(gearType)) {
+    return {
+      pendingOrder: [],
+      totalChance: 0,
+    }
+  }
+
+  const targetQuality = Math.min(Math.max(Number(qualityTargetPercent) || 0, 0), 100)
+  const benchmarkDI = getGearQualityBenchmark(item, futurePotentialMultiplier)
+  const targetScore = Math.ceil(benchmarkDI * targetQuality / 100 * ratingScale)
+  let fixedScore = 0
+  const rollableLines = []
+
+  for (const lineIndex of lineOrder) {
+    const stat = statTypes[lineIndex]
+    const statInfo = item.Stats[stat]
+    if (!statInfo || statInfo.DI <= 0) {
+      continue
+    }
+
+    const currentValue = getInputValue(statInputs, lineIndex)
+    const hasValue = hasRolledValue(statInputs, lineIndex)
+    const linePotentialMultiplier = hasValue
+      ? remainingPotentialMultiplier
+      : futurePotentialMultiplier
+    const upgradeMinValue = normalizeStatValue(
+      statInfo,
+      statInfo.Potential[0] * linePotentialMultiplier,
+    )
+    const upgradeScore = Math.round(
+      upgradeMinValue / statInfo.Value * statInfo.DI * ratingScale,
+    )
+
+    if (hasValue) {
+      fixedScore += upgradeScore
+      fixedScore += Math.round(currentValue / statInfo.Value * statInfo.DI * ratingScale)
+      continue
+    }
+
+    rollableLines.push({
+      index: lineIndex,
+      upgradeScore,
+      enchantMethod: getOddsEnchantMethod(gearType, lineEnchantMethods?.[lineIndex]),
+      distribution: getRollDistribution(
+        getStatStep(stat),
+        statInfo.Value,
+        getStatStep(stat),
+        statInfo.Value,
+        statInfo.DI,
+      ),
+    })
+  }
+
+  if (fixedScore >= targetScore) {
+    return {
+      pendingOrder: rollableLines.map((line) => line.index),
+      totalChance: 1,
+    }
+  }
+
+  const subsetCount = 2 ** rollableLines.length
+  const activeOutcomesBySubset = Array(subsetCount)
+  activeOutcomesBySubset[0] = new Map([[fixedScore, 1]])
+
+  for (let subset = 1; subset < subsetCount; subset++) {
+    const linePosition = getFirstSetBitIndex(subset)
+    const previousSubset = subset & ~(1 << linePosition)
+    activeOutcomesBySubset[subset] = getRemainingQualityOutcomes(
+      activeOutcomesBySubset[previousSubset],
+      rollableLines[linePosition],
+      targetScore,
+    )
+  }
+
+  const bestChanceBySubset = Array(subsetCount).fill(Number.NEGATIVE_INFINITY)
+  const bestOrderBySubset = Array(subsetCount)
+  bestChanceBySubset[0] = 0
+  bestOrderBySubset[0] = []
+
+  for (let subset = 0; subset < subsetCount; subset++) {
+    for (let linePosition = 0; linePosition < rollableLines.length; linePosition++) {
+      const lineBit = 1 << linePosition
+      if (subset & lineBit) {
+        continue
+      }
+
+      const nextSubset = subset | lineBit
+      const candidateChance = bestChanceBySubset[subset] + getQualityFinishChance(
+        activeOutcomesBySubset[subset],
+        rollableLines[linePosition],
+        targetScore,
+      )
+
+      if (candidateChance > bestChanceBySubset[nextSubset] + Number.EPSILON) {
+        bestChanceBySubset[nextSubset] = candidateChance
+        bestOrderBySubset[nextSubset] = [
+          ...bestOrderBySubset[subset],
+          rollableLines[linePosition].index,
+        ]
+      }
+    }
+  }
+
+  return {
+    pendingOrder: bestOrderBySubset[subsetCount - 1] ?? [],
+    totalChance: Math.max(bestChanceBySubset[subsetCount - 1], 0),
+  }
+}
+
+function getFirstSetBitIndex(value) {
+  for (let index = 0; index < 32; index++) {
+    if (value & (1 << index)) {
+      return index
+    }
+  }
+  return 0
+}
+
+function getRemainingQualityOutcomes(activeOutcomes, line, targetScore) {
+  const nextOutcomes = new Map()
+  activeOutcomes.forEach((currentProbability, currentScore) => {
+    const survivedProbability = currentProbability * line.enchantMethod.successRate
+    line.distribution.forEach((roll) => {
+      const nextScore = currentScore + line.upgradeScore + roll.score
+      if (nextScore >= targetScore) {
+        return
+      }
+
+      const nextProbability = survivedProbability * roll.probability
+      nextOutcomes.set(nextScore, (nextOutcomes.get(nextScore) || 0) + nextProbability)
+    })
+  })
+  return nextOutcomes
+}
+
+function getQualityFinishChance(activeOutcomes, line, targetScore) {
+  let finishChance = 0
+  activeOutcomes.forEach((currentProbability, currentScore) => {
+    const survivedProbability = currentProbability * line.enchantMethod.successRate
+    line.distribution.forEach((roll) => {
+      if (currentScore + line.upgradeScore + roll.score >= targetScore) {
+        finishChance += survivedProbability * roll.probability
+      }
+    })
+  })
+  return finishChance
+}
+
+function sumOutcomeProbabilities(outcomes) {
+  let total = 0
+  outcomes.forEach((probability) => {
+    total += probability
+  })
+  return total
+}
+
+function clampProbability(probability) {
+  return Math.min(Math.max(probability, 0), 1)
+}
+
+function getStartsForConfidence(probability, confidence) {
+  if (probability <= 0) {
+    return null
+  }
+  if (probability >= 1) {
+    return 1
+  }
+
+  return Math.ceil(Math.log(1 - confidence) / Math.log(1 - probability))
 }
