@@ -580,25 +580,10 @@
     min-height: 108px;
     background-color: oklch(0.225 0.075 253);
     background-image:
-      linear-gradient(90deg, rgb(3 19 45 / 0.98), rgb(12 53 105 / 0.88) 58%, rgb(26 91 145 / 0.78)),
-      linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
-    background-position: center, center, center;
-    background-size: cover, 28px 28px, 28px 28px;
-  }
-
-  .parade-app-header[data-active="upgrade"] .parade-artband::after {
-    position: absolute;
-    inset: -5rem -4rem auto auto;
-    width: 28rem;
-    height: 18rem;
-    border: 1px solid rgb(255 214 126 / 0.2);
-    border-radius: 50%;
-    background: radial-gradient(circle, rgb(255 196 86 / 0.16), transparent 66%);
-    content: "";
-    pointer-events: none;
-    transform: rotate(-12deg);
-    z-index: 0;
+      var(--parade-art-overlay),
+      url('https://static.latale.com/latale/Contents/2026/06/2026062411320982210.jpg');
+    background-position: center, center 38%;
+    background-size: cover;
   }
 
   .parade-app-header[data-active="upgrade"] .parade-artband-inner {
@@ -1087,19 +1072,13 @@
   border-bottom: 1px solid color-mix(in oklab, var(--upgrade-night-cyan) 18%, transparent);
   background-color: var(--upgrade-night-deep);
   background-image:
-    radial-gradient(circle at 18% -80%, color-mix(in oklab, var(--upgrade-night-cyan) 25%, transparent), transparent 34rem),
-    radial-gradient(circle at 86% 160%, oklch(0.84 0.14 84 / 0.035), transparent 26rem),
-    linear-gradient(105deg, var(--upgrade-night-deep), oklch(0.18 0.07 246) 58%, oklch(0.205 0.075 239));
-  background-size: auto;
+    var(--parade-art-overlay),
+    url('https://static.latale.com/latale/Contents/2026/06/2026062411320982210.jpg');
+  background-position: center, center 38%;
+  background-size: cover;
   box-shadow:
     0 18px 50px rgb(0 4 18 / 0.28),
     0 -1px 0 rgb(255 255 255 / 0.04) inset;
-}
-
-.dark .parade-app-header[data-active="upgrade"] .parade-artband::after {
-  border-color: color-mix(in oklab, var(--upgrade-night-gold) 25%, transparent);
-  background: transparent;
-  box-shadow: none;
 }
 
 .dark .upgrade-workbench {
@@ -1445,6 +1424,10 @@
   .parade-app-header[data-active="upgrade"] .parade-artband,
   .parade-app-header[data-active="upgrade"] .parade-artband-inner {
     min-height: 92px;
+  }
+
+  .parade-app-header[data-active="upgrade"] .parade-artband {
+    background-position: center, 64% 34%;
   }
 
   .upgrade-workspace {
