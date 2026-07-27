@@ -14,9 +14,9 @@ const shellRoutes = {
   },
   '/upgrade': {
     active: 'upgrade',
-    eyebrow: 'Upgrade materials',
-    title: 'Plan your next upgrade.',
-    description: '',
+    eyebrow: 'Upgrade workbench · live material plan',
+    title: 'Chart the cost before you commit.',
+    description: 'Build a work order from any starting level, see what your inventory can cover, and inspect every material step.',
     showHelp: false,
   },
   '/plan': {

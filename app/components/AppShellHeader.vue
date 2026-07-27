@@ -60,7 +60,7 @@ const primaryNavStyle = computed(() => {
 </script>
 
 <template>
-  <header class="parade-app-header">
+  <header class="parade-app-header" :data-active="props.active">
     <a class="parade-skip-link" href="#main-content">Skip to main content</a>
 
     <div class="parade-appbar">
