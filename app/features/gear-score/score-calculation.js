@@ -14,6 +14,8 @@ import {
   getTierForPercent,
 } from './helpers.js'
 
+const materialVariants = ['untradeable', 'tradable']
+
 export function createEmptyGearScoreResult() {
   return {
     individual: [
@@ -77,9 +79,14 @@ export function getEmptyQualityOdds() {
 
 function getEmptyMaterialEstimate(emptyValue = 0) {
   return {
-    ely: emptyValue,
-    hammersMin: emptyValue,
-    hammersMax: emptyValue,
+    untradeable: {
+      ely: emptyValue,
+      hammers: emptyValue,
+    },
+    tradable: {
+      ely: emptyValue,
+      hammers: emptyValue,
+    },
   }
 }
 
@@ -524,9 +531,8 @@ export function calculateQualityOdds({
       enchantMethod: enchantMethod?.value ?? null,
       enchantMethodLabel: enchantMethod?.label ?? '',
       successRate: enchantMethod?.successRate ?? null,
-      elyCost: enchantMethod?.elyCost ?? 0,
-      hammerCostMin: enchantMethod?.hammerCostMin ?? 0,
-      hammerCostMax: enchantMethod?.hammerCostMax ?? 0,
+      costsByTradeability:
+        enchantMethod?.costsByTradeability ?? getEmptyMaterialEstimate(),
     })
   }
 
@@ -545,9 +551,7 @@ export function calculateQualityOdds({
   let activeOutcomes = fixedScore >= targetScore ? new Map() : new Map([[fixedScore, 1]])
   let totalChance = fixedScore >= targetScore ? 1 : 0
   let abandonedMissChance = 0
-  let expectedElyPerStart = 0
-  let expectedHammersMinPerStart = 0
-  let expectedHammersMaxPerStart = 0
+  const expectedMaterialsPerStart = getEmptyMaterialEstimate()
   const lineOutcomeDetails = new Map()
 
   for (let index = 0; index < rollableFutureLines.length; index++) {
@@ -572,9 +576,12 @@ export function calculateQualityOdds({
     const attemptChance = sumOutcomeProbabilities(activeOutcomes)
     const nextOutcomes = new Map()
 
-    expectedElyPerStart += attemptChance * line.enchantMethod.elyCost
-    expectedHammersMinPerStart += attemptChance * line.enchantMethod.hammerCostMin
-    expectedHammersMaxPerStart += attemptChance * line.enchantMethod.hammerCostMax
+    for (const variant of materialVariants) {
+      expectedMaterialsPerStart[variant].ely +=
+        attemptChance * line.enchantMethod.costsByTradeability[variant].ely
+      expectedMaterialsPerStart[variant].hammers +=
+        attemptChance * line.enchantMethod.costsByTradeability[variant].hammers
+    }
 
     activeOutcomes.forEach((currentProbability, currentScore) => {
       const survivedProbability = currentProbability * line.enchantMethod.successRate
@@ -635,22 +642,25 @@ export function calculateQualityOdds({
   const expectedDestroyedItems = totalChance > 0 ? destroyedChance / totalChance : null
   const expectedKeptMisses = totalChance > 0 ? survivedMissChance / totalChance : null
   const fullSequenceMaterials = rollableFutureLines.reduce((materials, line) => {
-    materials.ely += line.enchantMethod.elyCost
-    materials.hammersMin += line.enchantMethod.hammerCostMin
-    materials.hammersMax += line.enchantMethod.hammerCostMax
+    for (const variant of materialVariants) {
+      materials[variant].ely +=
+        line.enchantMethod.costsByTradeability[variant].ely
+      materials[variant].hammers +=
+        line.enchantMethod.costsByTradeability[variant].hammers
+    }
     return materials
   }, getEmptyMaterialEstimate())
-  const perStartMaterials = {
-    ely: expectedElyPerStart,
-    hammersMin: expectedHammersMinPerStart,
-    hammersMax: expectedHammersMaxPerStart,
-  }
+  const perStartMaterials = expectedMaterialsPerStart
   const perTargetMaterials = totalChance > 0
-    ? {
-        ely: expectedElyPerStart / totalChance,
-        hammersMin: expectedHammersMinPerStart / totalChance,
-        hammersMax: expectedHammersMaxPerStart / totalChance,
-      }
+    ? Object.fromEntries(
+        materialVariants.map((variant) => [
+          variant,
+          {
+            ely: expectedMaterialsPerStart[variant].ely / totalChance,
+            hammers: expectedMaterialsPerStart[variant].hammers / totalChance,
+          },
+        ]),
+      )
     : getEmptyMaterialEstimate(null)
   const detailedLines = lines.map((line) => ({
     ...line,

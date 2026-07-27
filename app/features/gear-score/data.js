@@ -19,25 +19,46 @@ export const oddsEnchantMethods = {
     value: 'normal',
     label: 'Normal',
     successRate: 0.5,
-    elyCost: 50_000_000,
-    hammerCostMin: 1,
-    hammerCostMax: 1,
+    costsByTradeability: {
+      untradeable: {
+        ely: 0,
+        hammers: 1,
+      },
+      tradable: {
+        ely: 50_000_000,
+        hammers: 1,
+      },
+    },
   },
   standard: {
     value: 'standard',
     label: 'Super',
     successRate: 0.6,
-    elyCost: 100_000_000,
-    hammerCostMin: 2,
-    hammerCostMax: 2,
+    costsByTradeability: {
+      untradeable: {
+        ely: 0,
+        hammers: 2,
+      },
+      tradable: {
+        ely: 100_000_000,
+        hammers: 2,
+      },
+    },
   },
   special: {
     value: 'special',
     label: 'Special',
     successRate: 1,
-    elyCost: 0,
-    hammerCostMin: 10,
-    hammerCostMax: 30,
+    costsByTradeability: {
+      untradeable: {
+        ely: 0,
+        hammers: 10,
+      },
+      tradable: {
+        ely: 0,
+        hammers: 30,
+      },
+    },
   },
 }
 

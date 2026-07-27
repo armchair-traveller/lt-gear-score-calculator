@@ -66,6 +66,7 @@ export function useGearScoreCalculator() {
   const statInput = ref(['', '', '', '', ''])
   const statPickerOpen = ref([])
   const qualityOddsOrder = ref([0, 1, 2, 3, 4])
+  const qualityPlanEnchantMethod = ref(defaultOddsEnchantMethod)
   const qualityLineEnchantMethods = ref(Array(5).fill(defaultOddsEnchantMethod))
   const qualityTargets = ref(readStoredQualityTargets())
   const validStats = ref([])
@@ -355,6 +356,7 @@ export function useGearScoreCalculator() {
   }
 
   function resetOddsEnchantMethods() {
+    qualityPlanEnchantMethod.value = defaultOddsEnchantMethod
     qualityLineEnchantMethods.value = statType.value.map(() => defaultOddsEnchantMethod)
   }
 
@@ -364,9 +366,11 @@ export function useGearScoreCalculator() {
     }
 
     const validMethods = currentOddsEnchantMethodOptions.value.map((option) => option.value)
-    qualityLineEnchantMethods.value[lineIndex] = validMethods.includes(method)
-      ? method
-      : defaultOddsEnchantMethod
+    if (!validMethods.includes(method)) {
+      return
+    }
+
+    qualityLineEnchantMethods.value[lineIndex] = method
   }
 
   function setAllQualityLineEnchantMethods(method) {
@@ -375,6 +379,7 @@ export function useGearScoreCalculator() {
       return
     }
 
+    qualityPlanEnchantMethod.value = method
     qualityLineEnchantMethods.value = statType.value.map(() => method)
   }
 
@@ -875,6 +880,7 @@ export function useGearScoreCalculator() {
     inputValueMode,
     resultMode,
     inputEnchantLevel,
+    qualityPlanEnchantMethod,
     qualityLineEnchantMethods,
     statType,
     statInput,

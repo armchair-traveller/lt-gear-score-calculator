@@ -7,7 +7,9 @@ the score of a completed item.
 ## Enchant flow
 
 - All supported gear uses Platinum Hammers for enchanting.
-  - Worth 150 million Ely.
+  - Each is valued at 150 million Ely for planning comparisons.
+- Untradeable equipment pays no Ely enchanting fee, regardless of the method.
+  Ely fees listed below apply only to tradable equipment.
 - Every enchant attempt targets one stat line; lines are never enchanted in a
   batch.
 - A failed enchant destroys the item.
@@ -27,12 +29,12 @@ lines only.
 
 Costs are per attempted line.
 
-| Method | Success rate |         Ely | Platinum Hammers |
-| ------ | -----------: | ----------: | ---------------: |
-| Normal |          50% |  50,000,000 |                1 |
-| Super  |          60% | 100,000,000 |                2 |
+| Method | Success rate | Tradable-item Ely | Platinum Hammers |
+| ------ | -----------: | ----------------: | ---------------: |
+| Normal |          50% |        50,000,000 |                1 |
+| Super  |          60% |       100,000,000 |                2 |
 
-Super doubles both costs of Normal.
+Super doubles Normal's Platinum Hammer count and tradable-item Ely fee.
 
 ## sLv Special enchant
 
@@ -40,21 +42,22 @@ Special enchant has 100% success and is available only on eligible sLv gear.
 The only eligible family currently represented is Rikimo gear,
 `[sLv5] Accessories`.
 
-| Variant     | Success rate | Ely | Platinum Hammers |
-| ----------- | -----------: | --: | ---------------: |
-| Untradeable |         100% |   0 |               10 |
-| Tradable    |         100% |   0 |               30 |
+| Item variant | Success rate | Ely | Platinum Hammers |
+| ------------ | -----------: | --: | ---------------: |
+| Untradeable  |         100% |   0 |               10 |
+| Tradable     |         100% |   0 |               30 |
 
 ## Badge 6 rates and costs
 
 Badge 6 uses its own profile instead of the main-gear profile.
 
-| Method     | Success rate |         Ely | Platinum Hammers |
-| ---------- | -----------: | ----------: | ---------------: |
-| 40% option |          40% |  50,000,000 |                1 |
-| 50% option |          50% | 100,000,000 |                2 |
+| Method     | Success rate | Tradable-item Ely | Platinum Hammers |
+| ---------- | -----------: | ----------------: | ---------------: |
+| 40% option |          40% |        50,000,000 |                1 |
+| 50% option |          50% |       100,000,000 |                2 |
 
-The 50% option doubles both costs of the 40% option.
+The 50% option doubles the 40% option's Platinum Hammer count and
+tradable-item Ely fee.
 
 ## Planning implications
 

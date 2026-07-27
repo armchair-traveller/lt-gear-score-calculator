@@ -3,10 +3,11 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ChevronDownIcon,
+  CircleHelpIcon,
   RotateCcwIcon,
+  Settings2Icon,
   SparklesIcon,
   TargetIcon,
-  WandSparklesIcon,
 } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { getQualityTargetPresetValues } from '@/features/gear-score/data.js'
@@ -15,15 +16,16 @@ import { cn } from '@/lib/utils'
 
 const {
   gearType,
+  qualityPlanEnchantMethod,
   qualityLineEnchantMethods,
   results,
   currentOddsEnchantMethodOptions,
   defaultQualityTargetPercent,
   hasCustomQualityTarget,
   qualityTargetPercent,
-  platinumHammerElyValue,
   movePendingQualityOddsLine,
   optimizeQualityOddsOrder,
+  setAllQualityLineEnchantMethods,
   setQualityLineEnchantMethod,
   setQualityTargetPercent,
   resetQualityTarget,
@@ -33,6 +35,8 @@ const qualityTargetDraft = ref('')
 const targetError = ref('')
 const targetDetailsOpen = ref(false)
 const planDetailsOpen = ref(false)
+const calculationNotesOpen = ref(false)
+const methodOverridesOpen = ref(false)
 const optimizationMessage = ref('')
 const planAnnouncement = ref('')
 
@@ -40,10 +44,27 @@ const compactNumberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 })
 
+const materialPaths = [
+  {
+    key: 'untradeable',
+    label: 'Untradeable',
+  },
+  {
+    key: 'tradable',
+    label: 'Tradable',
+  },
+]
+
 const odds = computed(() => results.value.qualityOdds)
 const pendingLines = computed(() => odds.value.lines.filter((line) => line.status === 'new'))
 const activePendingLines = computed(() =>
   pendingLines.value.filter((line) => line.attemptChance > 0),
+)
+const targetMaterialPaths = computed(() =>
+  materialPaths.map((path) => ({
+    ...path,
+    ...odds.value.materials.perTarget[path.key],
+  })),
 )
 const hasLockedQuality = computed(() => odds.value.qualityText !== '—')
 
@@ -73,12 +94,12 @@ const selectedTargetPreset = computed(
     )?.id,
 )
 
-const commonPendingMethod = computed(() => {
-  const methods = activePendingLines.value.map(
-    (line) => qualityLineEnchantMethods.value[line.index],
-  )
-  return methods.length && methods.every((method) => method === methods[0]) ? methods[0] : undefined
-})
+const methodOverrideCount = computed(
+  () =>
+    activePendingLines.value.filter(
+      (line) => qualityLineEnchantMethods.value[line.index] !== qualityPlanEnchantMethod.value,
+    ).length,
+)
 
 const methodGridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${currentOddsEnchantMethodOptions.value.length}, minmax(0, 1fr))`,
@@ -139,7 +160,7 @@ const outcomeLabel = computed(() => {
   if (odds.value.targetState === 'no-rolls') {
     return 'No damaging rolls remain'
   }
-  return 'Chance to reach target'
+  return 'Target chance'
 })
 
 const outcomeSummary = computed(() => {
@@ -185,47 +206,17 @@ const targetMarkerClass = computed(() =>
   ),
 )
 
-const activeMethodSummary = computed(() =>
-  currentOddsEnchantMethodOptions.value
-    .map((method) => ({
-      label: method.label,
-      count: activePendingLines.value.filter(
-        (line) => qualityLineEnchantMethods.value[line.index] === method.value,
-      ).length,
-    }))
-    .filter((method) => method.count > 0)
-    .map((method) => `${method.count}× ${method.label}`)
-    .join(' · '),
-)
-
-const hasActiveSpecialMethod = computed(() =>
-  activePendingLines.value.some(
-    (line) => qualityLineEnchantMethods.value[line.index] === 'special',
-  ),
-)
-
-const targetHammerValue = computed(() => {
-  const materials = odds.value.materials.perTarget
-  if (!Number.isFinite(materials.hammersMin) || !Number.isFinite(materials.hammersMax)) {
-    return '—'
+const planLabel = computed(() => {
+  const count = pendingLines.value.length
+  if (!count) {
+    return 'Plan'
   }
-
-  const minText = formatCount(materials.hammersMin)
-  const maxText = formatCount(materials.hammersMax)
-  if (minText === maxText) {
-    return minText
-  }
-  if (hasActiveSpecialMethod.value) {
-    return `${minText} / ${maxText}`
-  }
-  return `${minText}–${maxText}`
+  return `Plan · ${count} ${count === 1 ? 'line' : 'lines'}`
 })
 
-const targetHammerQualifier = computed(() => {
-  const materials = odds.value.materials.perTarget
-  return hasActiveSpecialMethod.value && materials.hammersMin !== materials.hammersMax
-    ? 'untradeable / tradable'
-    : ''
+const commonMethodLabel = computed(() => {
+  const count = methodOverrideCount.value
+  return count ? `Method · ${count} ${count === 1 ? 'override' : 'overrides'}` : 'Method'
 })
 
 const targetDisclosureLabel = computed(() => {
@@ -241,6 +232,10 @@ watch(
   },
   { immediate: true },
 )
+
+watch(gearType, () => {
+  methodOverridesOpen.value = false
+})
 
 watch(
   [qualityLineEnchantMethods, qualityTargetPercent],
@@ -313,17 +308,30 @@ function setTargetDetailsOpen(open) {
 }
 
 function updateQualityLineEnchantMethod(lineIndex, method) {
-  if (typeof method === 'string') {
-    setQualityLineEnchantMethod(lineIndex, method)
+  const option = currentOddsEnchantMethodOptions.value.find((item) => item.value === method)
+  if (!option) {
+    return
+  }
+
+  setQualityLineEnchantMethod(lineIndex, method)
+  const line = pendingLines.value.find((item) => item.index === lineIndex)
+  if (line) {
+    planAnnouncement.value = `${line.stat} now uses ${option.label}.`
   }
 }
 
 function updateAllEnchantMethods(method) {
-  if (typeof method === 'string') {
-    activePendingLines.value.forEach((line) => {
-      setQualityLineEnchantMethod(line.index, method)
-    })
+  const option = currentOddsEnchantMethodOptions.value.find((item) => item.value === method)
+  if (!option) {
+    return
   }
+
+  setAllQualityLineEnchantMethods(method)
+  planAnnouncement.value = `${option.label} applied to every roll.`
+}
+
+function isLineMethodOverride(line) {
+  return qualityLineEnchantMethods.value[line.index] !== qualityPlanEnchantMethod.value
 }
 
 function optimizeOrder() {
@@ -381,41 +389,25 @@ function formatEly(value) {
   return compactNumberFormatter.format(value)
 }
 
-function formatHammerRange(minValue, maxValue) {
-  if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
+function formatHammerCount(value) {
+  if (!Number.isFinite(value)) {
     return '—'
   }
 
-  const minText = formatCount(minValue)
-  const maxText = formatCount(maxValue)
-  return minText === maxText ? minText : `${minText}–${maxText}`
+  const noun = Math.abs(value - 1) < 1e-9 ? 'hammer' : 'hammers'
+  return `${formatCount(value)} ${noun}`
 }
 
-function formatMethodCost(method) {
-  const hammerText = formatHammerRange(method.hammerCostMin, method.hammerCostMax)
-  const hammerLabel = method.hammerCostMax === 1 ? 'hammer' : 'hammers'
-  if (method.elyCost === 0) {
-    return `${hammerText} ${hammerLabel} · no Ely`
+function formatMaterialPath(cost) {
+  const parts = [formatHammerCount(cost.hammers)]
+  if (Number.isFinite(cost.ely) && cost.ely > 0) {
+    parts.push(`${formatEly(cost.ely)} Ely`)
   }
-  return `${formatEly(method.elyCost)} Ely + ${hammerText} ${hammerLabel}`
+  return parts.join(' · ')
 }
 
 function formatAttemptCost(method) {
-  if (method.hammerCostMin !== method.hammerCostMax) {
-    const elyText = method.elyCost === 0 ? 'no Ely' : `${formatEly(method.elyCost)} Ely`
-    return `${formatCount(method.hammerCostMin)} untradeable hammers or ${formatCount(method.hammerCostMax)} tradable hammers · ${elyText} per attempted roll`
-  }
-
-  return `${formatMethodCost(method)} per attempted roll`
-}
-
-function formatCompactAttemptCost(method) {
-  if (method.hammerCostMin !== method.hammerCostMax) {
-    const elyText = method.elyCost === 0 ? 'no Ely' : `${formatEly(method.elyCost)} Ely`
-    return `${formatCount(method.hammerCostMin)} untradeable / ${formatCount(method.hammerCostMax)} tradable hammers per roll · ${elyText}`
-  }
-
-  return `${formatMethodCost(method)} per roll`
+  return `per attempted roll: untradeable item, ${formatMaterialPath(method.costsByTradeability.untradeable)}; tradable item, ${formatMaterialPath(method.costsByTradeability.tradable)}`
 }
 
 function formatRangeText(range) {
@@ -429,328 +421,334 @@ function formatRangeText(range) {
       {{ liveAnnouncement }}
     </p>
 
-    <Collapsible :open="targetDetailsOpen" @update:open="setTargetDetailsOpen">
-      <section
+    <Collapsible v-model:open="planDetailsOpen">
+      <div
         class="overflow-hidden rounded-2xl bg-gradient-to-br from-surface-inset to-info-surface/70"
-        aria-labelledby="quality-outcome-heading"
       >
-        <div class="p-4 sm:p-5">
-          <div class="flex min-w-0 items-start justify-between gap-3">
-            <div class="min-w-0">
-              <h3
-                id="quality-outcome-heading"
-                class="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
-              >
-                {{ outcomeLabel }}
-              </h3>
-              <MotionValue
-                :motion-key="odds.totalChanceText"
-                as="div"
-                class="motion-tabular mt-1 text-4xl font-bold tracking-[-0.05em]"
-              >
-                {{ odds.totalChanceText }}
-              </MotionValue>
-              <p v-if="outcomeSummary" class="mt-1 text-sm text-muted-foreground">
-                {{ outcomeSummary }}
-              </p>
-            </div>
-
-            <CollapsibleTrigger as-child>
-              <Button
-                variant="outline"
-                size="sm"
-                class="h-8 shrink-0 bg-background/70 px-2.5 shadow-sm"
-                :aria-label="targetDisclosureLabel"
-              >
-                <TargetIcon data-icon="inline-start" aria-hidden="true" />
-                <span>
-                  {{ hasCustomQualityTarget ? 'Target' : 'SSS' }} ·
-                  {{ odds.targetQualityText }}
-                </span>
-                <ChevronDownIcon
-                  data-icon="inline-end"
-                  :class="cn('transition-transform', targetDetailsOpen && 'rotate-180')"
-                  aria-hidden="true"
-                />
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-
-          <dl
-            v-if="odds.targetState === 'active'"
-            class="mt-3 grid min-w-0 grid-cols-[0.95fr_0.8fr_1.25fr] divide-x"
-            aria-label="Average resources per successful target"
-          >
-            <div class="min-w-0 pr-2 sm:pr-4">
-              <dt class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Avg. matching copies
-              </dt>
-              <dd class="motion-tabular mt-1 text-lg font-semibold tracking-[-0.03em] sm:text-xl">
-                ≈{{ formatCount(odds.expectedStarts) }}
-              </dd>
-            </div>
-            <div class="min-w-0 px-2 sm:px-4">
-              <dt class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Avg. Ely
-              </dt>
-              <dd class="motion-tabular mt-1 text-lg font-semibold tracking-[-0.03em] sm:text-xl">
-                {{ formatEly(odds.materials.perTarget.ely) }}
-              </dd>
-            </div>
-            <div class="min-w-0 pl-2 sm:pl-4">
-              <dt class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Avg. hammers
-              </dt>
-              <dd class="motion-tabular mt-1 break-words text-lg font-semibold sm:text-xl">
-                {{ targetHammerValue }}
-              </dd>
-              <dd v-if="targetHammerQualifier" class="mt-0.5 text-[10px] text-muted-foreground">
-                {{ targetHammerQualifier }}
-              </dd>
-            </div>
-          </dl>
-
-          <template v-if="odds.targetState === 'active'">
-            <div class="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-              <span
-                class="bg-success"
-                :style="outcomeSegmentStyles.target"
-                aria-hidden="true"
-              ></span>
-              <span class="bg-warning" :style="outcomeSegmentStyles.kept" aria-hidden="true"></span>
-              <span
-                class="bg-destructive"
-                :style="outcomeSegmentStyles.destroyed"
-                aria-hidden="true"
-              ></span>
-            </div>
-
-            <dl
-              v-if="hasAlternateOutcomes"
-              class="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs"
-              aria-label="Other attempt outcomes"
-            >
-              <div v-if="hasKeptMissOutcome" class="flex items-center gap-1.5">
-                <span class="size-1.5 shrink-0 rounded-full bg-warning" aria-hidden="true"></span>
-                <dt class="text-muted-foreground">End below target</dt>
-                <dd class="motion-tabular font-semibold">
-                  {{ odds.survivedMissChanceText }}
-                </dd>
-              </div>
-              <div v-if="hasDestroyedOutcome" class="flex items-center gap-1.5">
-                <span
-                  class="size-1.5 shrink-0 rounded-full bg-destructive"
-                  aria-hidden="true"
-                ></span>
-                <dt class="text-muted-foreground">Destroyed</dt>
-                <dd class="motion-tabular font-semibold">
-                  {{ odds.destroyedChanceText }}
-                </dd>
-              </div>
-            </dl>
-          </template>
-        </div>
-
-        <div
-          v-if="odds.targetState === 'active' && activePendingLines.length"
-          class="border-t border-border/60 px-4 py-2.5 sm:px-5"
-        >
-          <div
-            class="grid min-w-0 gap-2.5 sm:grid-cols-[minmax(9rem,0.55fr)_minmax(0,1.45fr)] sm:items-center"
-          >
-            <div class="min-w-0">
-              <h4 id="quality-common-method-label" class="text-xs font-semibold">
-                Roll method ·
-                {{
-                  activePendingLines.length === 1
-                    ? activePendingLines[0].stat
-                    : `${activePendingLines.length} rolls`
-                }}
-              </h4>
-              <p id="quality-material-scope" class="sr-only">
-                Attempt materials only; replacements excluded.
-              </p>
-            </div>
-
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              :spacing="1"
-              :model-value="commonPendingMethod"
-              class="grid w-full gap-1"
-              :style="methodGridStyle"
-              aria-labelledby="quality-common-method-label"
-              aria-describedby="quality-material-scope"
-              @update:model-value="updateAllEnchantMethods"
-            >
-              <ToggleGroupItem
-                v-for="method in currentOddsEnchantMethodOptions"
-                :key="method.value"
-                :value="method.value"
-                class="min-w-0 gap-1 px-1.5 text-xs"
-                :aria-label="`${method.label}: ${method.successRate * 100}% success; ${formatAttemptCost(method)}`"
-              >
-                <span class="truncate font-semibold">{{ method.label }}</span>
-                <span class="motion-tabular shrink-0 text-[10px] text-muted-foreground">
-                  {{ method.successRate * 100 }}%
-                </span>
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        </div>
-      </section>
-
-      <CollapsibleContent class="mt-3 rounded-xl bg-surface-inset">
-        <div
-          class="grid min-w-0 gap-6 p-4 sm:p-5 lg:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.2fr)]"
-        >
-          <FieldSet class="gap-4">
-            <FieldLegend variant="label">Target</FieldLegend>
-
-            <FieldGroup class="gap-4">
-              <Field :data-invalid="targetError ? true : undefined">
-                <div class="flex items-center justify-between gap-3">
-                  <FieldLabel for="quality-target">Exact</FieldLabel>
-                  <Button
-                    v-if="hasCustomQualityTarget && !hasQuickTargetPresets"
-                    variant="ghost"
-                    size="xs"
-                    @click="restoreDefaultTarget"
+        <Collapsible :open="targetDetailsOpen" @update:open="setTargetDetailsOpen">
+          <section aria-labelledby="quality-outcome-heading">
+            <div class="p-4 sm:p-5">
+              <div class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3
+                    id="quality-outcome-heading"
+                    class="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
                   >
-                    <RotateCcwIcon data-icon="inline-start" aria-hidden="true" />
-                    Use SSS
-                  </Button>
+                    {{ outcomeLabel }}
+                  </h3>
+                  <MotionValue
+                    :motion-key="odds.totalChanceText"
+                    as="div"
+                    class="motion-tabular mt-1 text-4xl font-bold tracking-[-0.05em]"
+                  >
+                    {{ odds.totalChanceText }}
+                  </MotionValue>
+                  <p v-if="outcomeSummary" class="mt-1 text-sm text-muted-foreground">
+                    {{ outcomeSummary }}
+                  </p>
                 </div>
-                <InputGroup>
-                  <InputGroupInput
-                    id="quality-target"
-                    v-model="qualityTargetDraft"
-                    type="number"
-                    inputmode="decimal"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    class="motion-tabular"
-                    :aria-invalid="targetError ? true : undefined"
-                    :aria-describedby="targetError ? 'quality-target-error' : undefined"
-                    @blur="commitQualityTarget"
-                    @keydown.enter.prevent="$event.currentTarget.blur()"
-                    @keydown.esc.prevent="cancelQualityTargetEdit"
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupText>%</InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-                <FieldError v-if="targetError" id="quality-target-error">
-                  {{ targetError }}
-                </FieldError>
-              </Field>
 
-              <Field v-if="hasQuickTargetPresets">
-                <FieldLabel id="quality-preset-label">Quick targets</FieldLabel>
+                <CollapsibleTrigger as-child>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="h-8 shrink-0 bg-background/70 px-2.5 shadow-sm"
+                    :aria-label="targetDisclosureLabel"
+                  >
+                    <TargetIcon data-icon="inline-start" aria-hidden="true" />
+                    <span>
+                      {{ hasCustomQualityTarget ? 'Target' : 'SSS' }} ·
+                      {{ odds.targetQualityText }}
+                    </span>
+                    <ChevronDownIcon
+                      data-icon="inline-end"
+                      :class="cn('transition-transform', targetDetailsOpen && 'rotate-180')"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+
+              <div v-if="odds.targetState === 'active'" class="mt-3">
+                <p
+                  id="quality-average-heading"
+                  class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+                >
+                  Average to succeed
+                </p>
+                <dl
+                  class="mt-1.5 grid min-w-0 grid-cols-[minmax(5.5rem,0.65fr)_minmax(0,1.35fr)] divide-x"
+                  aria-labelledby="quality-average-heading"
+                >
+                  <div class="min-w-0 pr-3 sm:pr-5">
+                    <dt
+                      class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+                    >
+                      Matching copies
+                    </dt>
+                    <dd
+                      class="motion-tabular mt-1 text-lg font-semibold tracking-[-0.03em] sm:text-xl"
+                    >
+                      ≈{{ formatCount(odds.expectedStarts) }}
+                    </dd>
+                  </div>
+                  <div class="min-w-0 pl-3 sm:pl-5">
+                    <dt
+                      class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+                    >
+                      Materials
+                    </dt>
+                    <dd class="mt-1 grid min-w-0 gap-1 text-[11px] sm:text-xs">
+                      <span
+                        v-for="path in targetMaterialPaths"
+                        :key="path.key"
+                        class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-2"
+                      >
+                        <span class="text-muted-foreground">{{ path.label }}</span>
+                        <span class="motion-tabular min-w-0 break-words text-right font-semibold">
+                          {{ formatMaterialPath(path) }}
+                        </span>
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <template v-if="odds.targetState === 'active'">
+                <div
+                  class="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted"
+                  aria-hidden="true"
+                >
+                  <span
+                    class="bg-success"
+                    :style="outcomeSegmentStyles.target"
+                    aria-hidden="true"
+                  ></span>
+                  <span
+                    class="bg-warning"
+                    :style="outcomeSegmentStyles.kept"
+                    aria-hidden="true"
+                  ></span>
+                  <span
+                    class="bg-destructive"
+                    :style="outcomeSegmentStyles.destroyed"
+                    aria-hidden="true"
+                  ></span>
+                </div>
+
+                <dl
+                  v-if="hasAlternateOutcomes"
+                  class="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs"
+                  aria-label="Other attempt outcomes"
+                >
+                  <div v-if="hasKeptMissOutcome" class="flex items-center gap-1.5">
+                    <span
+                      class="size-1.5 shrink-0 rounded-full bg-warning"
+                      aria-hidden="true"
+                    ></span>
+                    <dt class="text-muted-foreground">End below target</dt>
+                    <dd class="motion-tabular font-semibold">
+                      {{ odds.survivedMissChanceText }}
+                    </dd>
+                  </div>
+                  <div v-if="hasDestroyedOutcome" class="flex items-center gap-1.5">
+                    <span
+                      class="size-1.5 shrink-0 rounded-full bg-destructive"
+                      aria-hidden="true"
+                    ></span>
+                    <dt class="text-muted-foreground">Destroyed</dt>
+                    <dd class="motion-tabular font-semibold">
+                      {{ odds.destroyedChanceText }}
+                    </dd>
+                  </div>
+                </dl>
+              </template>
+            </div>
+
+            <div
+              v-if="odds.targetState === 'active' && activePendingLines.length"
+              class="border-t border-border/60 px-4 py-2.5 sm:px-5"
+            >
+              <div
+                class="grid min-w-0 gap-2.5 sm:grid-cols-[minmax(9rem,0.55fr)_minmax(0,1.45fr)] sm:items-center"
+              >
+                <div class="min-w-0">
+                  <h4 id="quality-common-method-label" class="text-xs font-semibold">
+                    {{ commonMethodLabel }}
+                    <span class="sr-only">
+                      for all rolls; selecting a method clears per-line overrides
+                    </span>
+                  </h4>
+                </div>
+
                 <ToggleGroup
                   type="single"
                   variant="outline"
                   :spacing="1"
-                  :model-value="selectedTargetPreset"
-                  class="grid gap-1"
-                  :style="targetPresetGridStyle"
-                  aria-labelledby="quality-preset-label"
+                  :model-value="qualityPlanEnchantMethod"
+                  class="grid w-full gap-1"
+                  :style="methodGridStyle"
+                  aria-labelledby="quality-common-method-label"
                 >
                   <ToggleGroupItem
-                    v-for="preset in targetPresets"
-                    :key="preset.id"
-                    :value="preset.id"
-                    class="min-w-0 px-1 text-xs"
-                    @click="applyTargetPreset(preset.id)"
+                    v-for="method in currentOddsEnchantMethodOptions"
+                    :key="method.value"
+                    :value="method.value"
+                    class="min-w-0 gap-1 px-1.5 text-xs"
+                    :aria-label="`${method.label}: ${method.successRate * 100}% success; ${formatAttemptCost(method)}`"
+                    @click="updateAllEnchantMethods(method.value)"
                   >
-                    {{ preset.label }}
+                    <span class="truncate font-semibold">{{ method.label }}</span>
+                    <span
+                      class="motion-tabular hidden shrink-0 text-[10px] text-muted-foreground min-[360px]:inline"
+                    >
+                      {{ method.successRate * 100 }}%
+                    </span>
                   </ToggleGroupItem>
                 </ToggleGroup>
-              </Field>
-            </FieldGroup>
-          </FieldSet>
-
-          <section aria-labelledby="quality-range-heading">
-            <div class="flex items-center gap-2">
-              <WandSparklesIcon class="size-4 text-info-foreground" aria-hidden="true" />
-              <h4 id="quality-range-heading" class="font-semibold">Quality range</h4>
-            </div>
-            <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-              100% is theoretical, not a practical target.
-            </p>
-
-            <div class="mt-4" aria-hidden="true">
-              <div class="relative pb-5 pt-5">
-                <span :class="targetMarkerClass" :style="runwayStyle.target">Target</span>
-                <div class="relative h-2 rounded-full bg-muted shadow-inner">
-                  <div
-                    class="absolute inset-y-0 rounded-full border border-info-border bg-primary/25"
-                    :style="runwayStyle.planned"
-                  ></div>
-                  <div
-                    class="absolute -top-1 h-4 w-0.5 bg-warning"
-                    :style="runwayStyle.target"
-                  ></div>
-                  <div
-                    v-if="hasLockedQuality"
-                    class="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-success shadow-sm"
-                    :style="runwayStyle.locked"
-                  ></div>
-                </div>
-                <span class="absolute bottom-0 left-0 text-[10px] text-muted-foreground">0%</span>
-                <span class="absolute bottom-0 right-0 text-[10px] text-muted-foreground">
-                  100%
-                </span>
               </div>
             </div>
-
-            <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt class="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-                  Locked
-                </dt>
-                <dd class="motion-tabular mt-1 font-semibold">
-                  {{ hasLockedQuality ? odds.qualityText.replaceAll(' ~ ', '–') : 'None' }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-                  Possible finish
-                </dt>
-                <dd class="motion-tabular mt-1 font-semibold">
-                  {{ odds.plannedQualityText.replaceAll(' ~ ', '–') }}
-                </dd>
-              </div>
-            </dl>
           </section>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
 
-    <Collapsible v-model:open="planDetailsOpen" class="mt-2 border-t">
-      <CollapsibleTrigger as-child>
-        <Button
-          variant="ghost"
-          class="h-auto w-full justify-start rounded-none px-0 py-3 text-left"
-        >
-          <SparklesIcon data-icon="inline-start" aria-hidden="true" />
-          <span class="min-w-0 flex-1 text-xs font-semibold">Plan details</span>
-          <span
-            v-if="odds.targetState === 'active' && activePendingLines.length"
-            class="hidden min-w-0 truncate text-xs font-normal text-muted-foreground sm:block"
+          <CollapsibleContent class="border-t border-border/60 bg-background/25">
+            <div class="p-4 sm:p-5">
+              <FieldGroup class="grid grid-cols-[minmax(6.5rem,0.7fr)_minmax(0,1.3fr)] gap-2">
+                <Field
+                  :class="cn(!hasQuickTargetPresets && 'col-span-2')"
+                  :data-invalid="targetError ? true : undefined"
+                >
+                  <FieldLabel for="quality-target" class="sr-only">Exact target</FieldLabel>
+                  <div class="flex items-center gap-2">
+                    <InputGroup>
+                      <InputGroupInput
+                        id="quality-target"
+                        v-model="qualityTargetDraft"
+                        type="number"
+                        inputmode="decimal"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        class="motion-tabular"
+                        :aria-invalid="targetError ? true : undefined"
+                        :aria-describedby="targetError ? 'quality-target-error' : undefined"
+                        @blur="commitQualityTarget"
+                        @keydown.enter.prevent="$event.currentTarget.blur()"
+                        @keydown.esc.prevent="cancelQualityTargetEdit"
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupText>%</InputGroupText>
+                      </InputGroupAddon>
+                    </InputGroup>
+                    <Button
+                      v-if="hasCustomQualityTarget && !hasQuickTargetPresets"
+                      variant="ghost"
+                      size="xs"
+                      class="shrink-0"
+                      @click="restoreDefaultTarget"
+                    >
+                      <RotateCcwIcon data-icon="inline-start" aria-hidden="true" />
+                      SSS
+                    </Button>
+                  </div>
+                  <FieldError v-if="targetError" id="quality-target-error">
+                    {{ targetError }}
+                  </FieldError>
+                </Field>
+
+                <Field v-if="hasQuickTargetPresets">
+                  <FieldLabel id="quality-preset-label" class="sr-only">Quick targets</FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    :spacing="1"
+                    :model-value="selectedTargetPreset"
+                    class="grid gap-1"
+                    :style="targetPresetGridStyle"
+                    aria-labelledby="quality-preset-label"
+                  >
+                    <ToggleGroupItem
+                      v-for="preset in targetPresets"
+                      :key="preset.id"
+                      :value="preset.id"
+                      class="min-w-0 px-1 text-xs"
+                      @click="applyTargetPreset(preset.id)"
+                    >
+                      {{ preset.label }}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </Field>
+              </FieldGroup>
+
+              <section class="mt-3" aria-label="Quality range">
+                <div aria-hidden="true">
+                  <div class="relative pb-5 pt-5">
+                    <span :class="targetMarkerClass" :style="runwayStyle.target">Target</span>
+                    <div class="relative h-2 rounded-full bg-muted shadow-inner">
+                      <div
+                        class="absolute inset-y-0 rounded-full border border-info-border bg-primary/25"
+                        :style="runwayStyle.planned"
+                      ></div>
+                      <div
+                        class="absolute -top-1 h-4 w-0.5 bg-warning"
+                        :style="runwayStyle.target"
+                      ></div>
+                      <div
+                        v-if="hasLockedQuality"
+                        class="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-success shadow-sm"
+                        :style="runwayStyle.locked"
+                      ></div>
+                    </div>
+                    <span class="absolute bottom-0 left-0 text-[10px] text-muted-foreground"
+                      >0%</span
+                    >
+                    <span class="absolute bottom-0 right-0 text-[10px] text-muted-foreground">
+                      100%
+                    </span>
+                  </div>
+                </div>
+
+                <dl class="mt-2 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt
+                      class="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground"
+                    >
+                      Locked
+                    </dt>
+                    <dd class="motion-tabular mt-0.5 font-semibold">
+                      {{ hasLockedQuality ? odds.qualityText.replaceAll(' ~ ', '–') : 'None' }}
+                    </dd>
+                  </div>
+                  <div class="text-right">
+                    <dt
+                      class="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground"
+                    >
+                      Possible
+                    </dt>
+                    <dd class="motion-tabular mt-0.5 font-semibold">
+                      {{ odds.plannedQualityText.replaceAll(' ~ ', '–') }}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <CollapsibleTrigger as-child>
+          <Button
+            variant="ghost"
+            class="h-auto w-full justify-start rounded-none border-t border-border/60 px-4 py-2.5 text-left sm:px-5"
           >
-            {{ activePendingLines.length }}
-            {{ activePendingLines.length === 1 ? 'roll' : 'rolls' }} ·
-            {{ activeMethodSummary }}
-          </span>
-          <ChevronDownIcon
-            data-icon="inline-end"
-            :class="cn('transition-transform', planDetailsOpen && 'rotate-180')"
-            aria-hidden="true"
-          />
-        </Button>
-      </CollapsibleTrigger>
+            <SparklesIcon data-icon="inline-start" aria-hidden="true" />
+            <span class="min-w-0 flex-1 text-xs font-semibold">{{ planLabel }}</span>
+            <ChevronDownIcon
+              data-icon="inline-end"
+              :class="cn('transition-transform', planDetailsOpen && 'rotate-180')"
+              aria-hidden="true"
+            />
+          </Button>
+        </CollapsibleTrigger>
+      </div>
 
       <CollapsibleContent>
         <section
@@ -758,18 +756,43 @@ function formatRangeText(range) {
           class="border-t py-5"
           aria-labelledby="quality-order-heading"
         >
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-1">
               <h3 id="quality-order-heading" class="font-semibold">Roll order</h3>
-              <p class="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                Maximizes target chance from roll ranges and methods. Rating and cost do not set the
-                order, so a lower-rated line can go first.
-              </p>
+              <Tooltip :delay-duration="200">
+                <TooltipTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    class="rounded-full text-muted-foreground"
+                    aria-label="How roll-order optimization works"
+                  >
+                    <CircleHelpIcon aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-64">
+                  Maximizes target chance. Ratings and material costs do not affect order.
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <Button variant="outline" size="sm" class="shrink-0" @click="optimizeOrder">
-              <SparklesIcon data-icon="inline-start" aria-hidden="true" />
-              Optimize
-            </Button>
+            <div class="flex shrink-0 items-center gap-1">
+              <Button
+                :variant="methodOverridesOpen ? 'secondary' : 'ghost'"
+                size="sm"
+                :aria-pressed="methodOverridesOpen"
+                @click="methodOverridesOpen = !methodOverridesOpen"
+              >
+                <Settings2Icon data-icon="inline-start" aria-hidden="true" />
+                Per-line
+                <span v-if="methodOverrideCount" class="motion-tabular">
+                  · {{ methodOverrideCount }}
+                </span>
+              </Button>
+              <Button variant="outline" size="sm" class="shrink-0" @click="optimizeOrder">
+                <SparklesIcon data-icon="inline-start" aria-hidden="true" />
+                Optimize
+              </Button>
+            </div>
           </div>
 
           <p v-if="optimizationMessage" class="mt-3 text-xs font-medium text-info-foreground">
@@ -780,11 +803,20 @@ function formatRangeText(range) {
             <li
               v-for="(line, position) in pendingLines"
               :key="`pending-quality-line-${line.index}`"
-              class="py-4"
+              class="py-3"
             >
-              <div class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+              <div
+                :class="
+                  cn(
+                    'grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2',
+                    methodOverridesOpen
+                      ? 'sm:grid-cols-[auto_minmax(0,1fr)_minmax(12rem,14rem)_auto]'
+                      : 'sm:grid-cols-[auto_minmax(0,1fr)_auto]',
+                  )
+                "
+              >
                 <div
-                  class="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
+                  class="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
                 >
                   {{ line.pendingStep }}
                 </div>
@@ -795,20 +827,59 @@ function formatRangeText(range) {
                     <Badge v-if="line.attemptChance <= 0" variant="secondary">
                       Skipped by early stop
                     </Badge>
+                    <Badge
+                      v-else-if="!methodOverridesOpen && isLineMethodOverride(line)"
+                      variant="outline"
+                    >
+                      <span class="sr-only">Method override:</span>
+                      {{ line.enchantMethodLabel }}
+                    </Badge>
                   </div>
-                  <p class="motion-tabular mt-1 text-xs text-muted-foreground">
-                    Final range · {{ formatRangeText(line.range) }}
+                  <p class="motion-tabular mt-0.5 text-xs text-muted-foreground">
+                    {{ formatRangeText(line.range) }}
+                    <template v-if="line.attemptChance > 0">
+                      · Reach {{ line.attemptChanceText }} · Finish {{ line.finishChanceText }} ·
+                      Target
+                      {{ line.targetChanceAfterText }}
+                    </template>
                   </p>
                 </div>
 
+                <ToggleGroup
+                  v-if="methodOverridesOpen && line.attemptChance > 0"
+                  type="single"
+                  variant="outline"
+                  :spacing="1"
+                  :model-value="qualityLineEnchantMethods[line.index]"
+                  class="col-span-2 col-start-2 row-start-2 grid w-full gap-1 sm:col-span-1 sm:col-start-3 sm:row-start-1"
+                  :style="methodGridStyle"
+                  :aria-label="`Enchant method override for ${line.stat}`"
+                  @update:model-value="updateQualityLineEnchantMethod(line.index, $event)"
+                >
+                  <ToggleGroupItem
+                    v-for="method in currentOddsEnchantMethodOptions"
+                    :key="method.value"
+                    :value="method.value"
+                    class="min-w-0 px-1 text-xs"
+                    :aria-label="`${method.label}: ${method.successRate * 100}% success for ${line.stat}; ${formatAttemptCost(method)}`"
+                  >
+                    {{ method.label }}
+                  </ToggleGroupItem>
+                </ToggleGroup>
+
                 <div
-                  class="flex items-center gap-1"
+                  :class="
+                    cn(
+                      'col-start-3 row-start-1 flex items-center gap-1',
+                      methodOverridesOpen ? 'sm:col-start-4' : 'sm:col-start-3',
+                    )
+                  "
                   role="group"
                   :aria-label="`Reorder ${line.stat}`"
                 >
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="icon-sm"
                     :disabled="position === 0"
                     :aria-label="`Move ${line.stat} earlier to step ${Math.max(1, position)}`"
                     @click="movePendingLine(line, -1)"
@@ -817,7 +888,7 @@ function formatRangeText(range) {
                   </Button>
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="icon-sm"
                     :disabled="position === pendingLines.length - 1"
                     :aria-label="`Move ${line.stat} later to step ${Math.min(pendingLines.length, position + 2)}`"
                     @click="movePendingLine(line, 1)"
@@ -826,143 +897,50 @@ function formatRangeText(range) {
                   </Button>
                 </div>
               </div>
-
-              <div
-                v-if="line.attemptChance > 0"
-                class="mt-4 grid gap-4 sm:ml-11 sm:grid-cols-[minmax(14rem,1fr)_minmax(0,1fr)] sm:items-end"
-              >
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel :id="`quality-line-${line.index}-method-label`">
-                      Method
-                    </FieldLabel>
-                    <ToggleGroup
-                      type="single"
-                      variant="outline"
-                      :spacing="1"
-                      :model-value="qualityLineEnchantMethods[line.index]"
-                      class="grid w-full gap-1"
-                      :style="methodGridStyle"
-                      :aria-labelledby="`quality-line-${line.index}-method-label`"
-                      @update:model-value="updateQualityLineEnchantMethod(line.index, $event)"
-                    >
-                      <ToggleGroupItem
-                        v-for="method in currentOddsEnchantMethodOptions"
-                        :key="method.value"
-                        :value="method.value"
-                        class="min-w-0 gap-1 px-1 text-xs"
-                        :aria-label="`${method.label}: ${method.successRate * 100}% success for ${line.stat}; ${formatAttemptCost(method)}`"
-                      >
-                        <span class="truncate font-semibold">{{ method.label }}</span>
-                        <span class="motion-tabular shrink-0 text-[10px] text-muted-foreground">
-                          {{ method.successRate * 100 }}%
-                        </span>
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                    <FieldDescription>
-                      {{ formatCompactAttemptCost(line) }}
-                    </FieldDescription>
-                  </Field>
-                </FieldGroup>
-
-                <div>
-                  <p class="mb-2 text-[10px] font-medium text-muted-foreground">
-                    Share of matching copies
-                  </p>
-                  <dl class="grid grid-cols-3 divide-x text-center">
-                    <div class="px-2 first:pl-0">
-                      <dt
-                        class="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground"
-                      >
-                        Reach roll
-                      </dt>
-                      <dd class="motion-tabular mt-1 text-xs font-semibold">
-                        {{ line.attemptChanceText }}
-                      </dd>
-                    </div>
-                    <div class="px-2">
-                      <dt
-                        class="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground"
-                      >
-                        Finish here
-                      </dt>
-                      <dd class="motion-tabular mt-1 text-xs font-semibold">
-                        {{ line.finishChanceText }}
-                      </dd>
-                    </div>
-                    <div class="px-2 last:pr-0">
-                      <dt
-                        class="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground"
-                      >
-                        Target by here
-                      </dt>
-                      <dd class="motion-tabular mt-1 text-xs font-semibold">
-                        {{ line.targetChanceAfterText }}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              </div>
             </li>
           </ol>
         </section>
 
         <section
           :class="
-            cn('py-5', odds.targetState === 'active' && pendingLines.length > 1 && 'border-t')
+            cn('py-3', odds.targetState === 'active' && pendingLines.length > 1 && 'border-t')
           "
           aria-labelledby="quality-budget-heading"
         >
-          <h3 id="quality-budget-heading" class="font-semibold">Copy budget</h3>
-
-          <template v-if="odds.isTargetReachable">
-            <dl class="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3">
-              <div class="min-w-0">
-                <dt class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Copies for 90% chance
-                </dt>
-                <dd class="motion-tabular mt-1 text-lg font-semibold">
-                  {{ formatCopyCount(odds.startsForHighConfidence) }}
-                </dd>
-              </div>
-              <div class="min-w-0 sm:border-l sm:pl-5">
-                <dt class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Destroyed / success
-                </dt>
-                <dd class="motion-tabular mt-1 text-lg font-semibold">
-                  {{ formatCount(odds.expectedDestroyedItems) }}
-                </dd>
-              </div>
-              <div class="min-w-0 sm:border-l sm:pl-5">
-                <dt class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Below target / success
-                </dt>
-                <dd class="motion-tabular mt-1 text-lg font-semibold">
-                  {{ formatCount(odds.expectedKeptMisses) }}
-                </dd>
-              </div>
-            </dl>
-          </template>
-          <p v-else class="mt-3 text-sm text-muted-foreground">
-            Lower the target to see a copy budget.
-          </p>
+          <h3 id="quality-budget-heading" class="sr-only">Copy budget</h3>
+          <dl v-if="odds.isTargetReachable" class="flex items-center justify-between gap-3">
+            <dt class="text-xs font-medium text-muted-foreground">90% success chance</dt>
+            <dd class="motion-tabular font-semibold">
+              {{ formatCopyCount(odds.startsForHighConfidence) }}
+            </dd>
+          </dl>
+          <p v-else class="text-xs text-muted-foreground">No copy budget at this target.</p>
         </section>
 
-        <section
-          class="border-t py-4 text-xs leading-relaxed text-muted-foreground"
-          aria-labelledby="quality-assumptions-heading"
-        >
-          <h3 id="quality-assumptions-heading" class="sr-only">Model assumptions</h3>
-          <p>
-            A matching copy has the same entered lines; blanks are unattempted. Entered damage stays
-            fixed, non-damage is excluded, and blank rolls are uniform across base ranges.
-          </p>
-          <p class="mt-2">
-            Rolls stop at the target or once it becomes unreachable. Materials cover attempts only;
-            replacement copies and rebuilt lines are excluded. Platinum hammers are valued at
-            {{ formatEly(platinumHammerElyValue) }} Ely each but remain separate from Ely totals.
-          </p>
-        </section>
+        <Collapsible v-model:open="calculationNotesOpen" class="border-t">
+          <CollapsibleTrigger as-child>
+            <Button
+              variant="ghost"
+              class="h-auto w-full justify-start rounded-none px-0 py-3 text-left"
+            >
+              <span class="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+                Calculation notes
+              </span>
+              <ChevronDownIcon
+                data-icon="inline-end"
+                :class="cn('transition-transform', calculationNotesOpen && 'rotate-180')"
+                aria-hidden="true"
+              />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <p class="pb-4 text-xs leading-relaxed text-muted-foreground">
+              Starts with matching copies of the entered lines and stops at the target or when it
+              becomes unreachable. Materials cover attempted rolls only; replacement copies and
+              rebuilt lines are excluded.
+            </p>
+          </CollapsibleContent>
+        </Collapsible>
       </CollapsibleContent>
     </Collapsible>
   </div>

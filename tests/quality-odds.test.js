@@ -63,10 +63,22 @@ test('quality outcomes separate target, kept miss, and destruction', () => {
 test('enchanting budget follows the same early-stop policy', () => {
   const result = getOdds()
 
-  assertClose(result.materials.perStart.ely, 100_000_000)
-  assertClose(result.materials.perStart.hammersMin, 2)
-  assertClose(result.materials.perTarget.ely, 100_000_000 / 0.36)
-  assertClose(result.materials.perTarget.hammersMin, 2 / 0.36)
+  assertClose(result.materials.perStart.untradeable.ely, 0)
+  assertClose(result.materials.perStart.untradeable.hammers, 2)
+  assertClose(result.materials.perStart.tradable.ely, 100_000_000)
+  assertClose(result.materials.perStart.tradable.hammers, 2)
+  assertClose(result.materials.perTarget.untradeable.ely, 0)
+  assertClose(result.materials.perTarget.untradeable.hammers, 2 / 0.36)
+  assertClose(result.materials.perTarget.tradable.ely, 100_000_000 / 0.36)
+  assertClose(result.materials.perTarget.tradable.hammers, 2 / 0.36)
+  assert.deepEqual(result.materials.fullSequence, {
+    untradeable: { ely: 0, hammers: 2 },
+    tradable: { ely: 100_000_000, hammers: 2 },
+  })
+  assert.deepEqual(
+    result.lines[0].costsByTradeability,
+    oddsEnchantMethods.standard.costsByTradeability,
+  )
   assertClose(result.expectedStarts, 1 / 0.36)
   assertClose(result.expectedDestroyedItems, 0.4 / 0.36)
   assertClose(result.expectedKeptMisses, 0.24 / 0.36)
@@ -79,8 +91,10 @@ test('an already-secured target skips pending costs and risk', () => {
   assert.equal(result.targetState, 'secured')
   assert.equal(result.totalChance, 1)
   assert.equal(result.destroyedChance, 0)
-  assert.equal(result.materials.perStart.ely, 0)
-  assert.equal(result.materials.perTarget.hammersMax, 0)
+  assert.equal(result.materials.perStart.untradeable.ely, 0)
+  assert.equal(result.materials.perStart.tradable.ely, 0)
+  assert.equal(result.materials.perTarget.untradeable.hammers, 0)
+  assert.equal(result.materials.perTarget.tradable.hammers, 0)
   assert.equal(result.lines[0].attemptChance, 0)
 })
 
@@ -91,9 +105,11 @@ test('an unreachable target is abandoned before spending materials', () => {
   assert.equal(result.totalChance, 0)
   assertClose(result.survivedMissChance, 1)
   assertClose(result.destroyedChance, 0)
-  assert.equal(result.materials.perStart.ely, 0)
+  assert.equal(result.materials.perStart.untradeable.ely, 0)
+  assert.equal(result.materials.perStart.tradable.ely, 0)
   assert.equal(result.expectedStarts, null)
-  assert.equal(result.materials.perTarget.ely, null)
+  assert.equal(result.materials.perTarget.untradeable.ely, null)
+  assert.equal(result.materials.perTarget.tradable.ely, null)
   assert.equal(result.lines[0].attemptChance, 0)
 })
 
@@ -108,13 +124,17 @@ test('abandons a surviving piece when remaining maximum rolls cannot reach targe
 
   assertClose(result.totalChance, 0.0756)
   assertClose(result.lines[1].attemptChance, 0.36)
-  assertClose(result.materials.perStart.ely, 136_000_000)
-  assertClose(result.materials.perStart.hammersMin, 2.72)
+  assertClose(result.materials.perStart.untradeable.ely, 0)
+  assertClose(result.materials.perStart.untradeable.hammers, 2.72)
+  assertClose(result.materials.perStart.tradable.ely, 136_000_000)
+  assertClose(result.materials.perStart.tradable.hammers, 2.72)
   assertClose(result.survivedMissChance, 0.3804)
   assertClose(result.destroyedChance, 0.544)
   assertClose(result.expectedStarts, 1 / 0.0756)
-  assertClose(result.materials.perTarget.ely, 136_000_000 / 0.0756, 1e-6)
-  assertClose(result.materials.perTarget.hammersMin, 2.72 / 0.0756)
+  assertClose(result.materials.perTarget.untradeable.ely, 0)
+  assertClose(result.materials.perTarget.untradeable.hammers, 2.72 / 0.0756)
+  assertClose(result.materials.perTarget.tradable.ely, 136_000_000 / 0.0756, 1e-6)
+  assertClose(result.materials.perTarget.tradable.hammers, 2.72 / 0.0756)
 })
 
 test('method profiles expose Normal, Super, and eligible Special costs', () => {
@@ -126,10 +146,30 @@ test('method profiles expose Normal, Super, and eligible Special costs', () => {
     getOddsEnchantMethodOptions('[sLv5] Accessories').map((method) => method.label),
     ['Super', 'Normal', 'Special'],
   )
-  assert.equal(oddsEnchantMethods.normal.elyCost, 50_000_000)
-  assert.equal(oddsEnchantMethods.standard.hammerCostMax, 2)
-  assert.equal(oddsEnchantMethods.special.hammerCostMin, 10)
-  assert.equal(oddsEnchantMethods.special.hammerCostMax, 30)
+  assert.deepEqual(oddsEnchantMethods.normal.costsByTradeability, {
+    untradeable: { ely: 0, hammers: 1 },
+    tradable: { ely: 50_000_000, hammers: 1 },
+  })
+  assert.deepEqual(oddsEnchantMethods.standard.costsByTradeability, {
+    untradeable: { ely: 0, hammers: 2 },
+    tradable: { ely: 100_000_000, hammers: 2 },
+  })
+  assert.deepEqual(oddsEnchantMethods.special.costsByTradeability, {
+    untradeable: { ely: 0, hammers: 10 },
+    tradable: { ely: 0, hammers: 30 },
+  })
+})
+
+test('Special enchanting keeps both item paths free of Ely fees', () => {
+  const result = getOdds({
+    gearType: '[sLv5] Accessories',
+    lineEnchantMethods: ['special'],
+  })
+
+  assert.deepEqual(result.materials.perStart, {
+    untradeable: { ely: 0, hammers: 10 },
+    tradable: { ely: 0, hammers: 30 },
+  })
 })
 
 test('quick targets reflect practical sLv5 and armor progression', () => {
