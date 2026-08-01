@@ -453,6 +453,29 @@ test('falls back only when the extracted equipment identity is invalid', () => {
   assert.equal(result.pieceType, 'Chestplate')
 })
 
+test('lets a user-selected hint override a conflicting visible identity on fallback', () => {
+  const result = normalizeExtraction(
+    screenshotExtraction,
+    '[sLv5] Accessories',
+    'Cloak',
+    gears,
+    {
+      hintProvided: true,
+      preferGearHint: true,
+    },
+  )
+
+  assert.equal(result.gearType, '[sLv5] Accessories')
+  assert.equal(result.pieceType, 'Cloak')
+  assert.deepEqual(result.equipment, {
+    status: 'resolved',
+    source: 'hint',
+    imageVisible: true,
+    confidence: 1,
+    reason: 'Equipment identity supplied by the user',
+  })
+})
+
 function createLine(rawText, statText, value, rollPercent, level = 5) {
   return {
     rawText,

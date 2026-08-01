@@ -172,6 +172,43 @@ test('preserves and rejects more than five active screenshot lines', () => {
   )
 })
 
+test('exposes missing-line, unsupported-equipment, and out-of-range fallback codes', () => {
+  const resolvedEquipment = {
+    status: 'resolved',
+    source: 'hint',
+    imageVisible: false,
+    confidence: 1,
+    reason: 'Equipment identity supplied by the user',
+  }
+  const baseImport = {
+    gearType: '[9999] Armor',
+    pieceType: 'Helmet',
+    equipment: resolvedEquipment,
+    inputEnchantLevel: 2,
+    lines: [],
+  }
+
+  assert.throws(
+    () => evaluateImportedGear(baseImport),
+    error => error instanceof GearEvaluationError && error.code === 'lines_missing',
+  )
+  assert.throws(
+    () => evaluateImportedGear({
+      ...baseImport,
+      gearType: '[5000] Accessories',
+      pieceType: 'Crystal',
+    }),
+    error => error instanceof GearEvaluationError && error.code === 'equipment_unsupported',
+  )
+  assert.throws(
+    () => evaluateImportedGear({
+      ...baseImport,
+      lines: [createNormalizedLine('Critical Damage', 1000)],
+    }),
+    error => error instanceof GearEvaluationError && error.code === 'values_out_of_range',
+  )
+})
+
 test('exposes all 23 supported equipment hints with reversible values', () => {
   const options = getSupportedEquipmentOptions()
 

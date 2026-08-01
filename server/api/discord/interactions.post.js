@@ -29,6 +29,17 @@ import {
 
 const backgroundDeadlineMs = 210_000
 const discordEditDeadlineMs = 15_000
+const discordImageFallbackCodes = new Set([
+  'parser_empty',
+  'parser_invalid',
+  'equipment_hint_conflict',
+  'equipment_unresolved',
+  'lines_missing',
+  'lines_too_many',
+  'lines_need_review',
+  'stats_duplicated',
+  'values_out_of_range',
+])
 
 export default defineEventHandler(async (event) => {
   const applicationId = process.env.DISCORD_APPLICATION_ID
@@ -154,6 +165,11 @@ export async function processGearScoreInteraction({
   editOriginalDiscordResponseImpl = editOriginalDiscordResponse,
   loadSnapshotItemImageImpl = loadSnapshotItemImage,
   loadSnapshotFontImpl = loadSnapshotFont,
+  fallbackImportModel =
+    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_MODEL || 'gpt-5.6-luna',
+  fallbackImportReasoningEffort =
+    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT || 'max',
+  onModelAttemptImpl = logDiscordModelAttempt,
 }) {
   const startedAt = Date.now()
   const signal = AbortSignal.timeout(backgroundDeadlineMs)
@@ -162,17 +178,53 @@ export async function processGearScoreInteraction({
     const { buffer, mimeType } = await downloadDiscordAttachmentImpl(attachment, { signal })
     const importImage = importGearImageImpl
       || (await import('../../utils/gear-image-import-service.js')).importGearImage
-    const imported = await importImage({
+    const evaluateGear = evaluateImportedGearImpl
+      || (await import('../../../app/features/gear-score/gear-evaluation.js'))
+        .evaluateImportedGear
+    const importInput = {
       buffer,
       mimeType,
       gearHint,
       safetyIdentifier,
       signal,
-    })
-    const evaluateGear = evaluateImportedGearImpl
-      || (await import('../../../app/features/gear-score/gear-evaluation.js'))
-        .evaluateImportedGear
-    const evaluation = evaluateGear(imported)
+    }
+    let imported
+    let evaluation
+    let fallbackReason = null
+
+    try {
+      imported = await importImage({
+        ...importInput,
+        throwOnVerificationError: true,
+        onModelAttempt: onModelAttemptImpl,
+      })
+      if (hasGearHintConflict(imported, gearHint)) {
+        throw createGearHintConflictError()
+      }
+      evaluation = evaluateGear(imported)
+    }
+    catch (error) {
+      if (!shouldRunImageFallback(error, signal)) {
+        throw error
+      }
+      fallbackReason = error
+    }
+
+    if (fallbackReason) {
+      imported = await importImage({
+        ...importInput,
+        importModel: fallbackImportModel,
+        importReasoningEffort: fallbackImportReasoningEffort,
+        enableValueVerification: false,
+        preferGearHint: true,
+        onModelAttempt: attempt => onModelAttemptImpl({
+          ...attempt,
+          stage: 'fallback',
+        }),
+      })
+      evaluation = evaluateGear(imported)
+    }
+
     const [itemImageBuffer, geistFontBuffers] = await Promise.all([
       loadSnapshotItemImageImpl(evaluation.snapshotPayload),
       loadSnapshotFontImpl(),
@@ -261,4 +313,53 @@ function logDiscordJob(outcome, startedAt, error) {
   const elapsedMs = Math.max(0, Date.now() - startedAt)
   const code = String(error?.code || error?.name || (outcome === 'success' ? 'OK' : 'UNKNOWN'))
   console.info('[discord-gear-score]', { outcome, code, elapsedMs })
+}
+
+function shouldRunImageFallback(error, signal) {
+  return !signal?.aborted && discordImageFallbackCodes.has(String(error?.code || ''))
+}
+
+function hasGearHintConflict(imported, gearHint) {
+  return Boolean(
+    gearHint?.gearType
+    && gearHint?.pieceType
+    && imported?.equipment?.source === 'image'
+    && (
+      imported?.gearType !== gearHint.gearType
+      || imported?.pieceType !== gearHint.pieceType
+    ),
+  )
+}
+
+function createGearHintConflictError() {
+  const error = new Error('The screenshot equipment does not match the selected hint.')
+  error.name = 'GearImageImportError'
+  error.code = 'equipment_hint_conflict'
+  error.statusCode = 422
+  return error
+}
+
+function logDiscordModelAttempt(attempt) {
+  const usage = attempt?.usage && typeof attempt.usage === 'object'
+    ? {
+        inputTokens: toTelemetryNumber(attempt.usage.inputTokens),
+        cachedInputTokens: toTelemetryNumber(attempt.usage.cachedInputTokens),
+        outputTokens: toTelemetryNumber(attempt.usage.outputTokens),
+        reasoningTokens: toTelemetryNumber(attempt.usage.reasoningTokens),
+        totalTokens: toTelemetryNumber(attempt.usage.totalTokens),
+      }
+    : null
+
+  console.info('[discord-gear-score-model]', {
+    stage: String(attempt?.stage || ''),
+    model: String(attempt?.model || ''),
+    reasoningEffort: String(attempt?.reasoningEffort || ''),
+    elapsedMs: toTelemetryNumber(attempt?.elapsedMs),
+    usage,
+  })
+}
+
+function toTelemetryNumber(value) {
+  const number = Number(value)
+  return Number.isFinite(number) && number >= 0 ? Math.trunc(number) : 0
 }

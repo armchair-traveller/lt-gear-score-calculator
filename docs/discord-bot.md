@@ -52,12 +52,18 @@ DISCORD_PUBLIC_KEY=
 NUXT_PUBLIC_SITE_URL=https://latale.example
 ```
 
-The existing optional image-model overrides continue to work:
+The image import stages can be overridden independently with server-side environment values:
 
 ```dotenv
-OPENAI_IMAGE_IMPORT_MODEL=gpt-5.4-mini
-OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL=gpt-4.1-mini
+OPENAI_IMAGE_IMPORT_MODEL=gpt-5.6-luna
+OPENAI_IMAGE_IMPORT_REASONING_EFFORT=low
+OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL=gpt-5.6-luna
+OPENAI_IMAGE_IMPORT_VERIFICATION_REASONING_EFFORT=none
+OPENAI_IMAGE_IMPORT_FALLBACK_MODEL=gpt-5.6-luna
+OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT=max
 ```
+
+The fallback settings apply only to Discord recovery after a parser or gear-evaluation rejection. The web importer continues to use the shared primary and focused value-verification stages without a full fallback.
 
 Use `DISCORD_BOT_TOKEN` only while running the registration script. It is not used by the webhook and should not be stored in Vercel.
 
@@ -74,6 +80,8 @@ The endpoint:
 5. Reuses the screenshot importer, strict evaluation rules, and snapshot renderer.
 6. Edits the original deferred response with a PNG and calculator link.
 
+Screenshot reading starts with Luna at low reasoning. An isolated roll/value mismatch can receive one Luna-none row re-read. If the parser or strict evaluator still rejects the result, Discord makes at most one independent Luna-max pass using the original screenshot and hint; that pass cannot recurse or run the focused verifier. A request therefore makes at most three image-model calls. On the fallback pass, a selected equipment hint takes precedence over a conflicting screenshot classification while the enchant lines must still validate against that equipment.
+
 Processing has a 210-second internal deadline under the deployment's 240-second function duration. The interaction token remains valid long enough for that edit. There is no durable retry: if a deployment is interrupted while processing, the user should run the command again.
 
 Warm instances apply best-effort limits of one active job per user, two concurrent imports, a 30-second per-user cooldown, and short-lived interaction-ID replay suppression. These are intentionally not a durable or cross-instance quota system; the controlled beta is the primary access boundary for this version.
@@ -86,7 +94,7 @@ Gear artwork and the Geist font weights used by the server renderer are bundled 
 - The bot token is registration-only. Rotate it immediately if it is exposed.
 - Interaction requests are rejected before parsing unless their Discord signature is valid and recent. Warm instances also reject duplicate interaction IDs before starting image analysis.
 - Attachment downloads allow only `cdn.discordapp.com` and `media.discordapp.net`, reject redirects, and enforce type, size, and dimension limits.
-- Logs contain outcome codes and timings only. They do not include screenshots, interaction tokens, OCR text, or raw Discord user IDs.
+- Logs contain outcome codes, model stage/model/effort, aggregate token usage, and timings only. They do not include screenshots, interaction tokens, OCR text or values, equipment hints, or raw Discord user IDs.
 - OpenAI image requests use the existing non-persistent importer behavior (`store: false`).
 - Discord responses disable mentions so imported or generated text cannot ping users or roles.
 
@@ -99,8 +107,10 @@ After registration has propagated:
 3. Confirm the deferred message is edited in place with one PNG, score, tier, and calculator link.
 4. Repeat with `private: true` and confirm only the invoking user sees the response.
 5. Try a screenshot with the title cropped, select `equipment`, and confirm the hint is used.
-6. Try an ambiguous enchant row and confirm the command gives retry guidance instead of a score.
-7. Verify the same user-installed command is available in a DM/GDM and a server channel where Discord permits user apps.
+6. Try a screenshot whose visible title conflicts with the selected equipment and confirm the fallback scores it using the selected hint.
+7. Test the known Chestplate screenshot and confirm `82%`, tier `SS`, and rating `6.33%`.
+8. Try an ambiguous enchant row and confirm the command gives retry guidance instead of a score.
+9. Verify the same user-installed command is available in a DM/GDM and a server channel where Discord permits user apps.
 
 ## Troubleshooting
 

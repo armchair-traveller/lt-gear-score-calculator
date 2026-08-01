@@ -257,7 +257,11 @@ export function normalizeExtraction(
   fallbackGearType,
   fallbackPieceType,
   gearCatalog,
-  { hintProvided = true, minimumEquipmentConfidence = 0.7 } = {},
+  {
+    hintProvided = true,
+    minimumEquipmentConfidence = 0.7,
+    preferGearHint = false,
+  } = {},
 ) {
   const { gearType, pieceType, equipment } = resolveExtractionEquipment(
     extracted,
@@ -267,6 +271,7 @@ export function normalizeExtraction(
     {
       hintProvided,
       minimumEquipmentConfidence,
+      preferGearHint,
     },
   )
   const item = gearCatalog?.[gearType]?.[pieceType]
@@ -371,7 +376,7 @@ function resolveExtractionEquipment(
   fallbackGearType,
   fallbackPieceType,
   gearCatalog,
-  { hintProvided, minimumEquipmentConfidence },
+  { hintProvided, minimumEquipmentConfidence, preferGearHint },
 ) {
   const extractedGearType = getValidGearType(extracted?.gearType, gearCatalog)
   const validFallbackGearType = getValidGearType(fallbackGearType, gearCatalog) || '[9999] Armor'
@@ -391,6 +396,20 @@ function resolveExtractionEquipment(
   const fallbackIdentityReady =
     Boolean(hintProvided)
     && Boolean(validFallbackGearType && fallbackPieceForFallbackGear)
+
+  if (preferGearHint && fallbackIdentityReady) {
+    return {
+      gearType: validFallbackGearType,
+      pieceType: fallbackPieceForFallbackGear,
+      equipment: {
+        status: 'resolved',
+        source: 'hint',
+        imageVisible,
+        confidence: 1,
+        reason: 'Equipment identity supplied by the user',
+      },
+    }
+  }
 
   if (imageIdentityReady) {
     return {
@@ -810,7 +829,7 @@ function getImportEnchantLevel(lines) {
   return levels.length ? Math.max(...levels) : 2
 }
 
-function getMaxEnchantLevel(gearType) {
+export function getMaxEnchantLevel(gearType) {
   if (!inputEnchantGearTypes.has(gearType)) {
     return 2
   }

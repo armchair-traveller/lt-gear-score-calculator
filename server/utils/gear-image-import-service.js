@@ -3,6 +3,7 @@ import gears from '../../app/utils/gear.js'
 import {
   getExtractorPrompt,
   getExtractorSchema,
+  getMaxEnchantLevel,
   getPieceNames,
   getRequestContext,
   getValidGearType,
@@ -52,9 +53,17 @@ export async function importGearImage({
   apiKey = process.env.OPENAI_API_KEY,
   fetchImpl = globalThis.fetch,
   gearCatalog = gears,
-  importModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.4-mini',
+  importModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.6-luna',
+  importReasoningEffort =
+    process.env.OPENAI_IMAGE_IMPORT_REASONING_EFFORT || 'low',
   verificationModel =
-    process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL || 'gpt-4.1-mini',
+    process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL || 'gpt-5.6-luna',
+  verificationReasoningEffort =
+    process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_REASONING_EFFORT || 'none',
+  enableValueVerification = true,
+  preferGearHint = false,
+  throwOnVerificationError = false,
+  onModelAttempt,
 } = {}) {
   if (!apiKey) {
     throw new GearImageImportError(
@@ -96,13 +105,18 @@ export async function importGearImage({
       formatName: 'gear_image_import',
       schema: getExtractorSchema(gearCatalog),
       model: importModel,
-      reasoning: { effort: 'none' },
+      reasoning: { effort: importReasoningEffort },
       verbosity: 'low',
+      stage: 'primary',
+      onModelAttempt,
       safetyIdentifier,
       signal: requestSignal,
       fetchImpl,
     })
-    const normalizationOptions = { hintProvided: Boolean(hint) }
+    const normalizationOptions = {
+      hintProvided: Boolean(hint),
+      preferGearHint: Boolean(preferGearHint),
+    }
     const normalized = normalizeExtraction(
       extracted,
       parsingGearType,
@@ -111,7 +125,14 @@ export async function importGearImage({
       normalizationOptions,
     )
     const reviewRowNumbers = getValueReviewRowNumbers(normalized)
-    if (!reviewRowNumbers.length) {
+    if (
+      !enableValueVerification
+      || !isValueVerificationEligible({
+        normalized,
+        reviewRowNumbers,
+        hint,
+      })
+    ) {
       return normalized
     }
 
@@ -122,8 +143,10 @@ export async function importGearImage({
         apiKey,
         imageUrl: verificationImageUrl,
         model: verificationModel,
-        reasoning: null,
+        reasoning: { effort: verificationReasoningEffort },
         verbosity: 'medium',
+        stage: 'verification',
+        onModelAttempt,
         developerText: getValueVerificationPrompt(),
         userText: getValueVerificationRequestText(verificationRequests),
         formatName: 'gear_image_value_verification',
@@ -163,7 +186,7 @@ export async function importGearImage({
       }
     }
     catch (error) {
-      if (requestSignal?.aborted) {
+      if (requestSignal?.aborted || throwOnVerificationError) {
         throw error
       }
 
@@ -375,69 +398,160 @@ async function requestImageModel({
   model,
   reasoning,
   verbosity,
+  stage,
+  onModelAttempt,
   safetyIdentifier,
   signal,
   fetchImpl,
 }) {
-  const response = await fetchImpl('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    signal,
-    body: JSON.stringify({
-      model,
-      store: false,
-      ...(reasoning ? { reasoning } : {}),
-      ...(safetyIdentifier ? { safety_identifier: String(safetyIdentifier) } : {}),
-      input: [
-        {
-          role: 'developer',
-          content: [
-            {
-              type: 'input_text',
-              text: developerText,
-            },
-          ],
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'input_text',
-              text: userText,
-            },
-            {
-              type: 'input_image',
-              image_url: imageUrl,
-              detail: 'high',
-            },
-          ],
-        },
-      ],
-      text: {
-        verbosity,
-        format: {
-          type: 'json_schema',
-          name: formatName,
-          strict: true,
-          schema,
-        },
-      },
-    }),
-  })
+  const startedAt = Date.now()
+  let payload = null
 
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) {
-    throw new GearImageImportError(
-      'upstream_error',
-      response.status,
-      payload?.error?.message || 'Could not read the uploaded image.',
-    )
+  try {
+    const response = await fetchImpl('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal,
+      body: JSON.stringify({
+        model,
+        store: false,
+        ...(reasoning ? { reasoning } : {}),
+        ...(safetyIdentifier ? { safety_identifier: String(safetyIdentifier) } : {}),
+        input: [
+          {
+            role: 'developer',
+            content: [
+              {
+                type: 'input_text',
+                text: developerText,
+              },
+            ],
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'input_text',
+                text: userText,
+              },
+              {
+                type: 'input_image',
+                image_url: imageUrl,
+                detail: 'high',
+              },
+            ],
+          },
+        ],
+        text: {
+          verbosity,
+          format: {
+            type: 'json_schema',
+            name: formatName,
+            strict: true,
+            schema,
+          },
+        },
+      }),
+    })
+
+    payload = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new GearImageImportError(
+        'upstream_error',
+        response.status,
+        payload?.error?.message || 'Could not read the uploaded image.',
+      )
+    }
+
+    return parseImageModelOutput(payload)
+  }
+  finally {
+    notifyModelAttempt(onModelAttempt, {
+      stage,
+      model,
+      reasoningEffort: reasoning?.effort || '',
+      elapsedMs: Math.max(0, Date.now() - startedAt),
+      usage: getModelAttemptUsage(payload?.usage),
+    })
+  }
+}
+
+function isValueVerificationEligible({ normalized, reviewRowNumbers, hint }) {
+  if (normalized?.equipment?.status !== 'resolved' || hasGearHintConflict(normalized, hint)) {
+    return false
   }
 
-  return parseImageModelOutput(payload)
+  const lines = Array.isArray(normalized?.lines) ? normalized.lines : []
+  const activeLines = lines.filter(line => !line?.ignored)
+  if (activeLines.length < 1 || activeLines.length > 5 || !reviewRowNumbers.length) {
+    return false
+  }
+
+  const reviewRows = new Set(reviewRowNumbers)
+  const unresolvedRows = lines.flatMap((line, index) =>
+    !line?.ignored && line?.status === 'needs_review' ? [index + 1] : [],
+  )
+  if (
+    unresolvedRows.length !== reviewRows.size
+    || unresolvedRows.some(rowNumber => !reviewRows.has(rowNumber))
+  ) {
+    return false
+  }
+
+  const maximumLevel = getMaxEnchantLevel(normalized.gearType)
+  return activeLines.every((line) => {
+    const level = Number(line?.level)
+    return Number.isInteger(level) && level >= 2 && level <= maximumLevel
+  })
+}
+
+function hasGearHintConflict(imported, hint) {
+  return Boolean(
+    hint
+    && imported?.equipment?.source === 'image'
+    && (
+      imported?.gearType !== hint.gearType
+      || imported?.pieceType !== hint.pieceType
+    ),
+  )
+}
+
+function getModelAttemptUsage(usage) {
+  if (!usage || typeof usage !== 'object') {
+    return null
+  }
+
+  return {
+    inputTokens: toTokenCount(usage.input_tokens),
+    cachedInputTokens: toTokenCount(usage.input_tokens_details?.cached_tokens),
+    outputTokens: toTokenCount(usage.output_tokens),
+    reasoningTokens: toTokenCount(usage.output_tokens_details?.reasoning_tokens),
+    totalTokens: toTokenCount(usage.total_tokens),
+  }
+}
+
+function toTokenCount(value) {
+  const count = Number(value)
+  return Number.isFinite(count) && count >= 0 ? Math.trunc(count) : 0
+}
+
+function notifyModelAttempt(callback, attempt) {
+  if (typeof callback !== 'function') {
+    return
+  }
+
+  try {
+    const result = callback(attempt)
+    if (result && typeof result.catch === 'function') {
+      result.catch(() => {})
+    }
+  }
+  catch {
+    // Observability must never change the import result.
+  }
 }
 
 function resolveGearHint(gearHint, gearCatalog) {
