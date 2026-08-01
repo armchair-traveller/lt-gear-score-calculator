@@ -96,7 +96,7 @@ test('imports a validated image buffer and records screenshot equipment provenan
   assert.equal(requests[0].store, false)
   assert.equal(requests[0].safety_identifier, 'hashed-user')
   assert.equal(requests[0].text.verbosity, 'low')
-  assert.equal(requests[0].input[1].content[1].detail, 'high')
+  assert.equal(requests[0].input[1].content[1].detail, 'original')
   assert.equal(
     requests[0].text.format.schema.properties.equipmentVisible.type,
     'boolean',
@@ -239,7 +239,7 @@ test('uses Luna none for one focused request that repairs every roll mismatch', 
     requests[1].text.format.schema.properties.lines.items.properties.rowNumber.enum,
     [4, 5],
   )
-  assert.equal(requests[1].input[1].content[1].detail, 'high')
+  assert.equal(requests[1].input[1].content[1].detail, 'original')
   assert.doesNotMatch(requests[1].input[1].content[0].text, /1553|14553|80%/)
   assert.deepEqual(
     result.lines.slice(3).map(line => ({ value: line.value, status: line.status })),
