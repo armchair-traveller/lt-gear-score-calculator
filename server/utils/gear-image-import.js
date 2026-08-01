@@ -91,8 +91,9 @@ export function getExtractorPrompt() {
     'Count the digits in each value and verify the full digit sequence against the image before responding; do not drop a narrow or faint digit between other digits.',
     'The percentage in square brackets is a separate roll percentage; never merge it into the stat value.',
     'Ignore base item stats, durability, enchant limit, seals, awakening lines, titles, and unrelated UI text.',
+    'Set equipmentVisible true only when the screenshot itself visibly identifies the equipment category and piece.',
     'If the full equipment tooltip is visible, infer the gear category and piece from title, required level, and piece wording.',
-    'Use the provided fallback gear category and piece only when the screenshot does not show the equipment identity.',
+    'When equipmentVisible is false, use the provided equipment hint when one exists; otherwise copy the parsing fallback values provisionally.',
     'Use exactly one of the allowed gear categories and piece names from the request context.',
     'If a visible "Class:" line appears in the equipment details, classify the item as [8000] Weapons / Weapon.',
     'Keep the raw visible stat wording in statText even when translated differently.',
@@ -102,10 +103,21 @@ export function getExtractorPrompt() {
   ].join('\n')
 }
 
-export function getRequestContext(fallbackGearType, fallbackPieceType, gearCatalog) {
+export function getRequestContext(
+  fallbackGearType,
+  fallbackPieceType,
+  gearCatalog,
+  { hintProvided = true } = {},
+) {
   return JSON.stringify({
     fallbackGearType,
     fallbackPieceType,
+    equipmentHint: hintProvided
+      ? {
+          gearType: fallbackGearType,
+          pieceType: fallbackPieceType,
+        }
+      : null,
     allowedGear: getGearCategories(gearCatalog).map((gearType) => ({
       gearType,
       pieces: getPieceNames(gearType, gearCatalog),
@@ -117,7 +129,7 @@ export function getExtractorSchema(gearCatalog) {
   return {
     type: 'object',
     additionalProperties: false,
-    required: ['gearType', 'pieceType', 'confidence', 'lines'],
+    required: ['gearType', 'pieceType', 'equipmentVisible', 'confidence', 'lines'],
     properties: {
       gearType: {
         type: 'string',
@@ -126,6 +138,9 @@ export function getExtractorSchema(gearCatalog) {
       pieceType: {
         type: 'string',
         enum: getAllPieceNames(gearCatalog),
+      },
+      equipmentVisible: {
+        type: 'boolean',
       },
       confidence: {
         type: 'number',
@@ -237,16 +252,25 @@ export function getValueVerificationSchema(rowNumbers) {
   }
 }
 
-export function normalizeExtraction(extracted, fallbackGearType, fallbackPieceType, gearCatalog) {
-  const { gearType, pieceType } = resolveExtractionEquipment(
+export function normalizeExtraction(
+  extracted,
+  fallbackGearType,
+  fallbackPieceType,
+  gearCatalog,
+  { hintProvided = true, minimumEquipmentConfidence = 0.7 } = {},
+) {
+  const { gearType, pieceType, equipment } = resolveExtractionEquipment(
     extracted,
     fallbackGearType,
     fallbackPieceType,
     gearCatalog,
+    {
+      hintProvided,
+      minimumEquipmentConfidence,
+    },
   )
   const item = gearCatalog?.[gearType]?.[pieceType]
   const lines = (Array.isArray(extracted?.lines) ? extracted.lines : [])
-    .slice(0, 5)
     .map((line, index) => normalizeLine(line, item, gearType, index))
   const activeLines = lines.filter((line) => !line.ignored)
   const readyLines = activeLines.filter((line) => line.status !== 'needs_review')
@@ -255,6 +279,7 @@ export function normalizeExtraction(extracted, fallbackGearType, fallbackPieceTy
   return {
     gearType,
     pieceType,
+    equipment,
     confidence: Math.min(clampNumber(extracted?.confidence, 0, 1), validationConfidence),
     inputEnchantLevel: getImportEnchantLevel(lines),
     lines,
@@ -341,34 +366,84 @@ export function getDisplayedRollPercent(value, maxValue) {
   return Math.floor(numericValue / numericMax * 100 + Number.EPSILON)
 }
 
-function resolveExtractionEquipment(extracted, fallbackGearType, fallbackPieceType, gearCatalog) {
+function resolveExtractionEquipment(
+  extracted,
+  fallbackGearType,
+  fallbackPieceType,
+  gearCatalog,
+  { hintProvided, minimumEquipmentConfidence },
+) {
   const extractedGearType = getValidGearType(extracted?.gearType, gearCatalog)
   const validFallbackGearType = getValidGearType(fallbackGearType, gearCatalog) || '[9999] Armor'
   const fallbackPieceForFallbackGear =
     getValidPieceType(validFallbackGearType, fallbackPieceType, gearCatalog)
     || getPieceNames(validFallbackGearType, gearCatalog)[0]
-
-  if (!extractedGearType) {
-    return {
-      gearType: validFallbackGearType,
-      pieceType: fallbackPieceForFallbackGear,
-    }
-  }
-
   const extractedPieceType = getValidPieceType(extractedGearType, extracted?.pieceType, gearCatalog)
-  if (extractedPieceType) {
+  const extractionConfidence = clampNumber(extracted?.confidence, 0, 1)
+  const hasExplicitVisibility = typeof extracted?.equipmentVisible === 'boolean'
+  const imageVisible = hasExplicitVisibility
+    ? extracted.equipmentVisible
+    : Boolean(extractedGearType && extractedPieceType)
+  const imageIdentityReady =
+    imageVisible
+    && Boolean(extractedGearType && extractedPieceType)
+    && extractionConfidence >= minimumEquipmentConfidence
+  const fallbackIdentityReady =
+    Boolean(hintProvided)
+    && Boolean(validFallbackGearType && fallbackPieceForFallbackGear)
+
+  if (imageIdentityReady) {
     return {
       gearType: extractedGearType,
       pieceType: extractedPieceType,
+      equipment: {
+        status: 'resolved',
+        source: 'image',
+        imageVisible: true,
+        confidence: extractionConfidence,
+        reason: 'Equipment identity read from the screenshot',
+      },
     }
   }
 
-  return {
-    gearType: extractedGearType,
-    pieceType:
-      extractedGearType === validFallbackGearType
+  if (fallbackIdentityReady) {
+    return {
+      gearType: validFallbackGearType,
+      pieceType: fallbackPieceForFallbackGear,
+      equipment: {
+        status: 'resolved',
+        source: 'hint',
+        imageVisible,
+        confidence: 1,
+        reason: 'Equipment identity supplied by the user',
+      },
+    }
+  }
+
+  const provisionalGearType = extractedGearType || validFallbackGearType
+  const provisionalPieceType =
+    extractedPieceType
+    || (
+      provisionalGearType === validFallbackGearType
         ? fallbackPieceForFallbackGear
-        : getPieceNames(extractedGearType, gearCatalog)[0],
+        : getPieceNames(provisionalGearType, gearCatalog)[0]
+    )
+  const reason = imageVisible
+    ? extractionConfidence < minimumEquipmentConfidence
+      ? 'Equipment identity confidence is too low'
+      : 'Equipment identity could not be matched to the catalog'
+    : 'Equipment identity is not visible and no equipment hint was supplied'
+
+  return {
+    gearType: provisionalGearType,
+    pieceType: provisionalPieceType,
+    equipment: {
+      status: 'needs_review',
+      source: 'fallback',
+      imageVisible,
+      confidence: extractionConfidence,
+      reason,
+    },
   }
 }
 

@@ -18,6 +18,31 @@ export default defineNuxtConfig({
     ],
   },
   css: ['~/styles/main.css'],
+  nitro: {
+    serverAssets: [
+      {
+        baseName: 'gear-images',
+        dir: '../app/assets',
+        ignore: [
+          'background.png',
+          'hammer.png',
+          'Icon_*.png',
+          'Note_*.png',
+        ],
+      },
+      {
+        baseName: 'snapshot-fonts',
+        dir: '../node_modules/@fontsource/geist/files',
+        pattern: 'geist-latin-{400,500,600,700,800,900}-normal.woff2',
+      },
+    ],
+    vercel: {
+      functions: {
+        maxDuration: 240,
+        runtime: 'nodejs24.x',
+      },
+    },
+  },
   app: {
     pageTransition: {
       name: 'motion-swap',

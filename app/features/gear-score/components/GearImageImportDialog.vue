@@ -44,6 +44,7 @@ const previewItem = computed(() => {
 })
 const previewStatOptions = computed(() => Object.keys(previewItem.value?.Stats ?? {}))
 const activeLines = computed(() => importResult.value?.lines?.filter((line) => !line.ignored) ?? [])
+const hasTooManyActiveLines = computed(() => activeLines.value.length > 5)
 const invalidLineCount = computed(() => activeLines.value.filter((line) => !isLineValid(line)).length)
 const ignoredLineCount = computed(() => importResult.value?.lines?.filter((line) => line.ignored).length ?? 0)
 const duplicateStats = computed(() => {
@@ -84,6 +85,9 @@ const reviewSummary = computed(() => {
   if (!activeLines.value.length) {
     return 'No usable rows'
   }
+  if (hasTooManyActiveLines.value) {
+    return 'Too many rows'
+  }
   if (duplicateStats.value.length) {
     return `${duplicateStats.value.length} duplicate`
   }
@@ -97,6 +101,7 @@ const canApplyImport = computed(
   () =>
     Boolean(importResult.value) &&
     activeLines.value.length > 0 &&
+    !hasTooManyActiveLines.value &&
     invalidLineCount.value === 0 &&
     duplicateStats.value.length === 0,
 )
@@ -106,6 +111,9 @@ const applyIssue = computed(() => {
   }
   if (!activeLines.value.length) {
     return 'No importable enchant lines detected.'
+  }
+  if (hasTooManyActiveLines.value) {
+    return 'A gear-score evaluation supports at most five active enchant lines.'
   }
   if (invalidLineCount.value) {
     return 'Fix or ignore unresolved rows before applying.'
@@ -525,6 +533,12 @@ function revokePreviewUrl() {
                 class="border-destructive/30 bg-destructive/10 text-destructive"
               >
                 {{ duplicateStats.length }} duplicate
+              </Badge>
+              <Badge
+                v-if="hasTooManyActiveLines"
+                variant="destructive"
+              >
+                5 line maximum
               </Badge>
               <Badge v-if="ignoredLineCount" variant="outline"> {{ ignoredLineCount }} ignored </Badge>
             </div>

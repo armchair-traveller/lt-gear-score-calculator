@@ -1,0 +1,481 @@
+import sharp from 'sharp'
+import gears from '../../app/utils/gear.js'
+import {
+  getExtractorPrompt,
+  getExtractorSchema,
+  getPieceNames,
+  getRequestContext,
+  getValidGearType,
+  getValidPieceType,
+  getValueReviewRowNumbers,
+  getValueVerificationPrompt,
+  getValueVerificationRequestText,
+  getValueVerificationRequests,
+  getValueVerificationSchema,
+  mergeVerifiedLineReads,
+  normalizeExtraction,
+} from './gear-image-import.js'
+
+export const maxGearImageBytes = 8 * 1024 * 1024
+export const maxGearImagePixels = 20_000_000
+export const maxGearImageDimension = 8192
+export const allowedGearImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
+
+const defaultGearType = '[9999] Armor'
+const defaultPieceType = 'Helmet'
+const verificationImageTargetSize = 1900
+const maxVerificationImageScale = 3
+const defaultImportTimeout = 210_000
+const imageFormatsByMimeType = {
+  'image/png': 'png',
+  'image/jpeg': 'jpeg',
+  'image/webp': 'webp',
+}
+
+export class GearImageImportError extends Error {
+  constructor(code, statusCode, message, options = {}) {
+    super(message, options)
+    this.name = 'GearImageImportError'
+    this.code = code
+    this.statusCode = statusCode
+    this.details = options.details || null
+  }
+}
+
+export async function importGearImage({
+  buffer,
+  mimeType,
+  gearHint = null,
+  safetyIdentifier = '',
+  signal,
+  timeoutMs = defaultImportTimeout,
+  apiKey = process.env.OPENAI_API_KEY,
+  fetchImpl = globalThis.fetch,
+  gearCatalog = gears,
+  importModel = process.env.OPENAI_IMAGE_IMPORT_MODEL || 'gpt-5.4-mini',
+  verificationModel =
+    process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL || 'gpt-4.1-mini',
+} = {}) {
+  if (!apiKey) {
+    throw new GearImageImportError(
+      'api_key_missing',
+      500,
+      'OPENAI_API_KEY is not configured.',
+    )
+  }
+
+  if (typeof fetchImpl !== 'function') {
+    throw new GearImageImportError(
+      'fetch_unavailable',
+      500,
+      'The image import service is unavailable.',
+    )
+  }
+
+  const image = await validateGearImage({ buffer, mimeType })
+  const hint = resolveGearHint(gearHint, gearCatalog)
+  const parsingGearType = hint?.gearType || defaultGearType
+  const parsingPieceType =
+    hint?.pieceType
+    || getValidPieceType(parsingGearType, defaultPieceType, gearCatalog)
+    || getPieceNames(parsingGearType, gearCatalog)[0]
+  const requestSignal = getRequestSignal(signal, timeoutMs)
+  const imageUrl = toImageDataUrl(image.buffer, image.mimeType)
+
+  try {
+    const extracted = await requestImageModel({
+      apiKey,
+      imageUrl,
+      developerText: getExtractorPrompt(),
+      userText: getRequestContext(
+        parsingGearType,
+        parsingPieceType,
+        gearCatalog,
+        { hintProvided: Boolean(hint) },
+      ),
+      formatName: 'gear_image_import',
+      schema: getExtractorSchema(gearCatalog),
+      model: importModel,
+      reasoning: { effort: 'none' },
+      verbosity: 'low',
+      safetyIdentifier,
+      signal: requestSignal,
+      fetchImpl,
+    })
+    const normalizationOptions = { hintProvided: Boolean(hint) }
+    const normalized = normalizeExtraction(
+      extracted,
+      parsingGearType,
+      parsingPieceType,
+      gearCatalog,
+      normalizationOptions,
+    )
+    const reviewRowNumbers = getValueReviewRowNumbers(normalized)
+    if (!reviewRowNumbers.length) {
+      return normalized
+    }
+
+    try {
+      const verificationRequests = getValueVerificationRequests(extracted, reviewRowNumbers)
+      const verificationImageUrl = await getVerificationImageUrl(image, imageUrl)
+      const verification = await requestImageModel({
+        apiKey,
+        imageUrl: verificationImageUrl,
+        model: verificationModel,
+        reasoning: null,
+        verbosity: 'medium',
+        developerText: getValueVerificationPrompt(),
+        userText: getValueVerificationRequestText(verificationRequests),
+        formatName: 'gear_image_value_verification',
+        schema: getValueVerificationSchema(reviewRowNumbers),
+        safetyIdentifier,
+        signal: requestSignal,
+        fetchImpl,
+      })
+      const verifiedExtraction = mergeVerifiedLineReads(
+        extracted,
+        verification?.lines,
+        reviewRowNumbers,
+      )
+      const verifiedNormalized = normalizeExtraction(
+        verifiedExtraction,
+        parsingGearType,
+        parsingPieceType,
+        gearCatalog,
+        normalizationOptions,
+      )
+      const improvedRowNumbers = reviewRowNumbers.filter((rowNumber) => {
+        const originalLine = normalized.lines[rowNumber - 1]
+        const verifiedLine = verifiedNormalized.lines[rowNumber - 1]
+        return verifiedLine?.status === 'matched'
+          && verifiedLine.stat === originalLine?.stat
+          && verifiedLine.level === originalLine?.level
+      })
+
+      if (improvedRowNumbers.length) {
+        return normalizeExtraction(
+          mergeVerifiedLineReads(extracted, verification?.lines, improvedRowNumbers),
+          parsingGearType,
+          parsingPieceType,
+          gearCatalog,
+          normalizationOptions,
+        )
+      }
+    }
+    catch (error) {
+      if (requestSignal?.aborted) {
+        throw error
+      }
+
+      // Keep the original review state when the focused re-read is unavailable.
+    }
+
+    return normalized
+  }
+  catch (error) {
+    if (error instanceof GearImageImportError) {
+      throw error
+    }
+
+    if (requestSignal?.aborted) {
+      throw new GearImageImportError(
+        'import_timeout',
+        504,
+        'The equipment screenshot took too long to read. Try a tighter crop.',
+        { cause: error },
+      )
+    }
+
+    throw new GearImageImportError(
+      'upstream_unavailable',
+      502,
+      'Could not read the uploaded image.',
+      { cause: error },
+    )
+  }
+}
+
+export async function validateGearImage({ buffer, mimeType } = {}) {
+  const imageBuffer = toBuffer(buffer)
+  if (!imageBuffer?.length) {
+    throw new GearImageImportError(
+      'image_missing',
+      400,
+      'Upload an equipment screenshot image.',
+    )
+  }
+
+  if (!allowedGearImageTypes.has(mimeType)) {
+    throw new GearImageImportError(
+      'image_type_unsupported',
+      400,
+      'Use a PNG, JPEG, or WebP image.',
+    )
+  }
+
+  if (imageBuffer.length > maxGearImageBytes) {
+    throw new GearImageImportError(
+      'image_too_large',
+      413,
+      'Image must be smaller than 8 MB.',
+    )
+  }
+
+  let metadata
+  try {
+    metadata = await sharp(imageBuffer, {
+      animated: true,
+      failOn: 'error',
+      limitInputPixels: false,
+    }).metadata()
+  }
+  catch (error) {
+    throw new GearImageImportError(
+      'image_invalid',
+      400,
+      'The uploaded file is not a readable image.',
+      { cause: error },
+    )
+  }
+
+  const expectedFormat = imageFormatsByMimeType[mimeType]
+  if (metadata.format !== expectedFormat) {
+    throw new GearImageImportError(
+      'image_type_mismatch',
+      400,
+      'The uploaded file does not match its image type.',
+    )
+  }
+
+  if (Number(metadata.pages || 1) > 1) {
+    throw new GearImageImportError(
+      'image_animated',
+      400,
+      'Animated images are not supported.',
+    )
+  }
+
+  const width = Number(metadata.width) || 0
+  const height = Number(metadata.height) || 0
+  if (!width || !height) {
+    throw new GearImageImportError(
+      'image_invalid',
+      400,
+      'The uploaded image has invalid dimensions.',
+    )
+  }
+
+  if (
+    width > maxGearImageDimension
+    || height > maxGearImageDimension
+    || width * height > maxGearImagePixels
+  ) {
+    throw new GearImageImportError(
+      'image_dimensions_exceeded',
+      413,
+      'Image dimensions are too large.',
+      {
+        details: {
+          width,
+          height,
+        },
+      },
+    )
+  }
+
+  return {
+    buffer: imageBuffer,
+    mimeType,
+    width,
+    height,
+    format: metadata.format,
+  }
+}
+
+export function getMultipartFields(parts = []) {
+  return (Array.isArray(parts) ? parts : []).reduce((fields, part) => {
+    if (!part.name) {
+      return fields
+    }
+
+    fields[part.name] = part.filename
+      ? {
+          data: part.data,
+          type: part.type || 'application/octet-stream',
+          filename: part.filename,
+        }
+      : { value: String(part.data || '') }
+
+    return fields
+  }, {})
+}
+
+export function parseImageModelOutput(payload) {
+  const outputText =
+    payload?.output_text
+    || payload?.output
+      ?.flatMap((item) => item.content || [])
+      ?.find((content) => content.type === 'output_text')
+      ?.text
+
+  if (!outputText) {
+    throw new GearImageImportError(
+      'parser_empty',
+      502,
+      'The image parser did not return readable results.',
+    )
+  }
+
+  try {
+    return JSON.parse(outputText)
+  }
+  catch (error) {
+    throw new GearImageImportError(
+      'parser_invalid',
+      502,
+      'The image parser returned invalid results.',
+      { cause: error },
+    )
+  }
+}
+
+async function getVerificationImageUrl(image, fallbackImageUrl) {
+  try {
+    const longestSide = Math.max(image.width, image.height)
+    const scale = Math.min(maxVerificationImageScale, verificationImageTargetSize / longestSide)
+    if (scale <= 1) {
+      return fallbackImageUrl
+    }
+
+    const resizedWidth = Math.round(image.width * scale)
+    const enlarged = await sharp(image.buffer, {
+      failOn: 'none',
+      limitInputPixels: maxGearImagePixels,
+    })
+      .resize({ width: resizedWidth, kernel: sharp.kernel.nearest })
+      .png({ compressionLevel: 9 })
+      .toBuffer()
+
+    return enlarged.length <= maxGearImageBytes
+      ? toImageDataUrl(enlarged, 'image/png')
+      : fallbackImageUrl
+  }
+  catch {
+    return fallbackImageUrl
+  }
+}
+
+async function requestImageModel({
+  apiKey,
+  imageUrl,
+  developerText,
+  userText,
+  formatName,
+  schema,
+  model,
+  reasoning,
+  verbosity,
+  safetyIdentifier,
+  signal,
+  fetchImpl,
+}) {
+  const response = await fetchImpl('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    signal,
+    body: JSON.stringify({
+      model,
+      store: false,
+      ...(reasoning ? { reasoning } : {}),
+      ...(safetyIdentifier ? { safety_identifier: String(safetyIdentifier) } : {}),
+      input: [
+        {
+          role: 'developer',
+          content: [
+            {
+              type: 'input_text',
+              text: developerText,
+            },
+          ],
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: userText,
+            },
+            {
+              type: 'input_image',
+              image_url: imageUrl,
+              detail: 'high',
+            },
+          ],
+        },
+      ],
+      text: {
+        verbosity,
+        format: {
+          type: 'json_schema',
+          name: formatName,
+          strict: true,
+          schema,
+        },
+      },
+    }),
+  })
+
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new GearImageImportError(
+      'upstream_error',
+      response.status,
+      payload?.error?.message || 'Could not read the uploaded image.',
+    )
+  }
+
+  return parseImageModelOutput(payload)
+}
+
+function resolveGearHint(gearHint, gearCatalog) {
+  const gearType = getValidGearType(gearHint?.gearType, gearCatalog)
+  const pieceType = getValidPieceType(gearType, gearHint?.pieceType, gearCatalog)
+  return gearType && pieceType ? { gearType, pieceType } : null
+}
+
+function getRequestSignal(signal, timeoutMs) {
+  const timeout = Number(timeoutMs)
+  const timeoutSignal =
+    Number.isFinite(timeout) && timeout > 0 && typeof AbortSignal?.timeout === 'function'
+      ? AbortSignal.timeout(timeout)
+      : null
+
+  if (signal && timeoutSignal && typeof AbortSignal?.any === 'function') {
+    return AbortSignal.any([signal, timeoutSignal])
+  }
+
+  return signal || timeoutSignal || undefined
+}
+
+function toBuffer(value) {
+  if (Buffer.isBuffer(value)) {
+    return value
+  }
+
+  if (value instanceof Uint8Array) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength)
+  }
+
+  if (value instanceof ArrayBuffer) {
+    return Buffer.from(value)
+  }
+
+  return null
+}
+
+function toImageDataUrl(buffer, mimeType) {
+  return `data:${mimeType};base64,${buffer.toString('base64')}`
+}

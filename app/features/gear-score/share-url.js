@@ -1,5 +1,5 @@
-import gears from '@/utils/gear.js'
-import { statIndex } from '@/features/gear-score/data.js'
+import gears from '../../utils/gear.js'
+import { statIndex } from './data.js'
 
 export function encodeShareState({ gearType, pieceType, statType, statInput }) {
   const gearNum = Object.keys(gears).reverse().indexOf(gearType).toString().padStart(2, '0')

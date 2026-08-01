@@ -3,19 +3,28 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=24.11.0 <25"
+  },
   "scripts": {
     "dev": "TMPDIR=/tmp nuxt dev --dotenv .env.local",
     "build": "nuxt build --dotenv .env.local",
     "generate": "nuxt generate --dotenv .env.local",
-    "preview": "nuxt preview --dotenv .env.local"
+    "preview": "nuxt preview --dotenv .env.local",
+    "test": "node --test tests/*.test.js",
+    "discord:register": "node scripts/register-discord-command.mjs"
   },
   "dependencies": {
+    "@fontsource/geist": "^5.3.0",
     "@lucide/vue": "^1.16.0",
+    "@napi-rs/canvas": "^1.0.3",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/vue-table": "^8.21.3",
+    "@vercel/functions": "^3.7.6",
     "@vueuse/core": "^14.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "discord-interactions": "^4.4.0",
     "nuxt": "^4.4.7",
     "reka-ui": "^2.10.1",
     "shadcn-vue": "^2.7.3",

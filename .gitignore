@@ -11,6 +11,7 @@ node_modules
 .DS_Store
 .nuxt
 .output
+.vercel
 dist
 dist-ssr
 coverage
