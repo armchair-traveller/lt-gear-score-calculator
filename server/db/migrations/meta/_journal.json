@@ -8,6 +8,13 @@
       "when": 1785652991628,
       "tag": "0000_init_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1785671444941,
+      "tag": "0001_cloud_gear_plan",
+      "breakpoints": true
     }
   ]
 }

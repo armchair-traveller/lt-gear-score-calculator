@@ -1,55 +1,93 @@
-import gears from '@/utils/gear.js'
+import gears from '../../utils/gear.js'
 import {
+  gearPlanDeviceMetaStorageKey,
   gearPlanShareVersion,
   gearPlanSlots,
   gearPlanStorageKey,
   getGearPlanSlot,
   getGearPlanSlotId,
-} from '@/features/gear-plan/data.js'
+} from './data.js'
 import {
   encodeShareState,
   parseShareState,
-} from '@/features/gear-score/share-url.js'
+} from '../gear-score/share-url.js'
 import {
-  getFinalStatValue,
-  isStatValueOverMax,
   normalizeStatValue,
-} from '@/features/gear-score/score-calculation.js'
+} from '../gear-score/score-calculation.js'
+import {
+  createEmptyGearPlan,
+  parseGearPlanStrict,
+} from './plan-validation.js'
 
-export function createEmptyGearPlan() {
-  return {
-    version: 1,
-    slots: {},
-  }
-}
+export { createEmptyGearPlan }
 
-export function readStoredGearPlan() {
+export function readStoredGearPlan(storage = globalThis.localStorage) {
   try {
-    const value = localStorage.getItem(gearPlanStorageKey)
+    if (!storage) {
+      return createEmptyGearPlan()
+    }
+
+    const value = storage.getItem(gearPlanStorageKey)
     return value ? sanitizeGearPlan(JSON.parse(value)) : createEmptyGearPlan()
   }
-  catch (error) {
-    console.error(error)
+  catch {
+    console.error('[gear-plan-storage] plan_read_failed')
     return createEmptyGearPlan()
   }
 }
 
-export function writeStoredGearPlan(plan) {
-  const sanitized = sanitizeGearPlan(plan)
-  localStorage.setItem(gearPlanStorageKey, JSON.stringify(sanitized))
-  return sanitized
+export function writeStoredGearPlan(plan, storage = globalThis.localStorage) {
+  const canonicalPlan = parseGearPlanStrict(plan)
+  storage.setItem(gearPlanStorageKey, JSON.stringify(canonicalPlan))
+  return canonicalPlan
 }
 
-export function saveStoredGearPlanEntry(entry) {
-  const sanitizedEntry = sanitizeGearPlanEntry(entry)
-  if (!sanitizedEntry) {
-    return false
+export function normalizeGearPlanUpdatedAt(value) {
+  if (typeof value !== 'string' || !value.trim()) {
+    return null
   }
 
-  const plan = readStoredGearPlan()
-  plan.slots[getGearPlanSlotId(sanitizedEntry.gearType, sanitizedEntry.pieceType)] = sanitizedEntry
-  writeStoredGearPlan(plan)
-  return true
+  const timestamp = new Date(value)
+  return Number.isFinite(timestamp.getTime()) ? timestamp.toISOString() : null
+}
+
+export function readStoredGearPlanDeviceMeta(storage = globalThis.localStorage) {
+  try {
+    if (!storage) {
+      return { updatedAt: null, ownerId: null }
+    }
+
+    const value = storage.getItem(gearPlanDeviceMetaStorageKey)
+    if (!value) {
+      return { updatedAt: null, ownerId: null }
+    }
+
+    const parsed = JSON.parse(value)
+    return {
+      updatedAt: normalizeGearPlanUpdatedAt(parsed?.updatedAt),
+      ownerId: typeof parsed?.ownerId === 'string' && parsed.ownerId.trim()
+        ? parsed.ownerId.trim()
+        : null,
+    }
+  }
+  catch {
+    console.error('[gear-plan-storage] metadata_read_failed')
+    return { updatedAt: null, ownerId: null }
+  }
+}
+
+export function writeStoredGearPlanDeviceMeta(
+  metadata,
+  storage = globalThis.localStorage,
+) {
+  const canonicalMetadata = {
+    updatedAt: normalizeGearPlanUpdatedAt(metadata?.updatedAt),
+    ownerId: typeof metadata?.ownerId === 'string' && metadata.ownerId.trim()
+      ? metadata.ownerId.trim()
+      : null,
+  }
+  storage.setItem(gearPlanDeviceMetaStorageKey, JSON.stringify(canonicalMetadata))
+  return canonicalMetadata
 }
 
 export function projectGearPlanEntry({
@@ -82,81 +120,47 @@ export function projectGearPlanEntry({
 
 export function sanitizeGearPlan(value) {
   const plan = createEmptyGearPlan()
-
-  if (!value || typeof value !== 'object' || value.version !== 1 || !value.slots || typeof value.slots !== 'object') {
+  if (
+    !value
+    || typeof value !== 'object'
+    || Array.isArray(value)
+    || value.version !== 1
+    || !value.slots
+    || typeof value.slots !== 'object'
+    || Array.isArray(value.slots)
+  ) {
     return plan
   }
 
   for (const entry of Object.values(value.slots)) {
-    const sanitizedEntry = sanitizeGearPlanEntry(entry)
-    if (!sanitizedEntry) {
+    const canonicalEntry = sanitizeGearPlanEntry(entry)
+    if (!canonicalEntry) {
       continue
     }
 
-    plan.slots[getGearPlanSlotId(sanitizedEntry.gearType, sanitizedEntry.pieceType)] = sanitizedEntry
+    const slotId = getGearPlanSlotId(
+      canonicalEntry.gearType,
+      canonicalEntry.pieceType,
+    )
+    if (!plan.slots[slotId]) {
+      plan.slots[slotId] = canonicalEntry
+    }
   }
 
   return plan
 }
 
 export function sanitizeGearPlanEntry(entry) {
-  if (!entry || typeof entry !== 'object') {
+  try {
+    const slotId = getGearPlanSlotId(entry?.gearType, entry?.pieceType)
+    const plan = parseGearPlanStrict({
+      version: 1,
+      slots: { [slotId]: entry },
+    })
+    return plan.slots[slotId] ?? null
+  }
+  catch {
     return null
-  }
-
-  const slot = getGearPlanSlot(entry.gearType, entry.pieceType)
-  const item = gears[entry.gearType]?.[entry.pieceType]
-  if (!slot || !item || !Array.isArray(entry.statType) || !Array.isArray(entry.statInput)) {
-    return null
-  }
-
-  const statType = entry.statType.slice(0, 5)
-  const statInput = entry.statInput.slice(0, 5).map((value) => Number(value))
-  if (statType.length !== 5 || statInput.length !== 5) {
-    return null
-  }
-
-  const usedStats = new Set()
-  let filledLineCount = 0
-  const normalizedStatInput = []
-  for (let index = 0; index < 5; index++) {
-    const stat = statType[index]
-    const statInfo = item.Stats[stat]
-    const value = statInput[index]
-    const canRepeat = stat === 'Other (Non-damaging)'
-    const maxValue = getFinalStatValue(statInfo, slot.upgradeCount)
-
-    if (
-      !statInfo ||
-      (!canRepeat && usedStats.has(stat)) ||
-      !Number.isFinite(value) ||
-      value < 0 ||
-      isStatValueOverMax(statInfo, value, maxValue)
-    ) {
-      return null
-    }
-
-    const normalizedValue = normalizeStatValue(statInfo, value)
-    normalizedStatInput[index] = normalizedValue
-
-    if (normalizedValue > 0) {
-      filledLineCount += 1
-    }
-
-    if (!canRepeat) {
-      usedStats.add(stat)
-    }
-  }
-
-  if (filledLineCount < 3) {
-    return null
-  }
-
-  return {
-    gearType: entry.gearType,
-    pieceType: entry.pieceType,
-    statType,
-    statInput: normalizedStatInput,
   }
 }
 

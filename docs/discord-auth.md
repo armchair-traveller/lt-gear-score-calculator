@@ -1,17 +1,45 @@
-# Discord authentication
+# Discord authentication and planner saves
 
-Discord sign-in uses Better Auth with Discord as the only identity provider and a single Turso database named `ltgear-auth`. It reuses the Discord application that owns the `/gear-score` command, but OAuth sign-in and command installation remain separate flows.
+Discord sign-in uses Better Auth with Discord as the only identity provider and a single Turso database named `ltgear-auth`. The same database stores one canonical gear planner for each Better Auth user. Authentication reuses the Discord application that owns the `/gear-score` command, but OAuth sign-in and command installation remain separate flows.
 
 ## Current scope
 
-This rollout provides only:
+This rollout provides:
 
 - Sign in with Discord.
 - A server-managed session.
 - Display of the signed-in Discord identity.
 - Sign out.
+- One gear planner saved across signed-in devices.
+- Local-first planner edits with automatic background saves.
+- Explicit conflict resolution when device and cloud copies differ.
 
-It does **not** sync planner entries or other browser state, save calculator history, connect command results to an account, or provide self-service account deletion. The existing local-storage behavior remains authoritative, and signing in or out must not migrate, overwrite, or clear it.
+It does **not** save calculator inputs, quality targets, recent upgrade items, calculator history, or image-import history; connect command results to an account; create multiple named planners; or provide self-service account deletion. The calculator, upgrade workbench, planner, image importer, share links, and Discord command remain usable without signing in.
+
+## Planner save behavior
+
+Planner persistence is local-first:
+
+- Signed-out changes are saved only on the current device.
+- Signed-in changes are written to the current device immediately and then saved to Turso in the background.
+- The editor never waits on the network before closing.
+- A failed cloud request reports **Save paused** and offers a retry. The local planner remains usable and no local edit is discarded.
+- If browser storage is blocked or full, the mutation is not reported as saved and no cloud write is attempted. **Save paused** explains the device failure and retries the retained in-memory mutation after storage becomes available.
+- Signing out retains the device copy. It does not clear or silently replace planner data.
+
+On the first signed-in reconciliation:
+
+- Matching copies need no action.
+- A populated device copy is uploaded when the account has no planner.
+- A populated account copy is loaded when the device planner is empty.
+- A populated device copy never silently repopulates an intentionally emptied cloud planner; that case requires a choice.
+- If both copies contain different data, the user chooses **Replace cloud with this device** or **Use cloud plan** before either copy is overwritten.
+
+A small device-only metadata record tracks the last modification time and the opaque Better Auth user ID associated with the retained copy. It never contains a Discord ID, email address, or plan contents, and exists only to prevent one account's retained planner from being uploaded to another account after a reload.
+
+Later writes use the stored revision to detect stale updates. A revision conflict returns to the same explicit chooser. Shared planner links remain read-only previews; adopting a shared plan requires confirmation when the current planner is non-empty and then follows the same local-first save path.
+
+Application ownership always uses Better Auth's internal user ID. The Discord snowflake remains provider-account data and is not used as the `gear_plan` owner key.
 
 ## Supported environments
 
@@ -106,9 +134,29 @@ npm run db:migrate
 
 Review and commit generated schema and migration files. Deployment should apply already-reviewed migrations with `npm run db:migrate`; it must not generate a new migration from live production state.
 
+Better Auth generation owns `server/db/auth-schema.js`. The application-owned `gear_plan` table is defined separately and aggregated through `server/db/schema.js`, so running `npm run auth:schema` cannot erase product tables. The `gear_plan` row uses the Better Auth user ID as its primary key, stores sanitized versioned slots, and tracks a revision for conditional writes.
+
+The additive planner migration also creates the migration-owned unique index on `account(provider_id, account_id)` that Better Auth 1.6.25 cannot generate. Before applying that migration to an existing database, run this count-only duplicate preflight and stop if the result is not zero:
+
+```sql
+SELECT COUNT(*) AS duplicate_pair_count
+FROM (
+  SELECT provider_id, account_id
+  FROM account
+  GROUP BY provider_id, account_id
+  HAVING COUNT(*) > 1
+);
+```
+
+The production order is: verify the database target, run the duplicate preflight, apply the committed migration, run the test/build checks, then push the reviewed commit to `main`. Never try to repair duplicate account rows automatically during deployment.
+
+## Continuous integration
+
+The GitHub Actions workflow uses Node.js 24 and runs `npm ci`, credential-free Better Auth schema generation with a checked-in drift check, the complete test suite, and the Nuxt server build. CI does not connect to Turso, apply migrations, use Discord credentials, or require repository secrets.
+
 ## Local verification
 
-1. Copy `.env.example` to `.env.local` and fill the server-only values without sharing them.
+1. Copy `.env.example` to `.env.local` and fill the server-only values without sharing them. Use a local-only Better Auth secret and a newly scoped `ltgear-auth` token; keep the registration-only `DISCORD_BOT_TOKEN` local.
 2. Set both `BETTER_AUTH_URL` and `NUXT_PUBLIC_SITE_URL` to `http://localhost:3000`.
 3. Confirm the Discord application contains the exact localhost callback.
 4. Apply the checked-in migrations with `npm run db:migrate`.
@@ -118,9 +166,12 @@ Review and commit generated schema and migration files. Deployment should apply 
    npm run dev
    ```
 
-6. Verify sign-in returns to the page that initiated it, refresh preserves the session, and sign-out leaves every anonymous calculator and planner feature usable.
-7. Cancel the Discord consent screen once and confirm the app reports cancellation without altering local data.
-8. Test a Discord account without an email if one is available, and confirm the `.invalid` placeholder is never rendered.
+6. While signed out, edit the planner and confirm the control says **Save across devices** while the entry survives a refresh on that device.
+7. Sign in from the planner and confirm the OAuth return preserves the current path and query. Reconcile device/cloud copies if prompted, then verify the control reaches **Saved across devices**.
+8. Change a planner entry, refresh, and open the same account in a second browser profile to confirm the canonical planner loads. Create a stale update deliberately and verify the conflict chooser preserves both summaries until a choice is made.
+9. Sign out and confirm the device copy remains available and every anonymous tool continues to work.
+10. Cancel the Discord consent screen once and confirm the app reports cancellation without altering local data.
+11. Test a Discord account without an email if one is available, and confirm the `.invalid` placeholder is never rendered.
 
 Do not test OAuth by pasting Discord tokens into requests or by automating a personal Discord account.
 
@@ -135,6 +186,8 @@ NUXT_PUBLIC_SITE_URL=https://ltgear.vercel.app
 
 Add `BETTER_AUTH_SECRET`, `DISCORD_APPLICATION_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_PUBLIC_KEY`, `TURSO_DATABASE_URL`, and `TURSO_AUTH_TOKEN` through Vercel's encrypted environment-variable UI. Keep production auth credentials out of the Preview environment.
 
+`DISCORD_BOT_TOKEN` must be absent from both Vercel Preview and Production. Command registration runs deliberately from a trusted local environment; the deployed webhook does not need the bot token.
+
 Use the Nuxt server build:
 
 ```text
@@ -145,17 +198,17 @@ Do **not** use `npm run generate`. Better Auth requires the Nitro `/api/auth/**`
 
 Before directing traffic to a build:
 
-1. Apply reviewed migrations to `ltgear-auth`.
+1. Run the count-only duplicate preflight, stop on a nonzero result, and then apply reviewed migrations to `ltgear-auth`.
 2. Query `PRAGMA foreign_keys;` through the remote runtime client and record the result. The initial `ltgear-auth` rollout returned `1`; investigate before deployment if a later check differs.
 3. Confirm the production callback is registered exactly.
 4. Confirm the build sees the Production environment values.
-5. Smoke-test anonymous calculation first, then sign-in, refresh, sign-out, and the existing `/gear-score` interaction.
+5. Smoke-test anonymous calculation and local planner saves first, then sign-in, planner reconciliation, a cloud save, refresh, a second-browser load, sign-out, and the existing `/gear-score` interaction.
 6. Inspect logs only for redacted outcome codes. Raw secrets, OAuth codes, cookies, emails, Turso tokens, and Discord user IDs must not be logged.
 
 ## Additive rollback
 
-Authentication is additive to the anonymous application. A safe rollback reverts or disables the sign-in UI and auth server routes while leaving the calculator, planner, upgrade workbench, share links, screenshot importer, and Discord command available.
+Authentication and the canonical planner row are additive to the anonymous application. A safe rollback restores the prior server deployment while leaving the calculator, local planner, upgrade workbench, share links, screenshot importer, and Discord command available.
 
 Do not drop Turso tables, reverse migrations, rotate secrets, or delete user rows as the first rollback step. Keep the `ltgear-auth` database intact while the prior server build is restored and the incident is understood. Schema or data cleanup is a separate, reviewed destructive operation.
 
-Because this phase stores only Better Auth user, account, verification, and session data—and does not cloud-sync calculator data—rolling back the application does not require migrating planner or gear state back to browsers.
+The `gear_plan` table can remain unused during a rollback. Because every edit is written to the browser first, rollback does not require an emergency planner-data export or a destructive database migration. Reconciliation after redeployment should still be tested before traffic is restored.

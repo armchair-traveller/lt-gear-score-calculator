@@ -16,6 +16,7 @@ export const gearPlanSlots = [
 ]
 
 export const gearPlanStorageKey = 'ltGearPlanV1'
+export const gearPlanDeviceMetaStorageKey = 'ltGearPlanDeviceMetaV1'
 export const gearPlanShareVersion = '1'
 
 export function getGearPlanSlotId(gearType, pieceType) {

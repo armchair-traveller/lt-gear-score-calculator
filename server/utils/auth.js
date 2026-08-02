@@ -3,9 +3,9 @@ import { createDatabase } from '../db/client.js'
 import * as schema from '../db/schema.js'
 import { createAuth, readAuthEnvironment } from './auth-config.js'
 
-let runtimeAuth
+let runtimeServices
 
-export function createRuntimeAuth({
+export function createRuntimeServices({
   environment = process.env,
   db,
   backgroundTaskHandler,
@@ -17,19 +17,34 @@ export function createRuntimeAuth({
     schema,
   }).db
 
-  return createAuth({
+  return {
     db: database,
-    schema,
-    baseURL: authEnvironment.baseURL,
-    secret: authEnvironment.secret,
-    discordClientId: authEnvironment.discordClientId,
-    discordClientSecret: authEnvironment.discordClientSecret,
-    backgroundTaskHandler: backgroundTaskHandler
-      ?? (environment.VERCEL ? vercelWaitUntil : undefined),
-  })
+    auth: createAuth({
+      db: database,
+      schema,
+      baseURL: authEnvironment.baseURL,
+      secret: authEnvironment.secret,
+      discordClientId: authEnvironment.discordClientId,
+      discordClientSecret: authEnvironment.discordClientSecret,
+      backgroundTaskHandler: backgroundTaskHandler
+        ?? (environment.VERCEL ? vercelWaitUntil : undefined),
+    }),
+  }
+}
+
+export function createRuntimeAuth(options) {
+  return createRuntimeServices(options).auth
+}
+
+export function getRuntimeServices() {
+  runtimeServices ||= createRuntimeServices()
+  return runtimeServices
 }
 
 export function getAuth() {
-  runtimeAuth ||= createRuntimeAuth()
-  return runtimeAuth
+  return getRuntimeServices().auth
+}
+
+export function getDatabase() {
+  return getRuntimeServices().db
 }

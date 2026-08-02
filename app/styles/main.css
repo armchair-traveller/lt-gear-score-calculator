@@ -321,6 +321,17 @@
   }
 
   @media (min-width: 768px) and (max-width: 1199px) {
+    .gear-plan-sync-control[data-placement="header"] .gear-plan-sync-surface {
+      width: 2.25rem !important;
+      min-width: 2.25rem !important;
+      justify-content: center !important;
+      padding-inline: 0 !important;
+    }
+
+    .gear-plan-sync-control[data-placement="header"] .gear-plan-sync-label {
+      display: none;
+    }
+
     .auth-account-control {
       width: 2.25rem !important;
     }

@@ -45,14 +45,12 @@ import {
 } from '@/features/gear-score/share-url.js'
 import { useGearScoreSnapshot } from '@/features/gear-score/useGearScoreSnapshot.js'
 import { isGearPlanSlot } from '@/features/gear-plan/data.js'
-import {
-  projectGearPlanEntry,
-  saveStoredGearPlanEntry,
-} from '@/features/gear-plan/plan-state.js'
+import { projectGearPlanEntry } from '@/features/gear-plan/plan-state.js'
 
 export function useGearScoreCalculator() {
   const route = useRoute()
   const router = useRouter()
+  const gearPlanPersistence = useGearPlanPersistence()
   const upgradeHref = computed(() => router.resolve('/upgrade').href)
   const planHref = computed(() => router.resolve('/plan').href)
 
@@ -608,7 +606,7 @@ export function useGearScoreCalculator() {
       statInput: statInput.value,
       currentUpgradeCount: getInputEnchantUpgradeCount(),
     })
-    if (!entry || !saveStoredGearPlanEntry(entry)) {
+    if (!entry || !gearPlanPersistence.saveEntry(entry)) {
       return
     }
 

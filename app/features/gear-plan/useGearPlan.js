@@ -6,11 +6,8 @@ import {
   getGearPlanSlotId,
 } from '@/features/gear-plan/data.js'
 import {
-  createEmptyGearPlan,
   encodeGearPlanShare,
   parseGearPlanShare,
-  readStoredGearPlan,
-  writeStoredGearPlan,
 } from '@/features/gear-plan/plan-state.js'
 import {
   calculateGearPlanItem,
@@ -27,9 +24,10 @@ import {
 export function useGearPlan() {
   const route = useRoute()
   const router = useRouter()
+  const persistence = useGearPlanPersistence()
   const homeHref = computed(() => router.resolve('/').href)
   const upgradeHref = computed(() => router.resolve('/upgrade').href)
-  const localPlan = ref(readStoredGearPlan())
+  const localPlan = persistence.plan
   const sortMode = ref('impact')
   const shareCopied = ref(false)
   const shareCopyTimeout = ref(null)
@@ -154,7 +152,6 @@ export function useGearPlan() {
     if (!shareParam) {
       sharedPlan.value = null
       shareError.value = ''
-      localPlan.value = readStoredGearPlan()
       return
     }
 
@@ -257,20 +254,17 @@ export function useGearPlan() {
       return false
     }
 
-    const nextPlan = {
-      version: 1,
-      slots: {
-        ...localPlan.value.slots,
-        [selectedSlot.value.id]: {
-          gearType: selectedSlot.value.gearType,
-          pieceType: selectedSlot.value.pieceType,
-          statType: editorStatType.value.slice(),
-          statInput: editorStatInput.value.map((value) => Number(value)),
-        },
-      },
-    }
     const savedSlot = selectedSlot.value
-    localPlan.value = writeStoredGearPlan(nextPlan)
+    const saved = persistence.saveEntry({
+      gearType: savedSlot.gearType,
+      pieceType: savedSlot.pieceType,
+      statType: editorStatType.value.slice(),
+      statInput: editorStatInput.value.map((value) => Number(value)),
+    })
+    if (!saved) {
+      return false
+    }
+
     clearTimeout(saveFeedbackTimeout.value)
     lastSavedSlotId.value = savedSlot.id
     saveFeedbackMessage.value = `${savedSlot.pieceType} saved. Upgrade priority updated.`
@@ -284,25 +278,28 @@ export function useGearPlan() {
 
   function deleteSelectedSlot() {
     if (isSharedPreview.value || !selectedSlot.value?.entry) {
-      return
+      return false
     }
 
-    const nextPlan = {
-      version: 1,
-      slots: { ...localPlan.value.slots },
+    if (!persistence.deleteEntry(selectedSlot.value.id)) {
+      return false
     }
-    delete nextPlan.slots[selectedSlot.value.id]
-    localPlan.value = writeStoredGearPlan(nextPlan)
+
     editorOpen.value = false
+    return true
   }
 
   function resetPlan() {
     if (isSharedPreview.value) {
-      return
+      return false
     }
 
-    localPlan.value = writeStoredGearPlan(createEmptyGearPlan())
+    if (!persistence.resetPlan()) {
+      return false
+    }
+
     editorOpen.value = false
+    return true
   }
 
   async function copyShareLink() {
@@ -331,11 +328,15 @@ export function useGearPlan() {
 
   function useSharedPlan() {
     if (!sharedPlan.value) {
-      return
+      return false
     }
 
-    localPlan.value = writeStoredGearPlan(sharedPlan.value)
+    if (!persistence.replacePlan(sharedPlan.value)) {
+      return false
+    }
+
     void router.push('/plan')
+    return true
   }
 
   function acceptPlannerNotes() {
@@ -397,6 +398,11 @@ export function useGearPlan() {
     shareError,
     isSharedPreview,
     displayedPlan,
+    syncStatus: persistence.syncStatus,
+    pauseReason: persistence.pauseReason,
+    conflict: persistence.conflict,
+    localUpdatedAt: persistence.localUpdatedAt,
+    entryCount: persistence.entryCount,
     slotModels,
     eligibleSlots,
     rankedSlots,
@@ -423,6 +429,10 @@ export function useGearPlan() {
     saveEditor,
     deleteSelectedSlot,
     resetPlan,
+    replacePlan: persistence.replacePlan,
+    retry: persistence.retry,
+    useCloudPlan: persistence.useCloudPlan,
+    replaceCloudWithDevice: persistence.replaceCloudWithDevice,
     copyShareLink,
     useSharedPlan,
     acceptPlannerNotes,

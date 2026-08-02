@@ -3,7 +3,8 @@ import { normalizeAppRoutePath } from '@/utils/app-route.js'
 
 const route = useRoute()
 const appShell = provideAppShell()
-provideAuth()
+const auth = provideAuth()
+provideGearPlanPersistence({ auth })
 
 const shellRoutes = {
   '/': {

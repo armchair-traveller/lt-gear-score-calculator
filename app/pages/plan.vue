@@ -3,6 +3,10 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   ClipboardIcon,
+  CloudDownloadIcon,
+  CloudIcon,
+  CloudUploadIcon,
+  LaptopIcon,
   MoreHorizontalIcon,
   PlusIcon,
   RotateCcwIcon,
@@ -22,6 +26,13 @@ const gearPlan = useGearPlan()
 provideGearPlan(gearPlan)
 const planner = reactive(gearPlan)
 const appShell = useAppShellContext()
+const route = useRoute()
+const {
+  isSignedIn,
+  isAccountUnavailable,
+  signInWithDiscord,
+  refreshSession,
+} = useAuth()
 const unregisterHelpHandler = appShell.registerHelpHandler('planner', () => {
   planner.plannerNotesOpen = true
 })
@@ -30,6 +41,20 @@ onBeforeUnmount(unregisterHelpHandler)
 
 const resetOpen = ref(false)
 const deleteOpen = ref(false)
+const conflictOpen = ref(false)
+const sharedAdoptionOpen = ref(false)
+
+const sharedEntryCount = computed(() =>
+  Object.keys(planner.displayedPlan?.slots ?? {}).length,
+)
+
+const sharedAdoptionDescription = computed(() => {
+  const destination = isSignedIn.value
+    ? 'on this device and across your signed-in devices'
+    : 'on this device'
+
+  return `This replaces ${formatEntryCount(planner.entryCount)} in your current planner ${destination} with ${formatEntryCount(sharedEntryCount.value)} from the shared link.`
+})
 
 const topPriorityMotionKey = computed(() => {
   const slot = planner.topPriority
@@ -45,14 +70,88 @@ const topPriorityMotionKey = computed(() => {
   ].join(':')
 })
 
+watch(
+  () => planner.syncStatus,
+  (status) => {
+    if (status === 'conflict') {
+      conflictOpen.value = true
+      return
+    }
+
+    conflictOpen.value = false
+  },
+  { immediate: true },
+)
+
+function startCloudSignIn() {
+  void signInWithDiscord(route.fullPath)
+}
+
+function retryCloudSave() {
+  if (isAccountUnavailable.value) {
+    void refreshSession()
+    return
+  }
+
+  planner.retry()
+}
+
+function keepDevicePlan() {
+  planner.replaceCloudWithDevice()
+  conflictOpen.value = false
+}
+
+function useCloudPlan() {
+  planner.useCloudPlan()
+  conflictOpen.value = false
+}
+
+function requestSharedAdoption() {
+  if (Number(planner.entryCount) > 0) {
+    sharedAdoptionOpen.value = true
+    return
+  }
+
+  planner.useSharedPlan()
+}
+
+function confirmSharedAdoption() {
+  if (planner.useSharedPlan()) {
+    sharedAdoptionOpen.value = false
+  }
+}
+
+function formatEntryCount(value) {
+  const count = Math.max(0, Number(value) || 0)
+  return `${count} gear ${count === 1 ? 'entry' : 'entries'}`
+}
+
+function formatSyncTimestamp(value) {
+  if (!value) {
+    return 'Update time unavailable'
+  }
+
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return 'Update time unavailable'
+  }
+
+  return `Updated ${new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)}`
+}
+
 function confirmReset() {
-  planner.resetPlan()
-  resetOpen.value = false
+  if (planner.resetPlan()) {
+    resetOpen.value = false
+  }
 }
 
 function confirmDelete() {
-  planner.deleteSelectedSlot()
-  deleteOpen.value = false
+  if (planner.deleteSelectedSlot()) {
+    deleteOpen.value = false
+  }
 }
 </script>
 
@@ -60,6 +159,14 @@ function confirmDelete() {
   <div class="parade-route">
     <Teleport to="#app-shell-utilities">
       <div class="contents">
+          <GearPlanSyncControl
+            :status="isAccountUnavailable ? 'paused' : planner.syncStatus"
+            :pause-reason="isAccountUnavailable ? 'cloud' : planner.pauseReason"
+            placement="header"
+            @open-conflict="conflictOpen = true"
+            @retry="retryCloudSave"
+            @sign-in="startCloudSignIn"
+          />
           <Button
             variant="outline"
             size="sm"
@@ -119,7 +226,7 @@ function confirmDelete() {
             <ShieldAlertIcon class="mt-0.5 size-5 shrink-0" />
             <div>
               <div class="font-medium">Shared planner preview</div>
-              <div class="text-sm opacity-80">Your locally saved entries have not been changed.</div>
+              <div class="text-sm opacity-80">Your planner has not been changed.</div>
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -129,7 +236,7 @@ function confirmDelete() {
                 My planner
               </NuxtLink>
             </Button>
-            <Button @click="planner.useSharedPlan">Use these entries</Button>
+            <Button @click="requestSharedAdoption">Use these entries</Button>
           </div>
         </section>
 
@@ -264,25 +371,36 @@ function confirmDelete() {
           </section>
 
           <section class="parade-card grid content-start gap-4 rounded-[22px] border bg-card p-5">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <h2 class="text-lg font-bold">Gear slots</h2>
                 <p class="text-sm text-muted-foreground">Select a slot to review or edit it.</p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                class="w-28 justify-center"
-                :disabled="!planner.eligibleSlots.length"
-                :aria-label="planner.shareCopied ? 'Planner link copied' : 'Share plan'"
-                @click="planner.copyShareLink"
-              >
-                <Transition name="motion-swap" mode="out-in">
-                  <span :key="planner.shareCopied ? 'copied' : 'share'">
-                    {{ planner.shareCopied ? 'Copied' : 'Share plan' }}
-                  </span>
-                </Transition>
-              </Button>
+              <div class="flex w-full flex-wrap items-center gap-2 md:w-auto">
+                <GearPlanSyncControl
+                  class="w-full md:hidden"
+                  :status="isAccountUnavailable ? 'paused' : planner.syncStatus"
+                  :pause-reason="isAccountUnavailable ? 'cloud' : planner.pauseReason"
+                  placement="mobile"
+                  @open-conflict="conflictOpen = true"
+                  @retry="retryCloudSave"
+                  @sign-in="startCloudSignIn"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="w-28 justify-center"
+                  :disabled="!planner.eligibleSlots.length"
+                  :aria-label="planner.shareCopied ? 'Planner link copied' : 'Share plan'"
+                  @click="planner.copyShareLink"
+                >
+                  <Transition name="motion-swap" mode="out-in">
+                    <span :key="planner.shareCopied ? 'copied' : 'share'">
+                      {{ planner.shareCopied ? 'Copied' : 'Share plan' }}
+                    </span>
+                  </Transition>
+                </Button>
+              </div>
             </div>
 
             <div class="grid gap-5">
@@ -361,11 +479,101 @@ function confirmDelete() {
     <GearPlanEditorSheet @request-delete="deleteOpen = true" />
     <GearPlanNotesDialog />
 
+    <Dialog v-model:open="conflictOpen">
+      <DialogContent class="max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg sm:max-w-2xl">
+        <DialogHeader class="pr-8">
+          <DialogTitle>Choose which planner to keep</DialogTitle>
+          <DialogDescription>
+            We found different planners on this device and in your cloud account. Nothing will be overwritten until you choose.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <Card size="sm" class="flex h-full flex-col">
+            <CardHeader>
+              <CardTitle class="flex items-center gap-2">
+                <LaptopIcon class="size-4" />
+                This device
+              </CardTitle>
+              <CardDescription>Keep the planner currently open in this browser.</CardDescription>
+            </CardHeader>
+            <CardContent class="flex flex-1 flex-col gap-2">
+              <Badge variant="secondary" class="self-start">
+                {{ formatEntryCount(planner.conflict?.device?.entryCount) }}
+              </Badge>
+              <p class="text-sm text-muted-foreground">
+                {{ formatSyncTimestamp(planner.conflict?.device?.updatedAt) }}
+              </p>
+            </CardContent>
+            <CardFooter>
+              <Button
+                variant="outline"
+                class="h-auto w-full whitespace-normal py-2 text-center"
+                @click="keepDevicePlan"
+              >
+                <CloudUploadIcon data-icon="inline-start" />
+                Replace cloud with this device
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card size="sm" class="flex h-full flex-col">
+            <CardHeader>
+              <CardTitle class="flex items-center gap-2">
+                <CloudIcon class="size-4" />
+                Cloud copy
+              </CardTitle>
+              <CardDescription>Replace this browser's planner with the account copy.</CardDescription>
+            </CardHeader>
+            <CardContent class="flex flex-1 flex-col gap-2">
+              <Badge variant="secondary" class="self-start">
+                {{ formatEntryCount(planner.conflict?.cloud?.entryCount) }}
+              </Badge>
+              <p class="text-sm text-muted-foreground">
+                {{ formatSyncTimestamp(planner.conflict?.cloud?.updatedAt) }}
+              </p>
+            </CardContent>
+            <CardFooter>
+              <Button
+                variant="outline"
+                class="h-auto w-full whitespace-normal py-2 text-center"
+                @click="useCloudPlan"
+              >
+                <CloudDownloadIcon data-icon="inline-start" />
+                Use cloud plan
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" @click="conflictOpen = false">Decide later</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="sharedAdoptionOpen">
+      <DialogContent class="rounded-lg sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Replace your planner with these entries?</DialogTitle>
+          <DialogDescription>{{ sharedAdoptionDescription }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="sharedAdoptionOpen = false">Cancel</Button>
+          <Button @click="confirmSharedAdoption">Replace planner</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <Dialog v-model:open="resetOpen">
         <DialogContent class="rounded-lg">
           <DialogHeader>
             <DialogTitle>Reset planner?</DialogTitle>
-            <DialogDescription>This permanently removes every locally saved gear entry.</DialogDescription>
+            <DialogDescription>
+              {{ isSignedIn
+                ? 'This permanently removes every gear entry from your planner across signed-in devices.'
+                : 'This permanently removes every gear entry saved on this device.' }}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" @click="resetOpen = false">Cancel</Button>
@@ -378,7 +586,11 @@ function confirmDelete() {
         <DialogContent class="rounded-lg">
           <DialogHeader>
             <DialogTitle>Delete this gear entry?</DialogTitle>
-            <DialogDescription>The slot will return to its empty state.</DialogDescription>
+            <DialogDescription>
+              {{ isSignedIn
+                ? 'The slot will return to its empty state across signed-in devices.'
+                : 'The slot will return to its empty state on this device.' }}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" @click="deleteOpen = false">Cancel</Button>
