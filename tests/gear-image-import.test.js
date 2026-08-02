@@ -39,6 +39,19 @@ const grendelHelmetExtraction = {
   ],
 }
 
+const ascendedGrendelHelmetExtraction = {
+  gearType: '[9999] Armor',
+  pieceType: 'Helmet',
+  confidence: 0.99,
+  lines: [
+    createLine('Lv. 5 Attack / Elemental Intensity +245 [74%]', 'Attack / Elemental Intensity', 245, 74),
+    createLine('Lv. 5 Dual Accuracy +211 [91%]', 'Dual Accuracy', 211, 91),
+    createLine('Lv. 5 Normal Damage Amplification +5.8% [96%]', 'Normal Damage Amplification', 5.8, 96),
+    createLine('Lv. 1 Strength / Magic +1', 'Strength / Magic', 1, 0, 1),
+    createLine('Lv. 5 Dual Critical Damage +129 [77%]', 'Dual Critical Damage', 129, 77),
+  ],
+}
+
 const annihilationWeaponExtraction = {
   gearType: '[8000] Weapons',
   pieceType: 'Weapon',
@@ -79,6 +92,34 @@ test('requires one extraction result for every visible Lv. row', () => {
   assert.match(prompt, /Never skip a row between two other enchant rows/)
   assert.match(prompt, /lines\.length equals the number of visible rows that begin with "Lv\."/)
   assert.match(prompt, /Count the digits in each value and verify the full digit sequence/)
+  assert.match(prompt, /without a percentage in square brackets is still an enchant row/)
+  assert.match(prompt, /original position and set rollPercent to 0/)
+})
+
+test('keeps the unenchanted fourth row from the Ascended Grendel Helmet screenshot', () => {
+  const result = normalizeExtraction(
+    ascendedGrendelHelmetExtraction,
+    '[9999] Armor',
+    'Helmet',
+    gears,
+  )
+
+  assert.deepEqual(
+    result.lines.map(({ stat, value, rollPercent, ignored, status }) => ({
+      stat,
+      value,
+      rollPercent,
+      ignored,
+      status,
+    })),
+    [
+      { stat: 'Attack/Intensity', value: 245, rollPercent: 74, ignored: false, status: 'matched' },
+      { stat: 'Accuracy', value: 211, rollPercent: 91, ignored: false, status: 'matched' },
+      { stat: 'Normal Amplification', value: 5.8, rollPercent: 96, ignored: false, status: 'matched' },
+      { stat: 'Strength/Magic', value: 1, rollPercent: 0, ignored: true, status: 'ignored' },
+      { stat: 'Critical Damage', value: 129, rollPercent: 77, ignored: false, status: 'matched' },
+    ],
+  )
 })
 
 test('normalizes all five rows from the supplied Grendel Helmet screenshot', () => {

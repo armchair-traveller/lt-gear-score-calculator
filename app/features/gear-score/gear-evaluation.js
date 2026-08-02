@@ -6,6 +6,7 @@ import {
   repeatableStats,
 } from './data.js'
 import { formatStatValue } from './helpers.js'
+import { buildGearImageImportInputs } from './gear-image-import-inputs.js'
 import {
   calculateGearScore,
   getDefaultQualityTargetPercent,
@@ -55,7 +56,7 @@ export function evaluateImportedGear(importResult, { calculatorPath = '/' } = {}
   )
   validateImportValues(activeLines, gearType, item, inputEnchantLevel)
 
-  const { statTypes, statInputs } = buildCalculatorInputs(activeLines, item)
+  const { statTypes, statInputs } = buildGearImageImportInputs(importResult.lines, item)
   const futurePotentialMultiplier = getProjectionEnchantLevel(gearType) - 2
   const inputUpgradeCount = supportsInputEnchantLevel(gearType, item)
     ? inputEnchantLevel - 2
@@ -310,44 +311,6 @@ function validateImportValues(lines, gearType, item, inputEnchantLevel) {
       },
     )
   }
-}
-
-function buildCalculatorInputs(lines, item) {
-  const options = Object.keys(item.Stats || {})
-  const statTypes = lines.map((line) => line.stat)
-  const statInputs = lines.map((line) => formatInputValue(line.stat, line.value))
-  const usedStats = new Set(
-    statTypes.filter((stat) => !repeatableStats.includes(stat)),
-  )
-
-  while (statTypes.length < maximumGearLines) {
-    const fallback =
-      options.find(
-        (option) => repeatableStats.includes(option) || !usedStats.has(option),
-      )
-      || ''
-    statTypes.push(fallback)
-    statInputs.push('')
-    if (fallback && !repeatableStats.includes(fallback)) {
-      usedStats.add(fallback)
-    }
-  }
-
-  return {
-    statTypes,
-    statInputs,
-  }
-}
-
-function formatInputValue(stat, value) {
-  const number = Number(value)
-  if (!Number.isFinite(number)) {
-    return ''
-  }
-
-  return ['Normal Amplification', 'Boss Amplification', 'Cooldown Reduction'].includes(stat)
-    ? Number(number.toFixed(1))
-    : parseInt(number)
 }
 
 function getInputEnchantLevelNumber(gearType, item, value) {

@@ -21,6 +21,7 @@ import {
   getRollStatusClass,
   getTierClass,
 } from '@/features/gear-score/helpers.js'
+import { buildGearImageImportInputs } from '@/features/gear-score/gear-image-import-inputs.js'
 import {
   calculateGearScore,
   createEmptyGearScoreResult,
@@ -570,54 +571,16 @@ export function useGearScoreCalculator() {
     pieceType.value = nextPiece
     highlightedPiece.value = [nextGear, nextPiece]
 
-    const options = Object.keys(item.Stats ?? {})
-    const usedStats = new Set()
-    const importLines = Array.isArray(importResult.lines)
-      ? importResult.lines.filter((line) => !line.ignored).slice(0, 5)
-      : []
-    const nextStatType = []
-    const nextStatInput = []
-
-    for (let index = 0; index < 5; index++) {
-      const line = importLines[index]
-      const lineStat = item.Stats?.[line?.stat] ? line.stat : ''
-      const selectedStat = getAvailableImportStat(lineStat, options, usedStats)
-        || getAvailableImportStat('', options, usedStats)
-
-      nextStatType[index] = selectedStat
-      nextStatInput[index] = line && !line.ignored && lineStat && selectedStat === lineStat && Number(line.value) > 0
-        ? formatImportInputValue(lineStat, line.value)
-        : ''
-
-      if (selectedStat && !canRepeatStat(selectedStat)) {
-        usedStats.add(selectedStat)
-      }
-    }
+    const {
+      statTypes: nextStatType,
+      statInputs: nextStatInput,
+    } = buildGearImageImportInputs(importResult.lines, item)
 
     statType.value = nextStatType
     statInput.value = nextStatInput
     resetQualityOddsOrder()
     resetOddsEnchantMethods()
     setInputEnchantLevel(importResult.inputEnchantLevel || 2)
-  }
-
-  function getAvailableImportStat(stat, options, usedStats) {
-    if (stat && options.includes(stat) && (canRepeatStat(stat) || !usedStats.has(stat))) {
-      return stat
-    }
-
-    return options.find((option) => canRepeatStat(option) || !usedStats.has(option)) ?? ''
-  }
-
-  function formatImportInputValue(stat, value) {
-    const numericValue = Number(value)
-    if (!Number.isFinite(numericValue)) {
-      return ''
-    }
-
-    return isDecimalStat(stat)
-      ? Number(numericValue.toFixed(1))
-      : parseInt(numericValue)
   }
 
   function getFinalUpgrade(item) {

@@ -90,6 +90,7 @@ export function getExtractorPrompt() {
     'Keep every digit in large values, including repeated or trailing digits in five-digit values such as "+24011".',
     'Count the digits in each value and verify the full digit sequence against the image before responding; do not drop a narrow or faint digit between other digits.',
     'The percentage in square brackets is a separate roll percentage; never merge it into the stat value.',
+    'A visible "Lv." row without a percentage in square brackets is still an enchant row: emit it in its original position and set rollPercent to 0.',
     'Ignore base item stats, durability, enchant limit, seals, awakening lines, titles, and unrelated UI text.',
     'Set equipmentVisible true only when the screenshot itself visibly identifies the equipment category and piece.',
     'If the full equipment tooltip is visible, infer the gear category and piece from title, required level, and piece wording.',

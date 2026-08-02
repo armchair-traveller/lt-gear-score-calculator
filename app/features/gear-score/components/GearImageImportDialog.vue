@@ -237,7 +237,7 @@ function normalizeClientResult(result) {
     lines: (result?.lines ?? []).map((line, index) => ({
       ...line,
       id: line.id || `line-${index}`,
-      value: line.value || '',
+      value: line.value ?? '',
       stat: statOptions.includes(line.stat) ? line.stat : '',
       ignored: Boolean(line.ignored),
       userEdited: false,

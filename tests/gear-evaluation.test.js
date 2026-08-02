@@ -68,6 +68,48 @@ test('evaluates a normalized screenshot with the existing scoring and snapshot c
   assert.match(evaluation.sharePath, /&el=5$/)
 })
 
+test('preserves an unenchanted screenshot row as a zero-value quality-odds slot', () => {
+  const imported = normalizeExtraction(
+    {
+      gearType: '[9999] Armor',
+      pieceType: 'Helmet',
+      equipmentVisible: true,
+      confidence: 0.99,
+      lines: [
+        createLine('Lv. 5 Attack / Elemental Intensity +245 [74%]', 'Attack / Elemental Intensity', 245, 74),
+        createLine('Lv. 5 Dual Accuracy +211 [91%]', 'Dual Accuracy', 211, 91),
+        createLine('Lv. 5 Normal Damage Amplification +5.8% [96%]', 'Normal Damage Amplification', 5.8, 96),
+        createLine('Lv. 1 Strength / Magic +1', 'Strength / Magic', 1, 0, 1),
+        createLine('Lv. 5 Dual Critical Damage +129 [77%]', 'Dual Critical Damage', 129, 77),
+      ],
+    },
+    '[9999] Armor',
+    'Helmet',
+    gears,
+    { hintProvided: false },
+  )
+  const evaluation = evaluateImportedGear(imported)
+
+  assert.deepEqual(evaluation.statTypes, [
+    'Attack/Intensity',
+    'Accuracy',
+    'Normal Amplification',
+    'Strength/Magic',
+    'Critical Damage',
+  ])
+  assert.deepEqual(evaluation.statInputs, [245, 211, 5.8, 0, 129])
+  assert.deepEqual(
+    evaluation.result.qualityOdds.lines.map(({ index, stat, status }) => ({ index, stat, status })),
+    [
+      { index: 0, stat: 'Attack/Intensity', status: 'upgrade' },
+      { index: 1, stat: 'Accuracy', status: 'upgrade' },
+      { index: 2, stat: 'Normal Amplification', status: 'upgrade' },
+      { index: 3, stat: 'Strength/Magic', status: 'new' },
+      { index: 4, stat: 'Critical Damage', status: 'upgrade' },
+    ],
+  )
+})
+
 test('rejects provisional equipment identity rather than silently scoring it', () => {
   const imported = normalizeExtraction(
     {
