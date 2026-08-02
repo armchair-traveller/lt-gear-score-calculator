@@ -63,8 +63,8 @@ function retrySession() {
 
 <template>
   <div class="shrink-0">
-    <Tooltip :delay-duration="200">
-      <TooltipTrigger v-if="isSessionPending || isSigningIn" as-child>
+    <Tooltip v-if="isSessionPending || isSigningIn" :delay-duration="200">
+      <TooltipTrigger as-child>
         <Button
           variant="outline"
           size="icon"
@@ -75,77 +75,80 @@ function retrySession() {
           <LoaderCircleIcon class="animate-spin" data-icon="inline-start" />
         </Button>
       </TooltipTrigger>
+      <TooltipContent side="bottom">
+        {{ accountLabel }}
+      </TooltipContent>
+    </Tooltip>
 
-      <DropdownMenu v-else-if="isAccountUnavailable">
-        <TooltipTrigger as-child>
-          <DropdownMenuTrigger as-child>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Account unavailable"
-            >
-              <AlertCircleIcon data-icon="inline-start" />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <DropdownMenuContent align="end" class="w-64">
-          <DropdownMenuLabel>
-            <span class="block font-medium text-foreground">Account unavailable</span>
-            <span class="mt-0.5 block font-normal leading-relaxed">
-              We could not check your account. The toolkit still works without signing in.
-            </span>
-          </DropdownMenuLabel>
-          <DropdownMenuGroup>
-            <DropdownMenuItem :disabled="isRefreshing" @select="retrySession">
-              <LoaderCircleIcon v-if="isRefreshing" class="animate-spin" />
-              <RefreshCwIcon v-else />
-              {{ isRefreshing ? 'Checking again…' : 'Check again' }}
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <DropdownMenu v-else-if="isAccountUnavailable">
+      <DropdownMenuTrigger as-child>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Account unavailable"
+          title="Account unavailable"
+        >
+          <AlertCircleIcon data-icon="inline-start" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" class="w-64">
+        <DropdownMenuLabel>
+          <span class="block font-medium text-foreground">Account unavailable</span>
+          <span class="mt-0.5 block font-normal leading-relaxed">
+            We could not check your account. The toolkit still works without signing in.
+          </span>
+        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuItem :disabled="isRefreshing" @select="retrySession">
+            <LoaderCircleIcon v-if="isRefreshing" class="animate-spin" />
+            <RefreshCwIcon v-else />
+            {{ isRefreshing ? 'Checking again…' : 'Check again' }}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
-      <DropdownMenu v-else-if="isSignedIn">
-        <TooltipTrigger as-child>
-          <DropdownMenuTrigger as-child>
-            <Button
-              variant="outline"
-              size="icon"
-              :aria-label="`Account menu for ${displayName}`"
-            >
-              <img
-                v-if="userImage && !avatarFailed"
-                :src="userImage"
-                alt=""
-                class="size-5 rounded-full object-cover"
-                referrerpolicy="no-referrer"
-                @error="avatarFailed = true"
-              >
-              <UserRoundIcon v-else data-icon="inline-start" />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <DropdownMenuContent align="end" class="w-64">
-          <DropdownMenuLabel>
-            <span class="block text-[10px] font-semibold uppercase tracking-[0.08em]">
-              Signed in with Discord
-            </span>
-            <span class="mt-1 block truncate text-sm font-medium text-foreground">
-              {{ displayName }}
-            </span>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem :disabled="isSigningOut" @select="startSignOut">
-              <LoaderCircleIcon v-if="isSigningOut" class="animate-spin" />
-              <LogOutIcon v-else />
-              {{ isSigningOut ? 'Signing out…' : 'Sign out' }}
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <DropdownMenu v-else-if="isSignedIn">
+      <DropdownMenuTrigger as-child>
+        <Button
+          variant="outline"
+          size="icon"
+          :aria-label="`Account menu for ${displayName}`"
+          :title="displayName"
+        >
+          <img
+            v-if="userImage && !avatarFailed"
+            :src="userImage"
+            alt=""
+            class="size-5 rounded-full object-cover"
+            referrerpolicy="no-referrer"
+            @error="avatarFailed = true"
+          >
+          <UserRoundIcon v-else data-icon="inline-start" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" class="w-64">
+        <DropdownMenuLabel>
+          <span class="block text-[10px] font-semibold uppercase tracking-[0.08em]">
+            Signed in with Discord
+          </span>
+          <span class="mt-1 block truncate text-sm font-medium text-foreground">
+            {{ displayName }}
+          </span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem :disabled="isSigningOut" @select="startSignOut">
+            <LoaderCircleIcon v-if="isSigningOut" class="animate-spin" />
+            <LogOutIcon v-else />
+            {{ isSigningOut ? 'Signing out…' : 'Sign out' }}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
-      <TooltipTrigger v-else as-child>
+    <Tooltip v-else :delay-duration="200">
+      <TooltipTrigger as-child>
         <Button
           variant="outline"
           size="icon"

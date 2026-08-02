@@ -13,7 +13,12 @@ test('desktop account states use one icon-only control at every width', async ()
   assert.equal(source.match(/size="icon"/g)?.length, 4)
   assert.doesNotMatch(source, /\bw-48\b|\bw-full\b/)
   assert.doesNotMatch(source, /auth-account-(?:label|chevron)|useMediaQuery/)
-  assert.match(source, /<Tooltip :delay-duration="200">/)
+  assert.equal(source.match(/<Tooltip v-/g)?.length, 2)
   assert.match(source, /<DropdownMenu v-else-if="isSignedIn">/)
   assert.match(source, /Account menu for \$\{displayName\}/)
+  assert.match(source, /:title="displayName"/)
+  assert.doesNotMatch(
+    source,
+    /<TooltipTrigger as-child>\s*<DropdownMenuTrigger as-child>/,
+  )
 })
