@@ -162,7 +162,6 @@ function confirmDelete() {
           <GearPlanSyncControl
             :status="isAccountUnavailable ? 'paused' : planner.syncStatus"
             :pause-reason="isAccountUnavailable ? 'cloud' : planner.pauseReason"
-            placement="header"
             @open-conflict="conflictOpen = true"
             @retry="retryCloudSave"
             @sign-in="startCloudSignIn"
@@ -372,20 +371,21 @@ function confirmDelete() {
 
           <section class="parade-card grid content-start gap-4 rounded-[22px] border bg-card p-5">
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <h2 class="text-lg font-bold">Gear slots</h2>
-                <p class="text-sm text-muted-foreground">Select a slot to review or edit it.</p>
-              </div>
-              <div class="flex w-full flex-wrap items-center gap-2 md:w-auto">
+              <div class="flex items-start justify-between gap-3 md:block">
+                <div>
+                  <h2 class="text-lg font-bold">Gear slots</h2>
+                  <p class="text-sm text-muted-foreground">Select a slot to review or edit it.</p>
+                </div>
                 <GearPlanSyncControl
-                  class="w-full md:hidden"
+                  class="md:hidden"
                   :status="isAccountUnavailable ? 'paused' : planner.syncStatus"
                   :pause-reason="isAccountUnavailable ? 'cloud' : planner.pauseReason"
-                  placement="mobile"
                   @open-conflict="conflictOpen = true"
                   @retry="retryCloudSave"
                   @sign-in="startCloudSignIn"
                 />
+              </div>
+              <div class="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
                 <Button
                   variant="outline"
                   size="sm"

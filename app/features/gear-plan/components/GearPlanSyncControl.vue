@@ -1,5 +1,4 @@
 <script setup>
-import { useMediaQuery } from '@vueuse/core'
 import {
   CloudAlertIcon,
   CloudCheckIcon,
@@ -15,10 +14,6 @@ const props = defineProps({
     type: String,
     default: 'local',
   },
-  placement: {
-    type: String,
-    default: 'header',
-  },
   pauseReason: {
     type: String,
     default: '',
@@ -26,10 +21,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['open-conflict', 'retry', 'sign-in'])
-
-const isCompactHeaderControl = useMediaQuery(
-  '(min-width: 768px) and (max-width: 1199px)',
-)
 
 const statusDetails = computed(() => {
   const statuses = {
@@ -89,35 +80,21 @@ const statusDetails = computed(() => {
 
   return statuses[props.status] ?? statuses.local
 })
-
-const compactTooltipEnabled = computed(() =>
-  props.placement === 'header' && isCompactHeaderControl.value,
-)
-
-const surfaceClass = computed(() => cn(
-  'gear-plan-sync-surface h-8 min-w-36 justify-start',
-  props.placement === 'mobile' && 'w-full max-w-full',
-))
 </script>
 
 <template>
-  <div
-    class="gear-plan-sync-control shrink-0"
-    :data-placement="props.placement"
-  >
-    <Tooltip :disabled="!compactTooltipEnabled">
+  <div class="shrink-0">
+    <Tooltip :delay-duration="200">
       <DropdownMenu v-if="props.status === 'paused'">
         <TooltipTrigger as-child>
           <DropdownMenuTrigger as-child>
             <Button
-              variant="outline"
-              size="sm"
-              :class="surfaceClass"
+              :variant="statusDetails.variant"
+              size="icon-sm"
               data-sync-control
               :aria-label="statusDetails.tooltip"
             >
               <component :is="statusDetails.icon" data-icon="inline-start" />
-              <span class="gear-plan-sync-label">{{ statusDetails.label }}</span>
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -143,52 +120,49 @@ const surfaceClass = computed(() => cn(
 
       <TooltipTrigger v-else-if="props.status === 'conflict'" as-child>
         <Button
-          variant="outline"
-          size="sm"
-          :class="surfaceClass"
+          :variant="statusDetails.variant"
+          size="icon-sm"
           data-sync-control
           :aria-label="statusDetails.tooltip"
           @click="emit('open-conflict')"
         >
           <component :is="statusDetails.icon" data-icon="inline-start" />
-          <span class="gear-plan-sync-label">{{ statusDetails.label }}</span>
         </Button>
       </TooltipTrigger>
 
       <TooltipTrigger v-else-if="props.status === 'local'" as-child>
         <Button
-          variant="outline"
-          size="sm"
-          :class="surfaceClass"
+          :variant="statusDetails.variant"
+          size="icon-sm"
           data-sync-control
           :aria-label="statusDetails.tooltip"
           @click="emit('sign-in')"
         >
           <component :is="statusDetails.icon" data-icon="inline-start" />
-          <span class="gear-plan-sync-label">{{ statusDetails.label }}</span>
         </Button>
       </TooltipTrigger>
 
       <TooltipTrigger v-else as-child>
-        <Badge
+        <Button
           as="span"
+          size="icon-sm"
           :variant="statusDetails.variant"
-          :class="surfaceClass"
           data-sync-control
-          :tabindex="compactTooltipEnabled ? 0 : undefined"
+          tabindex="0"
           :aria-label="statusDetails.tooltip"
+          :aria-busy="statusDetails.spinning ? 'true' : undefined"
+          role="status"
         >
           <component
             :is="statusDetails.icon"
             :class="cn(statusDetails.spinning && 'animate-spin')"
             data-icon="inline-start"
           />
-          <span class="gear-plan-sync-label">{{ statusDetails.label }}</span>
-        </Badge>
+        </Button>
       </TooltipTrigger>
 
       <TooltipContent side="bottom">
-        {{ statusDetails.tooltip }}
+        {{ statusDetails.label }}
       </TooltipContent>
     </Tooltip>
 
