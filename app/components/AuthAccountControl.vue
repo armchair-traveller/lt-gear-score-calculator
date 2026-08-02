@@ -63,7 +63,7 @@ function retrySession() {
 </script>
 
 <template>
-  <div class="auth-account-control w-52 shrink-0">
+  <div class="auth-account-control w-48 shrink-0">
     <Tooltip :disabled="!isCompactHeaderControl">
       <TooltipTrigger v-if="isSessionPending || isSigningIn" as-child>
         <Button
