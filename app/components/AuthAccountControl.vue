@@ -1,8 +1,6 @@
 <script setup>
-import { useMediaQuery } from '@vueuse/core'
 import {
   AlertCircleIcon,
-  ChevronDownIcon,
   LoaderCircleIcon,
   LogInIcon,
   LogOutIcon,
@@ -24,12 +22,13 @@ const {
   signOut,
   refreshSession,
 } = useAuth()
+const avatarFailed = ref(false)
 
-const isCompactHeaderControl = useMediaQuery(
-  '(min-width: 768px) and (max-width: 1199px)',
-)
+watch(userImage, () => {
+  avatarFailed.value = false
+})
 
-const compactAccountLabel = computed(() => {
+const accountLabel = computed(() => {
   if (isSigningIn.value) {
     return 'Opening Discord'
   }
@@ -63,20 +62,17 @@ function retrySession() {
 </script>
 
 <template>
-  <div class="auth-account-control w-48 shrink-0">
-    <Tooltip :disabled="!isCompactHeaderControl">
+  <div class="shrink-0">
+    <Tooltip :delay-duration="200">
       <TooltipTrigger v-if="isSessionPending || isSigningIn" as-child>
         <Button
           variant="outline"
-          size="sm"
-          class="w-full justify-start"
+          size="icon"
           disabled
-          aria-label="Checking account status"
+          :aria-label="accountLabel"
+          aria-busy="true"
         >
           <LoaderCircleIcon class="animate-spin" data-icon="inline-start" />
-          <span class="auth-account-label min-w-0 flex-1 truncate text-left">
-            {{ isSigningIn ? 'Opening Discord' : 'Checking account' }}
-          </span>
         </Button>
       </TooltipTrigger>
 
@@ -85,15 +81,10 @@ function retrySession() {
           <DropdownMenuTrigger as-child>
             <Button
               variant="outline"
-              size="sm"
-              class="w-full justify-start"
+              size="icon"
               aria-label="Account unavailable"
             >
               <AlertCircleIcon data-icon="inline-start" />
-              <span class="auth-account-label min-w-0 flex-1 truncate text-left">
-                Account unavailable
-              </span>
-              <ChevronDownIcon class="auth-account-chevron" data-icon="inline-end" />
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -119,20 +110,18 @@ function retrySession() {
           <DropdownMenuTrigger as-child>
             <Button
               variant="outline"
-              size="sm"
-              class="w-full justify-start"
+              size="icon"
               :aria-label="`Account menu for ${displayName}`"
             >
               <img
-                v-if="userImage"
+                v-if="userImage && !avatarFailed"
                 :src="userImage"
                 alt=""
-                class="size-4 rounded-full object-cover"
+                class="size-5 rounded-full object-cover"
                 referrerpolicy="no-referrer"
+                @error="avatarFailed = true"
               >
               <UserRoundIcon v-else data-icon="inline-start" />
-              <span class="auth-account-label min-w-0 flex-1 truncate text-left">{{ displayName }}</span>
-              <ChevronDownIcon class="auth-account-chevron" data-icon="inline-end" />
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -159,17 +148,15 @@ function retrySession() {
       <TooltipTrigger v-else as-child>
         <Button
           variant="outline"
-          size="sm"
-          class="w-full justify-start"
+          size="icon"
           aria-label="Sign in with Discord"
           @click="startSignIn"
         >
           <LogInIcon data-icon="inline-start" />
-          <span class="auth-account-label">Sign in with Discord</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        {{ compactAccountLabel }}
+        {{ accountLabel }}
       </TooltipContent>
     </Tooltip>
   </div>
