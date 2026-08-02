@@ -3,7 +3,11 @@ import {
   CalculatorIcon,
   DiamondIcon,
   HelpCircleIcon,
+  LoaderCircleIcon,
+  LogInIcon,
+  LogOutIcon,
   MoreHorizontalIcon,
+  RefreshCwIcon,
   Rows3Icon,
 } from '@lucide/vue'
 
@@ -31,6 +35,19 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['help'])
+const route = useRoute()
+const {
+  displayName,
+  isSessionPending,
+  isSignedIn,
+  isSigningIn,
+  isSigningOut,
+  isRefreshing,
+  isAccountUnavailable,
+  signInWithDiscord,
+  signOut,
+  refreshSession,
+} = useAuth()
 
 const navItems = [
   { value: 'calculator', label: 'Calculator', to: '/', icon: CalculatorIcon },
@@ -45,18 +62,36 @@ const primaryNavSegments = [
 ]
 
 const activeNavIndex = computed(() => {
-  const index = navItems.findIndex(item => item.value === props.active)
-  return index === -1 ? 0 : index
+  return navItems.findIndex(item => item.value === props.active)
 })
 
 const primaryNavStyle = computed(() => {
   const segment = primaryNavSegments[activeNavIndex.value]
+
+  if (!segment) {
+    return {
+      '--parade-primary-nav-pill-offset': '0rem',
+      '--parade-primary-nav-pill-width': '0rem',
+    }
+  }
 
   return {
     '--parade-primary-nav-pill-offset': `${segment.offset}rem`,
     '--parade-primary-nav-pill-width': `${segment.width}rem`,
   }
 })
+
+function startMobileSignIn() {
+  void signInWithDiscord(route.fullPath)
+}
+
+function startMobileSignOut() {
+  void signOut()
+}
+
+function retryMobileSession() {
+  void refreshSession()
+}
 </script>
 
 <template>
@@ -113,11 +148,18 @@ const primaryNavStyle = computed(() => {
       </nav>
 
       <div class="parade-utilities">
-        <Button v-if="props.showHelp" variant="ghost" size="sm" @click="emit('help')">
+        <Button
+          v-if="props.showHelp"
+          variant="ghost"
+          size="sm"
+          class="parade-desktop-help"
+          @click="emit('help')"
+        >
           <HelpCircleIcon data-icon="inline-start" />
           Help
         </Button>
         <slot name="utilities" />
+        <AuthAccountControl />
         <ModeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
@@ -149,7 +191,55 @@ const primaryNavStyle = computed(() => {
               <MoreHorizontalIcon />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" class="w-64">
+            <DropdownMenuLabel v-if="isAccountUnavailable">
+              <span class="block font-medium text-foreground">Account unavailable</span>
+              <span class="mt-0.5 block font-normal leading-relaxed">
+                The toolkit still works without signing in.
+              </span>
+            </DropdownMenuLabel>
+            <DropdownMenuLabel v-else-if="isSignedIn">
+              <span class="block text-[10px] font-semibold uppercase tracking-[0.08em]">
+                Signed in with Discord
+              </span>
+              <span class="mt-1 block truncate text-sm font-medium text-foreground">
+                {{ displayName }}
+              </span>
+            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuItem v-if="isSessionPending" disabled>
+                <LoaderCircleIcon class="animate-spin" />
+                Checking account…
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-else-if="isAccountUnavailable"
+                :disabled="isRefreshing"
+                @select="retryMobileSession"
+              >
+                <LoaderCircleIcon v-if="isRefreshing" class="animate-spin" />
+                <RefreshCwIcon v-else />
+                {{ isRefreshing ? 'Checking again…' : 'Check account again' }}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-else-if="isSignedIn"
+                :disabled="isSigningOut"
+                @select="startMobileSignOut"
+              >
+                <LoaderCircleIcon v-if="isSigningOut" class="animate-spin" />
+                <LogOutIcon v-else />
+                {{ isSigningOut ? 'Signing out…' : 'Sign out' }}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-else
+                :disabled="isSigningIn"
+                @select="startMobileSignIn"
+              >
+                <LoaderCircleIcon v-if="isSigningIn" class="animate-spin" />
+                <LogInIcon v-else />
+                {{ isSigningIn ? 'Opening Discord…' : 'Sign in with Discord' }}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem v-if="props.showHelp" @click="emit('help')">
                 <HelpCircleIcon />

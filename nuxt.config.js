@@ -1,4 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath } from 'node:url'
+
+const appDirectory = fileURLToPath(new URL('./app', import.meta.url))
 
 export default defineNuxtConfig({
   ssr: false,
@@ -19,6 +22,9 @@ export default defineNuxtConfig({
   },
   css: ['~/styles/main.css'],
   nitro: {
+    externals: {
+      inline: [appDirectory],
+    },
     serverAssets: [
       {
         baseName: 'gear-images',

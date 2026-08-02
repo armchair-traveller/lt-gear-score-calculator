@@ -320,6 +320,25 @@
     @apply hidden items-center gap-2;
   }
 
+  @media (min-width: 768px) and (max-width: 1199px) {
+    .auth-account-control {
+      width: 2.25rem !important;
+    }
+
+    .auth-account-control button {
+      @apply justify-center;
+    }
+
+    .auth-account-control .auth-account-label,
+    .auth-account-control .auth-account-chevron {
+      display: none;
+    }
+
+    .parade-desktop-help {
+      display: none !important;
+    }
+  }
+
   .parade-artband {
     position: relative;
     overflow: hidden;

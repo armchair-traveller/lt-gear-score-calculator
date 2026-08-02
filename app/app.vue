@@ -3,6 +3,7 @@ import { normalizeAppRoutePath } from '@/utils/app-route.js'
 
 const route = useRoute()
 const appShell = provideAppShell()
+provideAuth()
 
 const shellRoutes = {
   '/': {
@@ -25,6 +26,13 @@ const shellRoutes = {
     title: 'See which piece earns your effort next.',
     description: 'Rank your final pieces against a shared benchmark without losing sight of the actual gear slots.',
     showHelp: true,
+  },
+  '/auth/error': {
+    active: 'auth',
+    eyebrow: 'Account access',
+    title: 'Your tools are still ready.',
+    description: 'Discord sign-in did not finish. The calculator, upgrade workbench, and local planner remain available without an account.',
+    showHelp: false,
   },
 }
 
