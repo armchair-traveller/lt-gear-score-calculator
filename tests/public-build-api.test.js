@@ -326,7 +326,7 @@ test('anonymous public read returns the live plan and only public owner fields',
     writeOutcome: outcome => readOutcomes.push(outcome),
   })
   assert.equal(publicResponse.status, 200)
-  assert.equal(publicResponse.headers.get('cache-control'), 'no-store')
+  assert.equal(publicResponse.headers.get('cache-control'), 'private, no-store')
   const publicBody = await publicResponse.json()
   assert.deepEqual(Object.keys(publicBody).toSorted(), ['owner', 'plan', 'updatedAt'])
   assert.deepEqual(Object.keys(publicBody.owner).toSorted(), ['displayName', 'image'])
@@ -389,7 +389,7 @@ test('public read hides lookup details and normalizes corrupt or failed storage'
   for (const slug of ['Unknown-Build', '../private', 'missing-build']) {
     const response = await publicBuildRequest({ db: context.db, slug })
     assert.equal(response.status, 404)
-    assert.equal(response.headers.get('cache-control'), 'no-store')
+    assert.equal(response.headers.get('cache-control'), 'private, no-store')
     assert.equal((await response.json()).data.code, 'PUBLIC_BUILD_NOT_FOUND')
   }
 
@@ -409,7 +409,7 @@ test('public read hides lookup details and normalizes corrupt or failed storage'
 
   const corruptResponse = await publicBuildRequest({ db: context.db, slug })
   assert.equal(corruptResponse.status, 503)
-  assert.equal(corruptResponse.headers.get('cache-control'), 'no-store')
+  assert.equal(corruptResponse.headers.get('cache-control'), 'private, no-store')
   assert.equal((await corruptResponse.json()).data.code, 'PUBLIC_BUILD_UNAVAILABLE')
 
   const failedResponse = await publicBuildRequest({

@@ -15,7 +15,7 @@ export function createPublicBuildGetHandler({
   writeOutcome = writePublicBuildOutcome,
 } = {}) {
   return defineEventHandler(async (event) => {
-    setPublicBuildCacheHeaders(event)
+    setPublicBuildCacheHeaders(event, { privateResponse: true })
 
     try {
       const publicBuild = await readPublicGearPlan(
