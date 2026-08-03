@@ -308,6 +308,45 @@ test('account linking is rejected before an OAuth consent URL or state is create
   assert.equal(Number(stateRows.rows[0].count), 0)
 })
 
+test('Discord-managed profile fields cannot be changed through Better Auth', async (t) => {
+  const { auth, client, db, fetch } = await createTestAuth()
+  t.after(() => client.close())
+
+  const context = await auth.$context
+  const user = context.test.createUser({
+    id: 'discord-profile-owner',
+    name: 'Discord Display Name',
+    email: 'discord-profile-owner@example.com',
+    image: 'https://cdn.discordapp.com/avatars/123/avatar.png',
+  })
+  await context.test.saveUser(user)
+  const login = await context.test.login({ userId: user.id })
+  const headers = new Headers(login.headers)
+  headers.set('content-type', 'application/json')
+  headers.set('origin', 'http://localhost:3000')
+
+  const response = await request(fetch, '/api/auth/update-user', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      name: 'Injected Display Name',
+      image: 'https://tracker.example/pixel.png',
+    }),
+  })
+
+  assert.equal(response.status, 403)
+  assert.equal((await response.json()).code, 'PROFILE_EDITING_DISABLED')
+  const [storedUser] = await db
+    .select({ image: schema.user.image, name: schema.user.name })
+    .from(schema.user)
+    .where(eq(schema.user.id, user.id))
+    .limit(1)
+  assert.deepEqual(storedUser, {
+    image: 'https://cdn.discordapp.com/avatars/123/avatar.png',
+    name: 'Discord Display Name',
+  })
+})
+
 test('production auth context uses secure cookies and one trusted origin', async (t) => {
   const queuedTasks = []
   const backgroundTaskHandler = promise => queuedTasks.push(promise)

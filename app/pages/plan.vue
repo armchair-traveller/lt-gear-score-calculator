@@ -1,12 +1,15 @@
 <script setup>
+import { useMediaQuery } from '@vueuse/core'
 import {
   ArrowLeftIcon,
   CheckIcon,
+  CircleAlertIcon,
   ClipboardIcon,
   CloudDownloadIcon,
   CloudIcon,
   CloudUploadIcon,
   LaptopIcon,
+  LoaderCircleIcon,
   MoreHorizontalIcon,
   PlusIcon,
   RotateCcwIcon,
@@ -43,6 +46,7 @@ const resetOpen = ref(false)
 const deleteOpen = ref(false)
 const conflictOpen = ref(false)
 const sharedAdoptionOpen = ref(false)
+const hoverCardsEnabled = useMediaQuery('(hover: hover) and (pointer: fine) and (min-width: 768px)')
 
 const sharedEntryCount = computed(() =>
   Object.keys(planner.displayedPlan?.slots ?? {}).length,
@@ -54,6 +58,34 @@ const sharedAdoptionDescription = computed(() => {
     : 'on this device'
 
   return `This replaces ${formatEntryCount(planner.entryCount)} in your current planner ${destination} with ${formatEntryCount(sharedEntryCount.value)} from the shared link.`
+})
+
+const shareButtonText = computed(() => {
+  if (planner.sharePending) {
+    return 'Creating link…'
+  }
+  if (planner.shareCopied) {
+    return 'Copied'
+  }
+  if (planner.shareFailed) {
+    return 'Try again'
+  }
+  return planner.shareUsesPublicBuild ? 'Share build' : 'Share plan'
+})
+
+const shareButtonAriaLabel = computed(() => {
+  if (planner.sharePending) {
+    return 'Creating public build link'
+  }
+  if (planner.shareCopied) {
+    return 'Build link copied'
+  }
+  if (planner.shareFailed) {
+    return 'Retry sharing build'
+  }
+  return planner.shareUsesPublicBuild
+    ? 'Share live public build'
+    : 'Copy planner snapshot link'
 })
 
 const topPriorityMotionKey = computed(() => {
@@ -169,16 +201,18 @@ function confirmDelete() {
           <Button
             variant="outline"
             size="sm"
-            class="w-28 justify-center"
-            :disabled="!planner.eligibleSlots.length"
-            :aria-label="planner.shareCopied ? 'Planner link copied' : 'Share plan'"
+            class="w-32 justify-center"
+            :disabled="!planner.canCopyShareLink"
+            :aria-label="shareButtonAriaLabel"
             @click="planner.copyShareLink"
           >
             <Transition name="motion-swap" mode="out-in">
-              <span :key="planner.shareCopied ? 'copied' : 'share'" class="flex items-center gap-2">
-                <CheckIcon v-if="planner.shareCopied" data-icon="inline-start" />
-                <ClipboardIcon v-else data-icon="inline-start" />
-                {{ planner.shareCopied ? 'Copied' : 'Share plan' }}
+              <span :key="shareButtonText" class="flex items-center gap-2">
+                <LoaderCircleIcon v-if="planner.sharePending" class="animate-spin" data-icon="inline-start" />
+                <CheckIcon v-else-if="planner.shareCopied" data-icon="inline-start" />
+                <CircleAlertIcon v-else-if="planner.shareFailed" data-icon="inline-start" />
+                <ClipboardIcon v-else-if="!planner.sharePending" data-icon="inline-start" />
+                {{ shareButtonText }}
               </span>
             </Transition>
           </Button>
@@ -189,6 +223,17 @@ function confirmDelete() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  :disabled="!planner.eligibleSlots.length"
+                  @select="planner.copySnapshotLink"
+                >
+                  <CheckIcon v-if="planner.snapshotCopied" />
+                  <ClipboardIcon v-else />
+                  {{ planner.snapshotCopied ? 'Snapshot link copied' : 'Copy snapshot link' }}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuItem
                   :disabled="planner.isSharedPreview || !planner.eligibleSlots.length"
@@ -205,7 +250,11 @@ function confirmDelete() {
     </Teleport>
 
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-      {{ planner.shareCopied ? 'Planner link copied to clipboard.' : '' }}
+      {{ planner.shareCopied
+        ? (planner.shareUsesPublicBuild ? 'Public build link copied to clipboard.' : 'Planner snapshot link copied to clipboard.')
+        : planner.shareFailed
+          ? 'Could not copy the build link. Try again.'
+          : '' }}
     </p>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
       {{ planner.saveFeedbackMessage }}
@@ -265,6 +314,7 @@ function confirmDelete() {
               <Transition name="motion-swap" mode="out-in">
                 <div v-if="planner.topPriority" :key="topPriorityMotionKey">
                   <HoverCard
+                    :open="planner.editorOpen || !hoverCardsEnabled ? false : undefined"
                     :open-delay="250"
                     :close-delay="100"
                     :enable-touch="false"
@@ -385,21 +435,55 @@ function confirmDelete() {
                   @sign-in="startCloudSignIn"
                 />
               </div>
-              <div class="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
+              <div class="flex w-full flex-wrap items-center justify-end gap-2 md:hidden">
                 <Button
                   variant="outline"
                   size="sm"
-                  class="w-28 justify-center"
-                  :disabled="!planner.eligibleSlots.length"
-                  :aria-label="planner.shareCopied ? 'Planner link copied' : 'Share plan'"
+                  class="w-32 justify-center"
+                  :disabled="!planner.canCopyShareLink"
+                  :aria-label="shareButtonAriaLabel"
                   @click="planner.copyShareLink"
                 >
                   <Transition name="motion-swap" mode="out-in">
-                    <span :key="planner.shareCopied ? 'copied' : 'share'">
-                      {{ planner.shareCopied ? 'Copied' : 'Share plan' }}
+                    <span :key="shareButtonText" class="flex items-center gap-2">
+                      <LoaderCircleIcon v-if="planner.sharePending" class="animate-spin" data-icon="inline-start" />
+                      <CheckIcon v-else-if="planner.shareCopied" data-icon="inline-start" />
+                      <CircleAlertIcon v-else-if="planner.shareFailed" data-icon="inline-start" />
+                      <ClipboardIcon v-else data-icon="inline-start" />
+                      {{ shareButtonText }}
                     </span>
                   </Transition>
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="ghost" size="icon" aria-label="Planner actions">
+                      <MoreHorizontalIcon />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        :disabled="!planner.eligibleSlots.length"
+                        @select="planner.copySnapshotLink"
+                      >
+                        <CheckIcon v-if="planner.snapshotCopied" />
+                        <ClipboardIcon v-else />
+                        {{ planner.snapshotCopied ? 'Snapshot link copied' : 'Copy snapshot link' }}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        :disabled="planner.isSharedPreview || !planner.eligibleSlots.length"
+                        variant="destructive"
+                        @click="resetOpen = true"
+                      >
+                        <RotateCcwIcon />
+                        Reset planner
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -410,6 +494,7 @@ function confirmDelete() {
                   <template v-for="slot in group.slots" :key="slot.id">
                     <HoverCard
                       v-if="slot.result.eligible"
+                      :open="planner.editorOpen || !hoverCardsEnabled ? false : undefined"
                       :open-delay="250"
                       :close-delay="100"
                       :enable-touch="false"

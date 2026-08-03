@@ -13,6 +13,8 @@ This rollout provides:
 - One gear planner saved across signed-in devices.
 - Local-first planner edits with automatic background saves.
 - Explicit conflict resolution when device and cloud copies differ.
+- One stable, read-only public build URL backed by the account's latest saved planner.
+- Calculator links for individual saved gear pieces.
 
 It does **not** save calculator inputs, quality targets, recent upgrade items, calculator history, or image-import history; connect command results to an account; create multiple named planners; or provide self-service account deletion. The calculator, upgrade workbench, planner, image importer, share links, and Discord command remain usable without signing in.
 
@@ -37,7 +39,14 @@ On the first signed-in reconciliation:
 
 A small device-only metadata record tracks the last modification time and the opaque Better Auth user ID associated with the retained copy. It never contains a Discord ID, email address, or plan contents, and exists only to prevent one account's retained planner from being uploaded to another account after a reload.
 
-Later writes use the stored revision to detect stale updates. A revision conflict returns to the same explicit chooser. Shared planner links remain read-only previews; adopting a shared plan requires confirmation when the current planner is non-empty and then follows the same local-first save path.
+Later writes use the stored revision to detect stale updates. A revision conflict returns to the same explicit chooser.
+
+Sharing has two deliberately different forms:
+
+- A signed-in owner whose planner is fully saved can use **Share build** to create or copy `/build/<slug>`. The first successful share permanently publishes that account's canonical planner. The slug is derived from the Discord display name, receives a numeric suffix on collision, and stays stable even if the display name later changes. The page is view-only and reads the latest saved `gear_plan` on every load; unsynced device edits are never exposed.
+- Signed-out owners and existing `?gp=` previews keep using the original data-embedded snapshot links. **Copy snapshot link** remains available to signed-in owners who need an immutable point-in-time link.
+
+Resetting a published planner keeps its public URL and shows the now-empty canonical plan rather than silently resurrecting older entries. The planner and public build also expose calculator links for individual populated slots. Public viewers cannot adopt, edit, or write through the live build page.
 
 Application ownership always uses Better Auth's internal user ID. The Discord snowflake remains provider-account data and is not used as the `gear_plan` owner key.
 
@@ -134,9 +143,15 @@ npm run db:migrate
 
 Review and commit generated schema and migration files. Deployment should apply already-reviewed migrations with `npm run db:migrate`; it must not generate a new migration from live production state.
 
-Better Auth generation owns `server/db/auth-schema.js`. The application-owned `gear_plan` table is defined separately and aggregated through `server/db/schema.js`, so running `npm run auth:schema` cannot erase product tables. The `gear_plan` row uses the Better Auth user ID as its primary key, stores sanitized versioned slots, and tracks a revision for conditional writes.
+Better Auth generation owns `server/db/auth-schema.js`. Application-owned product tables are defined separately and aggregated through `server/db/schema.js`, so running `npm run auth:schema` cannot erase them. The `gear_plan` row uses the Better Auth user ID as its primary key, stores sanitized versioned slots, and tracks a revision for conditional writes.
 
-The additive planner migration also creates the migration-owned unique index on `account(provider_id, account_id)` that Better Auth 1.6.25 cannot generate. Before applying that migration to an existing database, run this count-only duplicate preflight and stop if the result is not zero:
+`gear_plan_share` is an explicit publication record. Its `user_id` is both the primary key and a cascading foreign key to `gear_plan.user_id`, and its human-readable `slug` is unique. It does not duplicate planner JSON or store Discord account data. Anonymous public-build reads join the publication record to the current planner and Better Auth user display fields, then return only the display name, an allowlisted Discord CDN avatar URL, canonical plan, and planner update time. Missing or untrusted avatar URLs degrade to initials rather than being fetched by a viewer's browser.
+
+Display names and avatars are Discord-managed identity fields. The generic Better Auth profile-update endpoint is blocked so an authenticated user cannot replace public attribution with arbitrary text or a tracking image.
+
+Migration `0002_public_gear_plan_share.sql` is additive and must be applied before deploying the routes that create or read public builds. It does not rewrite existing planners or automatically publish them; a publication row is created only by the owner's first successful **Share build** action.
+
+The earlier planner migration `0001_cloud_gear_plan.sql` also creates the migration-owned unique index on `account(provider_id, account_id)` that Better Auth 1.6.25 cannot generate. Before applying that migration to an existing database, run this count-only duplicate preflight and stop if the result is not zero:
 
 ```sql
 SELECT COUNT(*) AS duplicate_pair_count
@@ -169,9 +184,11 @@ The GitHub Actions workflow uses Node.js 24 and runs `npm ci`, credential-free B
 6. While signed out, edit the planner and confirm the control says **Save across devices** while the entry survives a refresh on that device.
 7. Sign in from the planner and confirm the OAuth return preserves the current path and query. Reconcile device/cloud copies if prompted, then verify the control reaches **Saved across devices**.
 8. Change a planner entry, refresh, and open the same account in a second browser profile to confirm the canonical planner loads. Create a stale update deliberately and verify the conflict chooser preserves both summaries until a choice is made.
-9. Sign out and confirm the device copy remains available and every anonymous tool continues to work.
-10. Cancel the Discord consent screen once and confirm the app reports cancellation without altering local data.
-11. Test a Discord account without an email if one is available, and confirm the `.invalid` placeholder is never rendered.
+9. After the planner reports **Saved across devices**, share it and confirm the copied `/build/<slug>` loads signed out, shows all 14 slots, and contains no editing or adoption action. Change one gear entry, wait for the cloud save, then refresh the same public URL and verify it shows the new value.
+10. Copy an individual gear link from both the owner editor and public build detail sheet. Confirm it opens the calculator with the exact final enchant level and stat values.
+11. Sign out and confirm the device copy remains available, the existing `?gp=` snapshot link still opens, and every anonymous tool continues to work.
+12. Cancel the Discord consent screen once and confirm the app reports cancellation without altering local data.
+13. Test a Discord account without an email if one is available, and confirm the `.invalid` placeholder is never rendered.
 
 Do not test OAuth by pasting Discord tokens into requests or by automating a personal Discord account.
 
@@ -202,7 +219,7 @@ Before directing traffic to a build:
 2. Query `PRAGMA foreign_keys;` through the remote runtime client and record the result. The initial `ltgear-auth` rollout returned `1`; investigate before deployment if a later check differs.
 3. Confirm the production callback is registered exactly.
 4. Confirm the build sees the Production environment values.
-5. Smoke-test anonymous calculation and local planner saves first, then sign-in, planner reconciliation, a cloud save, refresh, a second-browser load, sign-out, and the existing `/gear-score` interaction.
+5. Smoke-test anonymous calculation and local planner saves first, then sign-in, planner reconciliation, a cloud save, live public-build creation and refresh, a per-piece calculator link, a second-browser load, sign-out, and the existing `/gear-score` interaction.
 6. Inspect logs only for redacted outcome codes. Raw secrets, OAuth codes, cookies, emails, Turso tokens, and Discord user IDs must not be logged.
 
 ## Additive rollback
@@ -211,4 +228,4 @@ Authentication and the canonical planner row are additive to the anonymous appli
 
 Do not drop Turso tables, reverse migrations, rotate secrets, or delete user rows as the first rollback step. Keep the `ltgear-auth` database intact while the prior server build is restored and the incident is understood. Schema or data cleanup is a separate, reviewed destructive operation.
 
-The `gear_plan` table can remain unused during a rollback. Because every edit is written to the browser first, rollback does not require an emergency planner-data export or a destructive database migration. Reconciliation after redeployment should still be tested before traffic is restored.
+The `gear_plan` and `gear_plan_share` tables can remain unused during a rollback. Because every edit is written to the browser first, rollback does not require an emergency planner-data export or a destructive database migration. Reconciliation and live public-build reads after redeployment should still be tested before traffic is restored.

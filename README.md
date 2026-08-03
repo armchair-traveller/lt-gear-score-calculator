@@ -10,7 +10,7 @@ Select your desired type of equipment and respective armor piece, then the stats
 
 ## Discord sign-in
 
-Optional Discord sign-in is backed by Better Auth and one Turso database. Signed-in users get one gear planner saved across devices, while every planner edit is still written to the current device first. The calculator, upgrade workbench, image importer, share links, and Discord command remain publicly usable; calculator inputs, quality targets, and recent upgrade items remain browser-local.
+Optional Discord sign-in is backed by Better Auth and one Turso database. Signed-in users get one gear planner saved across devices and can publish a stable, read-only URL that always shows the latest saved version of that planner. Every planner edit is still written to the current device first. Anonymous users keep the existing data-embedded snapshot links, and the calculator, upgrade workbench, image importer, share links, and Discord command remain publicly usable; calculator inputs, quality targets, and recent upgrade items remain browser-local.
 
 See [docs/discord-auth.md](docs/discord-auth.md) for Discord OAuth, planner save behavior, conflict handling, Turso, migrations, local setup, and Vercel deployment. Production must use the Nuxt server build (`npm run build`), not static generation (`npm run generate`).
 

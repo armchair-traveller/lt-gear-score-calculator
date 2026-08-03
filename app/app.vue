@@ -37,9 +37,21 @@ const shellRoutes = {
   },
 }
 
-const shellRoute = computed(() =>
-  shellRoutes[normalizeAppRoutePath(route.path)] ?? shellRoutes['/'],
-)
+const normalizedRoutePath = computed(() => normalizeAppRoutePath(route.path))
+const isPublicBuildRoute = computed(() => normalizedRoutePath.value.startsWith('/build/'))
+const shellRoute = computed(() => {
+  if (isPublicBuildRoute.value) {
+    return {
+      active: 'planner',
+      eyebrow: 'Shared build · live planner',
+      title: 'See the whole loadout at a glance.',
+      description: 'Review this player’s current gear, upgrade priority, and final enchant lines.',
+      showHelp: false,
+    }
+  }
+
+  return shellRoutes[normalizedRoutePath.value] ?? shellRoutes['/']
+})
 </script>
 
 <template>

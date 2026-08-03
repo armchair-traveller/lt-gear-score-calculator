@@ -225,6 +225,13 @@ export function createAuth({
           })
         }
 
+        if (context.path === '/update-user') {
+          throw APIError.from('FORBIDDEN', {
+            code: 'PROFILE_EDITING_DISABLED',
+            message: 'Discord manages this account profile.',
+          })
+        }
+
         if (
           context.path === '/sign-in/social'
           && context.body?.provider === 'discord'

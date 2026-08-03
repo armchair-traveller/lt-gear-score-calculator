@@ -1,14 +1,13 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from '#app'
-import gears from '@/utils/gear.js'
-import {
-  gearPlanSlots,
-  getGearPlanSlotId,
-} from '@/features/gear-plan/data.js'
 import {
   encodeGearPlanShare,
   parseGearPlanShare,
 } from '@/features/gear-plan/plan-state.js'
+import { useGearPlanReadModel } from '@/features/gear-plan/useGearPlanReadModel.js'
+import {
+  getGearPlanEntryCalculatorPath,
+} from '@/features/gear-plan/gear-share-url.js'
 import {
   calculateGearPlanItem,
   getFinalStatValue,
@@ -25,12 +24,18 @@ export function useGearPlan() {
   const route = useRoute()
   const router = useRouter()
   const persistence = useGearPlanPersistence()
+  const { isSessionPending, isSignedIn } = useAuth()
   const homeHref = computed(() => router.resolve('/').href)
   const upgradeHref = computed(() => router.resolve('/upgrade').href)
   const localPlan = persistence.plan
-  const sortMode = ref('impact')
   const shareCopied = ref(false)
+  const sharePending = ref(false)
+  const shareFailed = ref(false)
   const shareCopyTimeout = ref(null)
+  const snapshotCopied = ref(false)
+  const snapshotCopyTimeout = ref(null)
+  const gearShareCopyStatus = ref('idle')
+  const gearShareCopyTimeout = ref(null)
   const lastSavedSlotId = ref('')
   const saveFeedbackMessage = ref('')
   const saveFeedbackTimeout = ref(null)
@@ -46,93 +51,45 @@ export function useGearPlan() {
   const shareError = ref('')
   const isSharedPreview = computed(() => Boolean(sharedPlan.value))
   const displayedPlan = computed(() => sharedPlan.value ?? localPlan.value)
+  const {
+    sortMode,
+    slotModels,
+    eligibleSlots,
+    rankedSlots,
+    topPriority,
+    totalCurrentDI,
+    totalBenchmarkDI,
+    totalOpportunityDI,
+    loadoutQualityPercent,
+    maxChartDI,
+    categoryGroups,
+    getPrimaryReason,
+    getLineStatusLabel,
+  } = useGearPlanReadModel(displayedPlan)
+  const shareUsesPublicBuild = computed(() =>
+    isSignedIn.value && !isSharedPreview.value,
+  )
+  const canCopyShareLink = computed(() => {
+    if (!eligibleSlots.value.length || sharePending.value) {
+      return false
+    }
+    if (isSharedPreview.value) {
+      return true
+    }
+    if (isSessionPending.value) {
+      return false
+    }
+    if (!isSignedIn.value) {
+      return true
+    }
+    return persistence.syncStatus.value === 'saved'
+  })
 
   watch(
     () => route.query.gp,
     syncSharedPreview,
     { immediate: true },
   )
-
-  const imgUrls = import.meta.glob('../../assets/*.png', {
-    import: 'default',
-    eager: true,
-  })
-
-  const slotModels = computed(() => gearPlanSlots.map((slot, index) => {
-    const id = getGearPlanSlotId(slot.gearType, slot.pieceType)
-    const item = gears[slot.gearType][slot.pieceType]
-    const entry = displayedPlan.value.slots[id]
-    const result = calculateGearPlanItem({
-      item,
-      statTypes: entry?.statType ?? [],
-      statInputs: entry?.statInput ?? [],
-      upgradeCount: slot.upgradeCount,
-      lineWeights: slot.lineWeights,
-    })
-
-    return {
-      ...slot,
-      id,
-      index,
-      item,
-      entry,
-      result,
-      image: getItemImage(slot.pieceType, slot.gearType),
-    }
-  }))
-
-  const eligibleSlots = computed(() => slotModels.value.filter((slot) => slot.result.eligible))
-  const rankedSlots = computed(() => {
-    const rows = eligibleSlots.value.slice()
-    if (sortMode.value === 'quality') {
-      return rows.sort((a, b) =>
-        a.result.qualityPercent - b.result.qualityPercent ||
-        b.result.opportunityDI - a.result.opportunityDI ||
-        a.index - b.index,
-      )
-    }
-
-    return rows.sort((a, b) =>
-      b.result.opportunityDI - a.result.opportunityDI ||
-      a.result.qualityPercent - b.result.qualityPercent ||
-      a.index - b.index,
-    )
-  })
-  const topPriority = computed(() =>
-    rankedSlots.value.find((slot) => slot.result.opportunityDI > 0.0001) ?? null,
-  )
-  const totalCurrentDI = computed(() =>
-    eligibleSlots.value.reduce((total, slot) => total + slot.result.currentDI, 0),
-  )
-  const totalBenchmarkDI = computed(() =>
-    eligibleSlots.value.reduce((total, slot) => total + slot.result.benchmarkDI, 0),
-  )
-  const totalOpportunityDI = computed(() =>
-    eligibleSlots.value.reduce((total, slot) => total + slot.result.opportunityDI, 0),
-  )
-  const loadoutQualityPercent = computed(() =>
-    totalBenchmarkDI.value > 0 ? totalCurrentDI.value / totalBenchmarkDI.value * 100 : 0,
-  )
-  const maxChartDI = computed(() =>
-    Math.max(...slotModels.value.map((slot) =>
-      Math.max(slot.result.benchmarkDI, slot.result.currentDI),
-    ), 1),
-  )
-  const categoryGroups = computed(() => {
-    const groups = []
-    for (const slot of slotModels.value) {
-      let group = groups.find((row) => row.gearType === slot.gearType)
-      if (!group) {
-        group = {
-          gearType: slot.gearType,
-          slots: [],
-        }
-        groups.push(group)
-      }
-      group.slots.push(slot)
-    }
-    return groups
-  })
 
   const selectedSlot = computed(() =>
     slotModels.value.find((slot) => slot.id === editorSlotId.value) ?? null,
@@ -160,10 +117,6 @@ export function useGearPlan() {
     shareError.value = parsedShare.error
   }
 
-  function getItemImage(piece, category) {
-    return imgUrls[`../../assets/${piece}_${category.slice(1, 5)}.png`] ?? ''
-  }
-
   function openEditor(slotId) {
     const slot = slotModels.value.find((row) => row.id === slotId)
     if (!slot) {
@@ -176,6 +129,7 @@ export function useGearPlan() {
       ? slot.entry.statInput.map((value) => value > 0 ? value : '')
       : ['', '', '', '', '']
     editorPickerOpen.value = []
+    setGearShareCopyStatus('idle')
     editorOpen.value = true
   }
 
@@ -303,27 +257,106 @@ export function useGearPlan() {
   }
 
   async function copyShareLink() {
-    if (!eligibleSlots.value.length) {
-      return
+    if (!canCopyShareLink.value) {
+      return false
     }
 
-    const value = encodeGearPlanShare(displayedPlan.value)
-    const url = getAbsoluteHref({
-      path: '/plan',
-      query: { gp: value },
-    })
+    const usesPublicBuild = shareUsesPublicBuild.value
+    shareFailed.value = false
+    sharePending.value = usesPublicBuild
 
     try {
+      const url = usesPublicBuild
+        ? getAbsoluteHref(await createPublicBuildPath())
+        : getSnapshotShareUrl()
       await navigator.clipboard.writeText(url)
       clearTimeout(shareCopyTimeout.value)
       shareCopied.value = true
       shareCopyTimeout.value = setTimeout(() => {
         shareCopied.value = false
       }, 1800)
+      return true
     }
-    catch (error) {
-      console.error(error)
+    catch {
+      console.error('[gear-plan-share] plan_link_copy_failed')
+      shareFailed.value = true
+      return false
     }
+    finally {
+      sharePending.value = false
+    }
+  }
+
+  async function copySnapshotLink() {
+    if (!eligibleSlots.value.length) {
+      return false
+    }
+
+    try {
+      await navigator.clipboard.writeText(getSnapshotShareUrl())
+      clearTimeout(snapshotCopyTimeout.value)
+      snapshotCopied.value = true
+      snapshotCopyTimeout.value = setTimeout(() => {
+        snapshotCopied.value = false
+      }, 1800)
+      return true
+    }
+    catch {
+      console.error('[gear-plan-share] snapshot_link_copy_failed')
+      return false
+    }
+  }
+
+  async function createPublicBuildPath() {
+    const response = await $fetch('/api/gear-plan/share', {
+      method: 'POST',
+      body: {},
+    })
+    const slug = String(response?.slug ?? '')
+    const path = String(response?.path ?? '')
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || path !== `/build/${slug}`) {
+      throw new TypeError('The public build response is invalid.')
+    }
+    return path
+  }
+
+  function getSnapshotShareUrl() {
+    const value = encodeGearPlanShare(displayedPlan.value)
+    return getAbsoluteHref({
+      path: '/plan',
+      query: { gp: value },
+    })
+  }
+
+  async function copySelectedGearLink() {
+    const path = getGearPlanEntryCalculatorPath(selectedSlot.value)
+    if (!path) {
+      setGearShareCopyStatus('failed')
+      return false
+    }
+
+    try {
+      await navigator.clipboard.writeText(getAbsoluteHref(path))
+      setGearShareCopyStatus('copied')
+      return true
+    }
+    catch {
+      console.error('[gear-plan-share] gear_link_copy_failed')
+      setGearShareCopyStatus('failed')
+      return false
+    }
+  }
+
+  function setGearShareCopyStatus(status) {
+    clearTimeout(gearShareCopyTimeout.value)
+    gearShareCopyStatus.value = status
+    if (status === 'idle') {
+      return
+    }
+
+    gearShareCopyTimeout.value = setTimeout(() => {
+      gearShareCopyStatus.value = 'idle'
+    }, 1800)
   }
 
   function useSharedPlan() {
@@ -344,22 +377,6 @@ export function useGearPlan() {
     plannerNotesOpen.value = false
   }
 
-  function getPrimaryReason(slot) {
-    if (!slot?.result?.eligible) {
-      return 'Unranked'
-    }
-    if (slot.result.aboveBenchmark || slot.result.opportunityDI <= 0) {
-      return slot.result.aboveBenchmark ? 'Above curated benchmark' : 'At curated benchmark'
-    }
-    if (slot.result.pieceGapDI > slot.result.rollGapDI) {
-      return 'Piece replacement is the larger gap'
-    }
-    if (slot.result.rollGapDI > 0) {
-      return 'Roll values are the larger gap'
-    }
-    return 'Close to the curated benchmark'
-  }
-
   function getAbsoluteHref(to) {
     return new URL(router.resolve(to).href, window.location.origin).toString()
   }
@@ -368,18 +385,10 @@ export function useGearPlan() {
     return Array.isArray(value) ? value[0] : value
   }
 
-  function getLineStatusLabel(result) {
-    if (result?.lineStatus === 'penta') {
-      return 'Penta'
-    }
-    if (result?.lineStatus === 'partial') {
-      return 'Partial'
-    }
-    return 'Unranked'
-  }
-
   onBeforeUnmount(() => {
     clearTimeout(shareCopyTimeout.value)
+    clearTimeout(snapshotCopyTimeout.value)
+    clearTimeout(gearShareCopyTimeout.value)
     clearTimeout(saveFeedbackTimeout.value)
   })
 
@@ -388,6 +397,12 @@ export function useGearPlan() {
     upgradeHref,
     sortMode,
     shareCopied,
+    sharePending,
+    shareFailed,
+    snapshotCopied,
+    shareUsesPublicBuild,
+    canCopyShareLink,
+    gearShareCopyStatus,
     lastSavedSlotId,
     saveFeedbackMessage,
     plannerNotesOpen,
@@ -434,6 +449,8 @@ export function useGearPlan() {
     useCloudPlan: persistence.useCloudPlan,
     replaceCloudWithDevice: persistence.replaceCloudWithDevice,
     copyShareLink,
+    copySnapshotLink,
+    copySelectedGearLink,
     useSharedPlan,
     acceptPlannerNotes,
     getPrimaryReason,

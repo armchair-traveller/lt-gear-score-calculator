@@ -1,4 +1,5 @@
 <script setup>
+import { useMediaQuery } from '@vueuse/core'
 import {
   ArrowDownRightIcon,
   CheckCircle2Icon,
@@ -19,6 +20,8 @@ const {
   getPrimaryReason,
   getLineStatusLabel,
 } = useGearPlanContext()
+
+const hoverCardsEnabled = useMediaQuery('(hover: hover) and (pointer: fine) and (min-width: 768px)')
 
 function getWidth(value) {
   return `${Math.max(0, Math.min(value / maxChartDI.value * 100, 100))}%`
@@ -70,6 +73,7 @@ function getScale(value) {
           role="listitem"
         >
           <HoverCard
+            :open="editorOpen || !hoverCardsEnabled ? false : undefined"
             :open-delay="250"
             :close-delay="100"
             :enable-touch="false"

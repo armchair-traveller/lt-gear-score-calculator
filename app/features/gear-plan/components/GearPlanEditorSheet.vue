@@ -1,8 +1,11 @@
 <script setup>
 import {
+  CheckIcon,
   CheckCircle2Icon,
+  CircleAlertIcon,
   GaugeIcon,
   InfoIcon,
+  LinkIcon,
   TargetIcon,
   Trash2Icon,
   TrendingUpIcon,
@@ -19,6 +22,7 @@ const {
   editorStatType,
   editorStatInput,
   editorPickerOpen,
+  gearShareCopyStatus,
   isSharedPreview,
   selectedSlot,
   editorStatOptions,
@@ -33,6 +37,7 @@ const {
   getEditorLineMaxPercentClass,
   isEditorInputOverMax,
   saveEditor,
+  copySelectedGearLink,
   getLineStatusLabel,
   getStatStep,
 } = useGearPlanContext()
@@ -207,16 +212,45 @@ function getBreakdownScale(value) {
           </div>
 
           <SheetFooter v-if="!isSharedPreview" class="border-t bg-surface-raised p-4 sm:flex-row sm:justify-between">
-            <Button
-              v-if="selectedSlot.entry"
-              type="button"
-              variant="outline"
-              class="text-destructive hover:text-destructive"
-              @click="emit('request-delete')"
-            >
-              <Trash2Icon />
-              Delete
-            </Button>
+            <div v-if="selectedSlot.entry" class="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                class="text-destructive hover:text-destructive"
+                @click="emit('request-delete')"
+              >
+                <Trash2Icon data-icon="inline-start" />
+                Delete
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                :aria-label="gearShareCopyStatus === 'copied'
+                  ? 'Gear link copied'
+                  : gearShareCopyStatus === 'failed'
+                    ? 'Could not copy gear link'
+                    : 'Copy gear link'"
+                @click="copySelectedGearLink"
+              >
+                <Transition name="motion-pop" mode="out-in">
+                  <CheckIcon v-if="gearShareCopyStatus === 'copied'" key="copied" data-icon="inline-start" />
+                  <CircleAlertIcon v-else-if="gearShareCopyStatus === 'failed'" key="failed" data-icon="inline-start" />
+                  <LinkIcon v-else key="copy" data-icon="inline-start" />
+                </Transition>
+                <span>{{ gearShareCopyStatus === 'copied'
+                  ? 'Copied'
+                  : gearShareCopyStatus === 'failed'
+                    ? 'Try again'
+                    : 'Copy gear link' }}</span>
+              </Button>
+              <span class="sr-only" aria-live="polite">
+                {{ gearShareCopyStatus === 'copied'
+                  ? 'Gear link copied to clipboard.'
+                  : gearShareCopyStatus === 'failed'
+                    ? 'Could not copy gear link.'
+                    : '' }}
+              </span>
+            </div>
             <Button
               type="submit"
               class="sm:ml-auto"

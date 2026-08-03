@@ -276,7 +276,7 @@ async function readMaterializedBodyWithLimit(source, maxBytes) {
   return body
 }
 
-async function readGearPlanBodyWithLimit(event, maxBytes) {
+export async function readRequestBodyWithLimit(event, maxBytes) {
   const request = event.node?.req
   const rawBodySymbol = Symbol.for('h3RawBody')
   const materializedBody = event._requestBody
@@ -316,7 +316,7 @@ export async function readGearPlanPutBody(event) {
     throw createGearPlanBodyTooLargeError()
   }
 
-  const rawBody = await readGearPlanBodyWithLimit(event, gearPlanBodyLimitBytes)
+  const rawBody = await readRequestBodyWithLimit(event, gearPlanBodyLimitBytes)
   if (!rawBody || rawBody.byteLength === 0) {
     throw createError({
       statusCode: 400,
