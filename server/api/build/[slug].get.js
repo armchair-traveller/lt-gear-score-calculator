@@ -28,9 +28,29 @@ export function createPublicBuildGetHandler({
     catch (error) {
       const normalizedError = normalizePublicBuildRouteError(error)
       writeOutcome(getPublicBuildReadOutcome(normalizedError))
-      throw normalizedError
+      return createPublicBuildErrorResponse(normalizedError)
     }
   })
+}
+
+function createPublicBuildErrorResponse(error) {
+  return Response.json(
+    {
+      statusCode: error.statusCode,
+      statusMessage: error.statusMessage,
+      data: error.data,
+    },
+    {
+      status: error.statusCode,
+      headers: {
+        'cache-control': 'private, no-store',
+        pragma: 'no-cache',
+        'referrer-policy': 'no-referrer',
+        'x-content-type-options': 'nosniff',
+        'x-frame-options': 'DENY',
+      },
+    },
+  )
 }
 
 export default createPublicBuildGetHandler()
