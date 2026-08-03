@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import sharp from 'sharp'
 import {
   GearImageImportError,
   importGearImage,
@@ -11,6 +12,12 @@ const modelEnvironmentNames = [
   'OPENAI_IMAGE_IMPORT_REASONING_EFFORT',
   'OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL',
   'OPENAI_IMAGE_IMPORT_VERIFICATION_REASONING_EFFORT',
+  'OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_MODEL',
+  'OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_REASONING_EFFORT',
+  'OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_ENABLED',
+  'OPENAI_IMAGE_IMPORT_PRIMARY_UPSCALE_ENABLED',
+  'OPENAI_IMAGE_IMPORT_PRIMARY_TARGET_SHORT_SIDE',
+  'OPENAI_IMAGE_IMPORT_PRIMARY_MAX_SCALE',
 ]
 const originalModelEnvironment = Object.fromEntries(
   modelEnvironmentNames.map(name => [name, process.env[name]]),
@@ -48,6 +55,29 @@ const weaponMismatchExtraction = {
     createLine('Lv. 2 Dual Critical Damage +147 [97%]', 'Dual Critical Damage', 147, 97, 2),
     createLine('Lv. 2 Basic Stats +1553 [80%]', 'Basic Stats', 1553, 80, 2),
     createLine('Lv. 2 Dual Maximum Damage +14 [65%]', 'Dual Maximum Damage', 14, 65, 2),
+  ],
+}
+
+const semanticAndValueMismatchExtraction = {
+  gearType: '[9000] Accessories',
+  pieceType: 'Crystal',
+  equipmentVisible: true,
+  confidence: 0.99,
+  lines: [
+    createLine(
+      'Lv. 2 Boss Damage Mitigation +2.8% [84%]',
+      'Boss Damage Mitigation',
+      2.8,
+      84,
+      2,
+    ),
+    createLine(
+      'Lv. 2 Dual Critical Damage +11 [11%]',
+      'Dual Critical Damage',
+      11,
+      11,
+      2,
+    ),
   ],
 }
 
@@ -134,6 +164,201 @@ test('imports a validated image buffer and records screenshot equipment provenan
   assert.ok(attempts[0].elapsedMs >= 0)
   const attemptText = JSON.stringify(attempts[0])
   assert.doesNotMatch(attemptText, /data:image|hashed-user|Dual Critical Damage|Helmet/)
+})
+
+test('enlarges a small full screenshot by an integer nearest-neighbor factor', async () => {
+  const requests = []
+  const screenshot = await sharp({
+    create: {
+      width: 296,
+      height: 423,
+      channels: 4,
+      background: { r: 18, g: 28, b: 42, alpha: 1 },
+    },
+  }).png().toBuffer()
+
+  await importGearImage({
+    buffer: screenshot,
+    mimeType: 'image/png',
+    apiKey: 'test-key',
+    fetchImpl: createSequentialFetch([
+      {
+        output_text: JSON.stringify({
+          gearType: '[9999] Armor',
+          pieceType: 'Helmet',
+          equipmentVisible: true,
+          confidence: 0.98,
+          lines: [
+            createLine(
+              'Lv. 2 Dual Critical Damage +21 [17%]',
+              'Dual Critical Damage',
+              21,
+              17,
+              2,
+            ),
+          ],
+        }),
+      },
+    ], requests),
+  })
+
+  const imageInput = requests[0].input[1].content[1]
+  assert.match(imageInput.image_url, /^data:image\/png;base64,/)
+  const enlarged = decodeImageDataUrl(imageInput.image_url)
+  const metadata = await sharp(enlarged).metadata()
+  assert.deepEqual(
+    { width: metadata.width, height: metadata.height },
+    { width: 592, height: 846 },
+  )
+})
+
+test('auto-orients a JPEG before applying integer enlargement', async () => {
+  const requests = []
+  const screenshot = await sharp({
+    create: {
+      width: 40,
+      height: 20,
+      channels: 3,
+      background: { r: 18, g: 28, b: 42 },
+    },
+  })
+    .jpeg()
+    .withMetadata({ orientation: 6 })
+    .toBuffer()
+
+  await importGearImage({
+    buffer: screenshot,
+    mimeType: 'image/jpeg',
+    apiKey: 'test-key',
+    fetchImpl: createSequentialFetch([
+      {
+        output_text: JSON.stringify({
+          gearType: '[9999] Armor',
+          pieceType: 'Helmet',
+          equipmentVisible: true,
+          confidence: 0.98,
+          lines: [
+            createLine(
+              'Lv. 2 Dual Critical Damage +21 [17%]',
+              'Dual Critical Damage',
+              21,
+              17,
+              2,
+            ),
+          ],
+        }),
+      },
+    ], requests),
+  })
+
+  const enlarged = decodeImageDataUrl(requests[0].input[1].content[1].image_url)
+  const metadata = await sharp(enlarged).metadata()
+  assert.deepEqual(
+    { width: metadata.width, height: metadata.height, orientation: metadata.orientation },
+    { width: 60, height: 120, orientation: undefined },
+  )
+})
+
+test('gives semantic verification an original-resolution oriented copy without EXIF metadata', async () => {
+  const requests = []
+  const screenshot = await sharp({
+    create: {
+      width: 40,
+      height: 20,
+      channels: 3,
+      background: { r: 18, g: 28, b: 42 },
+    },
+  })
+    .jpeg()
+    .withMetadata({ orientation: 6 })
+    .toBuffer()
+
+  await importGearImage({
+    buffer: screenshot,
+    mimeType: 'image/jpeg',
+    apiKey: 'test-key',
+    fetchImpl: createSequentialFetch([
+      { output_text: JSON.stringify(semanticAndValueMismatchExtraction) },
+      {
+        output_text: JSON.stringify({
+          lines: [
+            {
+              rowNumber: 1,
+              rawText: 'Lv. 2 Boss Damage Amplification +2.8% [84%]',
+            },
+            {
+              rowNumber: 2,
+              rawText: 'Lv. 2 Dual Critical Damage +9 [11%]',
+            },
+          ],
+        }),
+      },
+    ], requests),
+  })
+
+  const primary = await sharp(
+    decodeImageDataUrl(requests[0].input[1].content[1].image_url),
+  ).metadata()
+  const semantic = await sharp(
+    decodeImageDataUrl(requests[1].input[1].content[1].image_url),
+  ).metadata()
+  assert.deepEqual(
+    { width: primary.width, height: primary.height, orientation: primary.orientation },
+    { width: 60, height: 120, orientation: undefined },
+  )
+  assert.deepEqual(
+    {
+      format: semantic.format,
+      width: semantic.width,
+      height: semantic.height,
+      orientation: semantic.orientation,
+    },
+    { format: 'png', width: 20, height: 40, orientation: undefined },
+  )
+})
+
+test('does not upscale a tall screenshot past the operational long-side target', async () => {
+  const requests = []
+  const screenshot = await sharp({
+    create: {
+      width: 300,
+      height: 2500,
+      channels: 3,
+      background: { r: 18, g: 28, b: 42 },
+    },
+  }).png().toBuffer()
+
+  await importGearImage({
+    buffer: screenshot,
+    mimeType: 'image/png',
+    apiKey: 'test-key',
+    fetchImpl: createSequentialFetch([
+      {
+        output_text: JSON.stringify({
+          gearType: '[9999] Armor',
+          pieceType: 'Helmet',
+          equipmentVisible: true,
+          confidence: 0.98,
+          lines: [
+            createLine(
+              'Lv. 2 Dual Critical Damage +21 [17%]',
+              'Dual Critical Damage',
+              21,
+              17,
+              2,
+            ),
+          ],
+        }),
+      },
+    ], requests),
+  })
+
+  const image = decodeImageDataUrl(requests[0].input[1].content[1].image_url)
+  const metadata = await sharp(image).metadata()
+  assert.deepEqual(
+    { width: metadata.width, height: metadata.height },
+    { width: 300, height: 2500 },
+  )
 })
 
 test('uses an explicit gear hint when equipment identity is not visible', async () => {
@@ -261,6 +486,188 @@ test('uses Luna none for one focused request that repairs every roll mismatch', 
   )
 })
 
+test('uses one unprimed Sol reread for semantic and numeric review rows', async () => {
+  const requests = []
+  const attempts = []
+  const result = await importGearImage({
+    buffer: pngBuffer,
+    mimeType: 'image/png',
+    apiKey: 'test-key',
+    onModelAttempt: attempt => attempts.push(attempt),
+    fetchImpl: createSequentialFetch([
+      { output_text: JSON.stringify(semanticAndValueMismatchExtraction) },
+      {
+        output_text: JSON.stringify({
+          lines: [
+            {
+              rowNumber: 1,
+              rawText: 'Lv. 2 Boss Damage Amplification +2.8% [84%]',
+            },
+            {
+              rowNumber: 2,
+              rawText: 'Lv. 2 Dual Critical Damage +9 [11%]',
+            },
+          ],
+        }),
+      },
+    ], requests),
+  })
+
+  assert.equal(requests.length, 2)
+  assert.equal(requests[1].model, 'gpt-5.6-sol')
+  assert.deepEqual(requests[1].reasoning, { effort: 'none' })
+  assert.equal(requests[1].text.verbosity, 'medium')
+  assert.equal(requests[1].text.format.name, 'gear_image_semantic_verification')
+  assert.deepEqual(
+    requests[1].text.format.schema.properties.lines.items.properties.rowNumber.enum,
+    [1, 2],
+  )
+  assert.notEqual(
+    requests[1].input[1].content[1].image_url,
+    requests[0].input[1].content[1].image_url,
+  )
+  const semanticImage = await sharp(
+    decodeImageDataUrl(requests[1].input[1].content[1].image_url),
+  ).metadata()
+  assert.deepEqual(
+    { format: semanticImage.format, width: semanticImage.width, height: semanticImage.height },
+    { format: 'png', width: 1, height: 1 },
+  )
+  const verificationPrompt = [
+    requests[1].input[0].content[0].text,
+    requests[1].input[1].content[0].text,
+  ].join('\n')
+  assert.equal(
+    requests[1].input[1].content[0].text,
+    'Requested row 1.\nRequested row 2.',
+  )
+  assert.doesNotMatch(
+    verificationPrompt,
+    /mitigation|amplification|critical damage|2\.8|84%|\+11|11%/i,
+  )
+  assert.deepEqual(
+    result.lines.map(line => ({ stat: line.stat, value: line.value, status: line.status })),
+    [
+      { stat: 'Boss Amplification', value: 2.8, status: 'matched' },
+      { stat: 'Critical Damage', value: 9, status: 'matched' },
+    ],
+  )
+  assert.deepEqual(
+    attempts.map(({ stage, model, reasoningEffort }) => ({
+      stage,
+      model,
+      reasoningEffort,
+    })),
+    [
+      { stage: 'primary', model: 'gpt-5.6-luna', reasoningEffort: 'low' },
+      { stage: 'semantic_verification', model: 'gpt-5.6-sol', reasoningEffort: 'none' },
+    ],
+  )
+})
+
+test('keeps the same-stat and same-level guard for numeric rows bundled into semantic verification', async () => {
+  const result = await importGearImage({
+    buffer: pngBuffer,
+    mimeType: 'image/png',
+    apiKey: 'test-key',
+    fetchImpl: createSequentialFetch([
+      { output_text: JSON.stringify(semanticAndValueMismatchExtraction) },
+      {
+        output_text: JSON.stringify({
+          lines: [
+            {
+              rowNumber: 1,
+              rawText: 'Lv. 2 Boss Damage Amplification +2.8% [84%]',
+            },
+            {
+              rowNumber: 2,
+              rawText: 'Lv. 3 Dual Maximum Damage +9 [11%]',
+            },
+          ],
+        }),
+      },
+    ]),
+  })
+
+  assert.deepEqual(
+    result.lines.map(line => ({ stat: line.stat, level: line.level, value: line.value, status: line.status })),
+    [
+      { stat: 'Boss Amplification', level: 2, value: 2.8, status: 'matched' },
+      { stat: 'Critical Damage', level: 2, value: 11, status: 'needs_review' },
+    ],
+  )
+})
+
+test('can trust a full independent model pass to confirm a genuine non-damaging row', async () => {
+  const result = await importGearImage({
+    buffer: pngBuffer,
+    mimeType: 'image/png',
+    apiKey: 'test-key',
+    enableValueVerification: false,
+    enableSemanticVerification: false,
+    trustPrimarySemanticReads: true,
+    fetchImpl: createSequentialFetch([
+      {
+        output_text: JSON.stringify({
+          ...semanticAndValueMismatchExtraction,
+          lines: [semanticAndValueMismatchExtraction.lines[0]],
+        }),
+      },
+    ]),
+  })
+
+  assert.deepEqual(
+    {
+      stat: result.lines[0].stat,
+      value: result.lines[0].value,
+      status: result.lines[0].status,
+      reason: result.lines[0].reason,
+    },
+    {
+      stat: 'Other (Non-damaging)',
+      value: 1,
+      status: 'other',
+      reason: 'Mapped to non-damaging option',
+    },
+  )
+})
+
+test('keeps semantic transcription failures in safe review without blocking imports', async () => {
+  const requests = []
+  const result = await importGearImage({
+    buffer: pngBuffer,
+    mimeType: 'image/png',
+    apiKey: 'test-key',
+    enableValueVerification: false,
+    fetchImpl: createSequentialFetch([
+      {
+        output_text: JSON.stringify({
+          ...semanticAndValueMismatchExtraction,
+          lines: [semanticAndValueMismatchExtraction.lines[0]],
+        }),
+      },
+      {},
+    ], requests),
+  })
+
+  assert.equal(requests.length, 2)
+  assert.equal(requests[1].model, 'gpt-5.6-sol')
+  assert.deepEqual(
+    {
+      stat: result.lines[0].stat,
+      value: result.lines[0].value,
+      status: result.lines[0].status,
+      reason: result.lines[0].reason,
+    },
+    {
+      stat: 'Other (Non-damaging)',
+      value: 1,
+      status: 'needs_review',
+      reason: 'Verify the stat wording before treating this as non-damaging',
+    },
+  )
+})
+
 test('keeps unrepaired rows in review when a focused re-read is only partially useful', async () => {
   const result = await importGearImage({
     buffer: pngBuffer,
@@ -357,6 +764,7 @@ test('runs the focused verifier only for isolated, legal value mismatches', asyn
         mimeType: 'image/png',
         gearHint: testCase.gearHint,
         apiKey: 'test-key',
+        enableSemanticVerification: false,
         fetchImpl: createSequentialFetch([
           { output_text: JSON.stringify(testCase.extraction) },
         ], requests),
@@ -486,6 +894,11 @@ function jsonResponse(payload) {
       'Content-Type': 'application/json',
     },
   })
+}
+
+function decodeImageDataUrl(dataUrl) {
+  const [, base64 = ''] = String(dataUrl).split(',', 2)
+  return Buffer.from(base64, 'base64')
 }
 
 function createLine(rawText, statText, value, rollPercent, level) {

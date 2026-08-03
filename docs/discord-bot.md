@@ -57,13 +57,19 @@ The image import stages can be overridden independently with server-side environ
 ```dotenv
 OPENAI_IMAGE_IMPORT_MODEL=gpt-5.6-luna
 OPENAI_IMAGE_IMPORT_REASONING_EFFORT=low
+OPENAI_IMAGE_IMPORT_PRIMARY_UPSCALE_ENABLED=true
+OPENAI_IMAGE_IMPORT_PRIMARY_TARGET_SHORT_SIDE=512
+OPENAI_IMAGE_IMPORT_PRIMARY_MAX_SCALE=3
 OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL=gpt-5.6-luna
 OPENAI_IMAGE_IMPORT_VERIFICATION_REASONING_EFFORT=none
-OPENAI_IMAGE_IMPORT_FALLBACK_MODEL=gpt-5.6-luna
-OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT=max
+OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_ENABLED=true
+OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_MODEL=gpt-5.6-sol
+OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_REASONING_EFFORT=none
+OPENAI_IMAGE_IMPORT_FALLBACK_MODEL=gpt-5.6-sol
+OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT=none
 ```
 
-The fallback settings apply only to Discord recovery after a parser or gear-evaluation rejection. The web importer continues to use the shared primary and focused value-verification stages without a full fallback.
+The fallback settings apply only to Discord recovery after a parser or gear-evaluation rejection. The web importer continues to use the shared primary, semantic-verification, and value-verification stages without a full fallback.
 
 Use `DISCORD_BOT_TOKEN` only while running the registration script. It is not used by the webhook and should not be stored in Vercel.
 
@@ -80,7 +86,7 @@ The endpoint:
 5. Reuses the screenshot importer, strict evaluation rules, and snapshot renderer.
 6. Edits the original deferred response with a PNG and calculator link.
 
-Screenshot reading starts with Luna at low reasoning. An isolated roll/value mismatch can receive one Luna-none row re-read. If the parser or strict evaluator still rejects the result, Discord makes at most one independent Luna-max pass using the original screenshot and hint; that pass cannot recurse or run the focused verifier. A request therefore makes at most three image-model calls. On the fallback pass, a selected equipment hint takes precedence over a conflicting screenshot classification while the enchant lines must still validate against that equipment.
+Screenshot reading starts with Luna at low reasoning. Small screenshots are enlarged as a full image with an integer nearest-neighbor scale before reading so pixel-font glyphs keep their shape; scaling stops at a 2048-pixel long side and respects EXIF orientation. An unmatched stat or an active `Other` row with a visible roll receives one unprimed Sol-none whole-row re-read of the original-resolution screenshot; when no semantic re-read is needed, an isolated roll/value mismatch can instead receive one Luna-none value re-read. These verification paths are mutually exclusive. If the parser or strict evaluator still rejects the result, Discord makes at most one independent Sol-none pass using the same full screenshot and hint; that pass cannot recurse or run either focused verifier. A request therefore makes at most three image-model calls. On the fallback pass, a selected equipment hint takes precedence over a conflicting screenshot classification while the enchant lines must still validate against that equipment.
 
 Processing has a 210-second internal deadline under the deployment's 240-second function duration. The interaction token remains valid long enough for that edit. There is no durable retry: if a deployment is interrupted while processing, the user should run the command again.
 

@@ -166,9 +166,9 @@ export async function processGearScoreInteraction({
   loadSnapshotItemImageImpl = loadSnapshotItemImage,
   loadSnapshotFontImpl = loadSnapshotFont,
   fallbackImportModel =
-    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_MODEL || 'gpt-5.6-luna',
+    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_MODEL || 'gpt-5.6-sol',
   fallbackImportReasoningEffort =
-    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT || 'max',
+    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT || 'none',
   onModelAttemptImpl = logDiscordModelAttempt,
 }) {
   const startedAt = Date.now()
@@ -216,6 +216,8 @@ export async function processGearScoreInteraction({
         importModel: fallbackImportModel,
         importReasoningEffort: fallbackImportReasoningEffort,
         enableValueVerification: false,
+        enableSemanticVerification: false,
+        trustPrimarySemanticReads: true,
         preferGearHint: true,
         onModelAttempt: attempt => onModelAttemptImpl({
           ...attempt,

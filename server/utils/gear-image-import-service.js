@@ -6,6 +6,10 @@ import {
   getMaxEnchantLevel,
   getPieceNames,
   getRequestContext,
+  getSemanticReviewRowNumbers,
+  getSemanticVerificationPrompt,
+  getSemanticVerificationRequestText,
+  getSemanticVerificationRequests,
   getValidGearType,
   getValidPieceType,
   getValueReviewRowNumbers,
@@ -13,6 +17,7 @@ import {
   getValueVerificationRequestText,
   getValueVerificationRequests,
   getValueVerificationSchema,
+  mergeSemanticVerifiedLineReads,
   mergeVerifiedLineReads,
   normalizeExtraction,
 } from './gear-image-import.js'
@@ -24,6 +29,10 @@ export const allowedGearImageTypes = new Set(['image/png', 'image/jpeg', 'image/
 
 const defaultGearType = '[9999] Armor'
 const defaultPieceType = 'Helmet'
+const defaultPrimaryImageTargetShortSide = 512
+const defaultPrimaryImageMaxScale = 3
+const primaryImageTargetLongSide = 2048
+const primaryImageTargetPixels = 2048 * 2048
 const verificationImageTargetSize = 1900
 const maxVerificationImageScale = 3
 const defaultImportTimeout = 210_000
@@ -60,7 +69,26 @@ export async function importGearImage({
     process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL || 'gpt-5.6-luna',
   verificationReasoningEffort =
     process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_REASONING_EFFORT || 'none',
+  semanticVerificationModel =
+    process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_MODEL || 'gpt-5.6-sol',
+  semanticVerificationReasoningEffort =
+    process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_REASONING_EFFORT || 'none',
   enableValueVerification = true,
+  enableSemanticVerification = getEnvironmentBoolean(
+    process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_ENABLED,
+    true,
+  ),
+  enablePrimaryImageUpscale = getEnvironmentBoolean(
+    process.env.OPENAI_IMAGE_IMPORT_PRIMARY_UPSCALE_ENABLED,
+    true,
+  ),
+  primaryImageTargetShortSide =
+    process.env.OPENAI_IMAGE_IMPORT_PRIMARY_TARGET_SHORT_SIDE
+    || defaultPrimaryImageTargetShortSide,
+  primaryImageMaxScale =
+    process.env.OPENAI_IMAGE_IMPORT_PRIMARY_MAX_SCALE
+    || defaultPrimaryImageMaxScale,
+  trustPrimarySemanticReads = false,
   preferGearHint = false,
   throwOnVerificationError = false,
   onModelAttempt,
@@ -89,12 +117,17 @@ export async function importGearImage({
     || getValidPieceType(parsingGearType, defaultPieceType, gearCatalog)
     || getPieceNames(parsingGearType, gearCatalog)[0]
   const requestSignal = getRequestSignal(signal, timeoutMs)
-  const imageUrl = toImageDataUrl(image.buffer, image.mimeType)
+  const originalImageUrl = toImageDataUrl(image.buffer, image.mimeType)
+  const primaryImageUrl = await getPrimaryImageUrl(image, originalImageUrl, {
+    enabled: enablePrimaryImageUpscale,
+    targetShortSide: primaryImageTargetShortSide,
+    maxScale: primaryImageMaxScale,
+  })
 
   try {
-    const extracted = await requestImageModel({
+    const modelExtraction = await requestImageModel({
       apiKey,
-      imageUrl,
+      imageUrl: primaryImageUrl,
       developerText: getExtractorPrompt(),
       userText: getRequestContext(
         parsingGearType,
@@ -113,6 +146,9 @@ export async function importGearImage({
       signal: requestSignal,
       fetchImpl,
     })
+    const extracted = trustPrimarySemanticReads
+      ? markSemanticReadsTrusted(modelExtraction)
+      : modelExtraction
     const normalizationOptions = {
       hintProvided: Boolean(hint),
       preferGearHint: Boolean(preferGearHint),
@@ -124,7 +160,78 @@ export async function importGearImage({
       gearCatalog,
       normalizationOptions,
     )
+    const semanticReviewRowNumbers = getSemanticReviewRowNumbers(normalized)
     const reviewRowNumbers = getValueReviewRowNumbers(normalized)
+
+    if (
+      enableSemanticVerification
+      && isSemanticVerificationEligible({
+        normalized,
+        reviewRowNumbers: semanticReviewRowNumbers,
+        hint,
+      })
+    ) {
+      const combinedReviewRowNumbers = Array.from(new Set([
+        ...semanticReviewRowNumbers,
+        ...(enableValueVerification ? reviewRowNumbers : []),
+      ])).sort((left, right) => left - right)
+
+      try {
+        const verificationRequests = getSemanticVerificationRequests(
+          combinedReviewRowNumbers,
+        )
+        const semanticImageUrl = await getSemanticImageUrl(image)
+        if (!semanticImageUrl) {
+          return normalized
+        }
+        const verification = await requestImageModel({
+          apiKey,
+          imageUrl: semanticImageUrl,
+          model: semanticVerificationModel,
+          reasoning: { effort: semanticVerificationReasoningEffort },
+          verbosity: 'medium',
+          stage: 'semantic_verification',
+          onModelAttempt,
+          developerText: getSemanticVerificationPrompt(),
+          userText: getSemanticVerificationRequestText(verificationRequests),
+          formatName: 'gear_image_semantic_verification',
+          schema: getValueVerificationSchema(combinedReviewRowNumbers),
+          safetyIdentifier,
+          signal: requestSignal,
+          fetchImpl,
+        })
+        const semanticallyVerifiedExtraction = mergeSemanticVerifiedLineReads(
+          extracted,
+          verification?.lines,
+          semanticReviewRowNumbers,
+        )
+        const numericOnlyReviewRowNumbers = reviewRowNumbers.filter(
+          rowNumber => !semanticReviewRowNumbers.includes(rowNumber),
+        )
+        const verifiedExtraction = mergeVerifiedLineReads(
+          semanticallyVerifiedExtraction,
+          verification?.lines,
+          numericOnlyReviewRowNumbers,
+        )
+
+        return normalizeExtraction(
+          verifiedExtraction,
+          parsingGearType,
+          parsingPieceType,
+          gearCatalog,
+          normalizationOptions,
+        )
+      }
+      catch (error) {
+        if (requestSignal?.aborted || throwOnVerificationError) {
+          throw error
+        }
+
+        // Keep the safe review state when the independent re-read is unavailable.
+        return normalized
+      }
+    }
+
     if (
       !enableValueVerification
       || !isValueVerificationEligible({
@@ -138,7 +245,7 @@ export async function importGearImage({
 
     try {
       const verificationRequests = getValueVerificationRequests(extracted, reviewRowNumbers)
-      const verificationImageUrl = await getVerificationImageUrl(image, imageUrl)
+      const verificationImageUrl = await getVerificationImageUrl(image, primaryImageUrl)
       const verification = await requestImageModel({
         apiKey,
         imageUrl: verificationImageUrl,
@@ -278,8 +385,8 @@ export async function validateGearImage({ buffer, mimeType } = {}) {
     )
   }
 
-  const width = Number(metadata.width) || 0
-  const height = Number(metadata.height) || 0
+  const width = Number(metadata.autoOrient?.width || metadata.width) || 0
+  const height = Number(metadata.autoOrient?.height || metadata.height) || 0
   if (!width || !height) {
     throw new GearImageImportError(
       'image_invalid',
@@ -362,20 +469,32 @@ export function parseImageModelOutput(payload) {
   }
 }
 
-async function getVerificationImageUrl(image, fallbackImageUrl) {
-  try {
-    const longestSide = Math.max(image.width, image.height)
-    const scale = Math.min(maxVerificationImageScale, verificationImageTargetSize / longestSide)
-    if (scale <= 1) {
-      return fallbackImageUrl
-    }
+async function getPrimaryImageUrl(
+  image,
+  fallbackImageUrl,
+  { enabled, targetShortSide, maxScale } = {},
+) {
+  if (!getEnvironmentBoolean(enabled, true)) {
+    return fallbackImageUrl
+  }
 
-    const resizedWidth = Math.round(image.width * scale)
+  const scale = getPrimaryImageScale(image, { targetShortSide, maxScale })
+  if (scale <= 1) {
+    return fallbackImageUrl
+  }
+
+  try {
     const enlarged = await sharp(image.buffer, {
       failOn: 'none',
       limitInputPixels: maxGearImagePixels,
     })
-      .resize({ width: resizedWidth, kernel: sharp.kernel.nearest })
+      .autoOrient()
+      .resize({
+        width: image.width * scale,
+        height: image.height * scale,
+        fit: 'fill',
+        kernel: sharp.kernel.nearest,
+      })
       .png({ compressionLevel: 9 })
       .toBuffer()
 
@@ -385,6 +504,148 @@ async function getVerificationImageUrl(image, fallbackImageUrl) {
   }
   catch {
     return fallbackImageUrl
+  }
+}
+
+async function getSemanticImageUrl(image) {
+  try {
+    const normalized = await sharp(image.buffer, {
+      failOn: 'none',
+      limitInputPixels: maxGearImagePixels,
+    })
+      .autoOrient()
+      .png({ compressionLevel: 9 })
+      .toBuffer()
+
+    if (normalized.length <= maxGearImageBytes) {
+      return toImageDataUrl(normalized, 'image/png')
+    }
+
+    for (const quality of [95, 85, 75, 60]) {
+      const compact = await sharp(image.buffer, {
+        failOn: 'none',
+        limitInputPixels: maxGearImagePixels,
+      })
+        .autoOrient()
+        .webp({ quality, smartSubsample: true })
+        .toBuffer()
+
+      if (compact.length <= maxGearImageBytes) {
+        return toImageDataUrl(compact, 'image/webp')
+      }
+    }
+
+    return ''
+  }
+  catch {
+    return ''
+  }
+}
+
+function getPrimaryImageScale(
+  image,
+  {
+    targetShortSide = defaultPrimaryImageTargetShortSide,
+    maxScale = defaultPrimaryImageMaxScale,
+  } = {},
+) {
+  const width = Number(image?.width) || 0
+  const height = Number(image?.height) || 0
+  if (!width || !height) {
+    return 1
+  }
+
+  const target = getPositiveInteger(
+    targetShortSide,
+    defaultPrimaryImageTargetShortSide,
+  )
+  const configuredMaxScale = Math.min(
+    defaultPrimaryImageMaxScale,
+    getPositiveInteger(maxScale, defaultPrimaryImageMaxScale),
+  )
+  const desiredScale = Math.max(1, Math.ceil(target / Math.min(width, height)))
+  const dimensionScale = Math.floor(Math.min(
+    maxGearImageDimension / width,
+    maxGearImageDimension / height,
+  ))
+  const pixelScale = Math.floor(Math.sqrt(
+    maxGearImagePixels / (width * height),
+  ))
+  const targetLongSideScale = Math.floor(
+    primaryImageTargetLongSide / Math.max(width, height),
+  )
+  const targetPixelScale = Math.floor(Math.sqrt(
+    primaryImageTargetPixels / (width * height),
+  ))
+
+  return Math.max(1, Math.min(
+    desiredScale,
+    configuredMaxScale,
+    dimensionScale,
+    pixelScale,
+    targetLongSideScale,
+    targetPixelScale,
+  ))
+}
+
+async function getVerificationImageUrl(image, fallbackImageUrl) {
+  try {
+    const longestSide = Math.max(image.width, image.height)
+    const scale = Math.min(
+      maxVerificationImageScale,
+      Math.floor(verificationImageTargetSize / longestSide),
+    )
+    if (scale <= 1) {
+      return fallbackImageUrl
+    }
+
+    const enlarged = await sharp(image.buffer, {
+      failOn: 'none',
+      limitInputPixels: maxGearImagePixels,
+    })
+      .autoOrient()
+      .resize({
+        width: image.width * scale,
+        height: image.height * scale,
+        fit: 'fill',
+        kernel: sharp.kernel.nearest,
+      })
+      .png({ compressionLevel: 9 })
+      .toBuffer()
+
+    return enlarged.length <= maxGearImageBytes
+      ? toImageDataUrl(enlarged, 'image/png')
+      : fallbackImageUrl
+  }
+  catch {
+    return fallbackImageUrl
+  }
+}
+
+function isSemanticVerificationEligible({ normalized, reviewRowNumbers, hint }) {
+  if (normalized?.equipment?.status !== 'resolved' || hasGearHintConflict(normalized, hint)) {
+    return false
+  }
+
+  const lines = Array.isArray(normalized?.lines) ? normalized.lines : []
+  const activeLines = lines.filter(line => !line?.ignored)
+  if (activeLines.length < 1 || activeLines.length > 5 || !reviewRowNumbers.length) {
+    return false
+  }
+
+  return reviewRowNumbers.every((rowNumber) => {
+    const line = lines[rowNumber - 1]
+    return !line?.ignored && line?.status === 'needs_review'
+  })
+}
+
+function markSemanticReadsTrusted(extracted) {
+  return {
+    ...extracted,
+    lines: (Array.isArray(extracted?.lines) ? extracted.lines : []).map(line => ({
+      ...line,
+      semanticVerified: true,
+    })),
   }
 }
 
@@ -536,6 +797,27 @@ function getModelAttemptUsage(usage) {
 function toTokenCount(value) {
   const count = Number(value)
   return Number.isFinite(count) && count >= 0 ? Math.trunc(count) : 0
+}
+
+function getEnvironmentBoolean(value, fallback) {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false
+  }
+
+  return fallback
+}
+
+function getPositiveInteger(value, fallback) {
+  const number = Number(value)
+  return Number.isInteger(number) && number > 0 ? number : fallback
 }
 
 function notifyModelAttempt(callback, attempt) {

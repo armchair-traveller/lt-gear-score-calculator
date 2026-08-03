@@ -133,7 +133,7 @@ test('edits the deferred response with guidance when evaluation fails', async ()
   assert.match(edits[0].content, /did not score/i)
 })
 
-test('runs one independent max fallback for parser and evaluation accuracy failures', async (t) => {
+test('runs one independent Sol fallback for parser and evaluation accuracy failures', async (t) => {
   const cases = [
     { name: 'empty parser output', importCode: 'parser_empty' },
     { name: 'invalid parser output', importCode: 'parser_invalid' },
@@ -161,8 +161,8 @@ test('runs one independent max fallback for parser and evaluation accuracy failu
           importCalls.push(input)
           input.onModelAttempt?.({
             stage: 'primary',
-            model: 'gpt-5.6-luna',
-            reasoningEffort: importCalls.length === 1 ? 'low' : 'max',
+            model: importCalls.length === 1 ? 'gpt-5.6-luna' : 'gpt-5.6-sol',
+            reasoningEffort: importCalls.length === 1 ? 'low' : 'none',
             elapsedMs: 1,
             usage: null,
           })
@@ -190,9 +190,11 @@ test('runs one independent max fallback for parser and evaluation accuracy failu
       assert.equal(importCalls[1].gearHint, gearHint)
       assert.equal(importCalls[1].safetyIdentifier, 'safety')
       assert.equal(importCalls[1].signal, importCalls[0].signal)
-      assert.equal(importCalls[1].importModel, 'gpt-5.6-luna')
-      assert.equal(importCalls[1].importReasoningEffort, 'max')
+      assert.equal(importCalls[1].importModel, 'gpt-5.6-sol')
+      assert.equal(importCalls[1].importReasoningEffort, 'none')
       assert.equal(importCalls[1].enableValueVerification, false)
+      assert.equal(importCalls[1].enableSemanticVerification, false)
+      assert.equal(importCalls[1].trustPrimarySemanticReads, true)
       assert.equal(importCalls[1].preferGearHint, true)
       assert.equal(modelAttempts.at(-1).stage, 'fallback')
       assert.equal(
@@ -206,7 +208,7 @@ test('runs one independent max fallback for parser and evaluation accuracy failu
   }
 })
 
-test('runs max before evaluation when the screenshot conflicts with the selected hint', async () => {
+test('runs the Sol fallback before evaluation when the screenshot conflicts with the selected hint', async () => {
   const importCalls = []
   const evaluationCalls = []
   const gearHint = { gearType: '[sLv5] Accessories', pieceType: 'Cloak' }
@@ -283,7 +285,7 @@ test('does not use the accuracy fallback for transport, configuration, or unsupp
   }
 })
 
-test('does not recurse when the max fallback also returns a retryable failure', async () => {
+test('does not recurse when the Sol fallback also returns a retryable failure', async () => {
   const importCalls = []
   const edits = []
 
@@ -322,7 +324,7 @@ test('does not retry after rendering fails', async () => {
   assert.equal(edits[0].file, undefined)
 })
 
-test('does not escalate a focused verifier upstream failure to max', async () => {
+test('does not escalate a focused verifier upstream failure to the full fallback', async () => {
   const requests = []
   const edits = []
   const responses = [
@@ -335,7 +337,7 @@ test('does not escalate a focused verifier upstream failure to max', async () =>
   const fetchImpl = async (_url, init) => {
     requests.push(JSON.parse(init.body))
     const response = responses.shift()
-    assert.notEqual(response, undefined, 'received an unexpected max fallback request')
+    assert.notEqual(response, undefined, 'received an unexpected full fallback request')
     return response
   }
 
@@ -401,12 +403,59 @@ test('caps primary, row verification, and full fallback at three model requests'
     [
       { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
       { format: 'gear_image_value_verification', model: 'gpt-5.6-luna', effort: 'none' },
-      { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'max' },
+      { format: 'gear_image_import', model: 'gpt-5.6-sol', effort: 'none' },
     ],
   )
   assert.doesNotMatch(JSON.stringify(requests[2]), /PRIMARY_OCR_SENTINEL/)
   assert.equal(edits.length, 1)
   assert.equal(edits[0].file, undefined)
+})
+
+test('caps primary, semantic verification, and full fallback at three model requests', async () => {
+  const requests = []
+  const edits = []
+  const extraction = createCrystalSemanticMismatchExtraction()
+  extraction.primarySentinel = 'PRIMARY_SEMANTIC_SENTINEL'
+  const responses = [
+    { output_text: JSON.stringify(extraction) },
+    { output_text: 'not valid json' },
+    { output_text: JSON.stringify(createCrystalSemanticMismatchExtraction()) },
+  ]
+  const fetchImpl = async (_url, init) => {
+    requests.push(JSON.parse(init.body))
+    const payload = responses.shift()
+    assert.notEqual(payload, undefined, 'received a fourth model request')
+    return jsonResponse(payload)
+  }
+
+  await processGearScoreInteraction(createProcessOptions({
+    imageBuffer: pngBuffer,
+    gearHint: { gearType: '[9000] Accessories', pieceType: 'Crystal' },
+    importGearImageImpl: input => importGearImage({
+      ...input,
+      apiKey: 'test-key',
+      fetchImpl,
+    }),
+    evaluateImportedGearImpl: evaluateImportedGear,
+    editOriginalDiscordResponseImpl: async input => edits.push(input),
+    onModelAttemptImpl: () => {},
+  }))
+
+  assert.equal(requests.length, 3)
+  assert.deepEqual(
+    requests.map(request => ({
+      format: request.text.format.name,
+      model: request.model,
+      effort: request.reasoning.effort,
+    })),
+    [
+      { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
+      { format: 'gear_image_semantic_verification', model: 'gpt-5.6-sol', effort: 'none' },
+      { format: 'gear_image_import', model: 'gpt-5.6-sol', effort: 'none' },
+    ],
+  )
+  assert.doesNotMatch(JSON.stringify(requests[2]), /PRIMARY_SEMANTIC_SENTINEL/)
+  assert.equal(edits.length, 1)
 })
 
 function createProcessOptions({
@@ -465,6 +514,24 @@ function createWeaponMismatchExtraction() {
       createLine('Lv. 2 Dual Critical Damage +147 [97%]', 'Dual Critical Damage', 147, 97, 2),
       createLine('Lv. 2 Basic Stats +1553 [80%]', 'Basic Stats', 1553, 80, 2),
       createLine('Lv. 2 Dual Maximum Damage +144 [65%]', 'Dual Maximum Damage', 144, 65, 2),
+    ],
+  }
+}
+
+function createCrystalSemanticMismatchExtraction() {
+  return {
+    gearType: '[9000] Accessories',
+    pieceType: 'Crystal',
+    equipmentVisible: true,
+    confidence: 0.99,
+    lines: [
+      createLine(
+        'Lv. 2 Boss Damage Mitigation +2.8% [84%]',
+        'Boss Damage Mitigation',
+        2.8,
+        84,
+        2,
+      ),
     ],
   }
 }
