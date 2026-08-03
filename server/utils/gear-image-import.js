@@ -253,6 +253,32 @@ export function getValueVerificationSchema(rowNumbers) {
   }
 }
 
+export function getSemanticVerificationRequests(rowNumbers) {
+  return Array.from(new Set(Array.isArray(rowNumbers) ? rowNumbers : []))
+    .filter((rowNumber) => Number.isInteger(rowNumber) && rowNumber > 0)
+    .sort((left, right) => left - right)
+    .map((rowNumber) => ({ rowNumber }))
+}
+
+export function getSemanticVerificationPrompt() {
+  return [
+    'Independently re-read only the requested LaTale enchant option rows from the image.',
+    'Count every visible row that begins with "Lv." from top to bottom, starting at 1, including any Lv. 1 unenchanted placeholder.',
+    'The request identifies rows only by number. Do not assume or reuse any previous transcription of their level, stat wording, value, or roll percentage.',
+    'For each requested row, transcribe the complete visible row character-for-character in rawText.',
+    'Preserve the visible level, the full stat wording, every value digit, any decimal separator, and whether the value has a percent sign.',
+    'Keep the percentage in square brackets separate from the stat value.',
+    'Do not paraphrase, translate, normalize, or semantically classify the stat wording.',
+    'Return each requested row exactly once and in ascending row-number order.',
+  ].join('\n')
+}
+
+export function getSemanticVerificationRequestText(requestedRows) {
+  return (Array.isArray(requestedRows) ? requestedRows : [])
+    .map((row) => `Requested row ${row.rowNumber}.`)
+    .join('\n')
+}
+
 export function normalizeExtraction(
   extracted,
   fallbackGearType,
@@ -301,6 +327,21 @@ export function getValueReviewRowNumbers(normalizedExtraction) {
     )
 }
 
+export function getSemanticReviewRowNumbers(normalizedExtraction) {
+  return (Array.isArray(normalizedExtraction?.lines) ? normalizedExtraction.lines : [])
+    .flatMap((line, index) => {
+      const mappedOtherWithVisibleRoll =
+        line?.stat === otherStat && hasVisibleRollPercent(line?.rollPercent)
+      const unmatchedStat = !line?.stat
+
+      return !line?.ignored
+        && line?.status === 'needs_review'
+        && (mappedOtherWithVisibleRoll || unmatchedStat)
+        ? [index + 1]
+        : []
+    })
+}
+
 export function mergeVerifiedLineReads(extracted, verifiedReads, rowNumbers) {
   const requestedRows = new Set(rowNumbers)
   const readsByRow = new Map(
@@ -324,6 +365,34 @@ export function mergeVerifiedLineReads(extracted, verifiedReads, rowNumbers) {
             rawText: verified.rawText,
             value: verified.value,
             rollPercent: verified.rollPercent,
+          }
+        : line
+    }),
+  }
+}
+
+export function mergeSemanticVerifiedLineReads(extracted, verifiedReads, rowNumbers) {
+  const requestedRows = new Set(Array.isArray(rowNumbers) ? rowNumbers : [])
+  const readsByRow = new Map(
+    (Array.isArray(verifiedReads) ? verifiedReads : [])
+      .filter((read) => requestedRows.has(read?.rowNumber))
+      .map((read) => [read.rowNumber, parseVerifiedRawLine(read.rawText)])
+      .filter(([, read]) => read),
+  )
+
+  return {
+    ...extracted,
+    lines: (Array.isArray(extracted?.lines) ? extracted.lines : []).map((line, index) => {
+      const verified = readsByRow.get(index + 1)
+      return verified
+        ? {
+            ...line,
+            rawText: verified.rawText,
+            level: verified.level,
+            statText: verified.statText,
+            value: verified.value,
+            rollPercent: verified.rollPercent,
+            semanticVerified: true,
           }
         : line
     }),
@@ -488,9 +557,16 @@ function normalizeLine(line, item, gearType, index) {
   const stat = reconciled.stat
   const validStat = stat && item?.Stats?.[stat]
   const finalValue = stat === otherStat ? 1 : reconciled.value
+  const needsSemanticReview =
+    stat === otherStat
+    && hasVisibleRollPercent(rollPercent)
+    && line?.semanticVerified !== true
   const status = ignored
     ? 'ignored'
-    : validStat && finalValue > 0 && reconciled.rollStatus !== 'mismatch'
+    : validStat
+      && finalValue > 0
+      && reconciled.rollStatus !== 'mismatch'
+      && !needsSemanticReview
       ? stat === otherStat
         ? 'other'
         : 'matched'
@@ -514,6 +590,7 @@ function normalizeLine(line, item, gearType, index) {
       validStat,
       rollStatus: reconciled.rollStatus,
       rollPercent,
+      needsSemanticReview,
     }),
   }
 }
@@ -530,10 +607,7 @@ function reconcileStatAndValue({
 }) {
   const primaryStat = normalizeStat(detectedStat || rawText, item, rawText)
   const statCandidates = getStatCandidates(detectedStat || rawText, item, rawText)
-  const hasVisibleRoll =
-    Number.isInteger(rollPercent) &&
-    rollPercent > 0 &&
-    rollPercent <= 100
+  const hasVisibleRoll = hasVisibleRollPercent(rollPercent)
 
   if (ignored || !hasVisibleRoll || primaryStat === otherStat) {
     return {
@@ -793,6 +867,7 @@ function getLineReason({
   validStat,
   rollStatus,
   rollPercent,
+  needsSemanticReview,
 }) {
   if (unenchantedPlaceholder) {
     return 'Unenchanted placeholder'
@@ -804,6 +879,10 @@ function getLineReason({
 
   if (!validStat) {
     return 'Choose a matching stat or ignore this line'
+  }
+
+  if (needsSemanticReview) {
+    return 'Verify the stat wording before treating this as non-damaging'
   }
 
   if (stat === otherStat) {
@@ -883,12 +962,14 @@ function parseVerifiedRawLine(rawText) {
   }
 
   const level = Number(levelMatch[1])
+  const statText = getStatNameText(text)
   const value = Number(valueMatch[1].replace(',', '.'))
   const rollPercent = Number(rollMatch[1])
   if (
     !Number.isInteger(level)
     || level < 1
     || level > 5
+    || !statText
     || !Number.isFinite(value)
     || value <= 0
     || !Number.isInteger(rollPercent)
@@ -901,10 +982,15 @@ function parseVerifiedRawLine(rawText) {
   return {
     rawText: text,
     level,
-    statKey: canonicalizeStat(getStatNameText(text)),
+    statText,
+    statKey: canonicalizeStat(statText),
     value,
     rollPercent,
   }
+}
+
+function hasVisibleRollPercent(rollPercent) {
+  return Number.isInteger(rollPercent) && rollPercent > 0 && rollPercent <= 100
 }
 
 function clampNumber(value, min, max) {

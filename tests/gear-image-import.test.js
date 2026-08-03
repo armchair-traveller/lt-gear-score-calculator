@@ -5,10 +5,15 @@ import {
   getExtractorPrompt,
   getDisplayedRollPercent,
   getLineMaxValue,
+  getSemanticReviewRowNumbers,
+  getSemanticVerificationPrompt,
+  getSemanticVerificationRequestText,
+  getSemanticVerificationRequests,
   getValueReviewRowNumbers,
   getValueVerificationPrompt,
   getValueVerificationRequestText,
   getValueVerificationRequests,
+  mergeSemanticVerifiedLineReads,
   mergeVerifiedLineReads,
   normalizeExtraction,
 } from '../server/utils/gear-image-import.js'
@@ -245,6 +250,27 @@ test('requests an independent re-read and repairs the supplied Weapon screenshot
   assert.equal(result.lines[3].reason, 'Ready to apply')
 })
 
+test('whole-row verification can safely repair a numeric-only review row', () => {
+  const verifiedExtraction = mergeSemanticVerifiedLineReads(
+    annihilationWeaponExtraction,
+    [{ rowNumber: 4, rawText: 'Lv. 2 Basic Stats +14553 [80%]' }],
+    [4],
+  )
+  const result = normalizeExtraction(
+    verifiedExtraction,
+    '[8000] Weapons',
+    'Weapon',
+    gears,
+  )
+
+  assert.deepEqual(pickLine(result.lines[3]), {
+    stat: 'Basic Stats',
+    value: 14553,
+    status: 'matched',
+    reason: 'Ready to apply',
+  })
+})
+
 test('does not invent a missing value digit when the visible roll may be wrong', () => {
   const extraction = {
     gearType: '[sLv5] Accessories',
@@ -263,6 +289,103 @@ test('does not invent a missing value digit when the visible roll may be wrong',
     status: 'needs_review',
     reason: 'Value does not match the visible 6% roll',
   })
+  assert.deepEqual(
+    getSemanticReviewRowNumbers(
+      normalizeExtraction(extraction, '[sLv5] Accessories', 'Cloak', gears),
+    ),
+    [],
+  )
+})
+
+test('independently verifies a mapped Other row before trusting its meaning', () => {
+  const extraction = {
+    gearType: '[9000] Accessories',
+    pieceType: 'Crystal',
+    confidence: 0.99,
+    lines: [
+      createLine('Lv. 1 Strength / Magic +1', 'Strength / Magic', 1, 0, 1),
+      createLine(
+        'Lv. 5 Boss Damage Mitigation +21% [99%]',
+        'Boss Damage Mitigation',
+        21,
+        99,
+      ),
+    ],
+  }
+  const firstPass = normalizeExtraction(
+    extraction,
+    '[9000] Accessories',
+    'Crystal',
+    gears,
+  )
+  const reviewRows = getSemanticReviewRowNumbers(firstPass)
+  const verificationRequests = getSemanticVerificationRequests(reviewRows)
+  const verificationText = getSemanticVerificationRequestText(verificationRequests)
+  const verificationPrompt = getSemanticVerificationPrompt()
+
+  assert.deepEqual(pickLine(firstPass.lines[0]), {
+    stat: 'Strength/Magic',
+    value: 1,
+    status: 'ignored',
+    reason: 'Unenchanted placeholder',
+  })
+  assert.deepEqual(pickLine(firstPass.lines[1]), {
+    stat: 'Other (Non-damaging)',
+    value: 1,
+    status: 'needs_review',
+    reason: 'Verify the stat wording before treating this as non-damaging',
+  })
+  assert.equal(firstPass.confidence, 0)
+  assert.deepEqual(reviewRows, [2])
+  assert.deepEqual(verificationRequests, [{ rowNumber: 2 }])
+  assert.equal(verificationText, 'Requested row 2.')
+  assert.doesNotMatch(
+    `${verificationPrompt}\n${verificationText}`,
+    /Boss|Mitigation|Amplification|Strength|Magic|21|99|2\.8|84/,
+  )
+  assert.match(verificationPrompt, /full stat wording/)
+  assert.match(verificationPrompt, /decimal separator/)
+  assert.match(verificationPrompt, /percentage in square brackets separate/)
+
+  const verifiedExtraction = mergeSemanticVerifiedLineReads(
+    extraction,
+    [{ rowNumber: 2, rawText: 'Lv. 2 Boss Damage Amplification +2.8% [84%]' }],
+    reviewRows,
+  )
+  assert.deepEqual(
+    {
+      rawText: verifiedExtraction.lines[1].rawText,
+      level: verifiedExtraction.lines[1].level,
+      statText: verifiedExtraction.lines[1].statText,
+      value: verifiedExtraction.lines[1].value,
+      rollPercent: verifiedExtraction.lines[1].rollPercent,
+      semanticVerified: verifiedExtraction.lines[1].semanticVerified,
+    },
+    {
+      rawText: 'Lv. 2 Boss Damage Amplification +2.8% [84%]',
+      level: 2,
+      statText: 'Boss Damage Amplification',
+      value: 2.8,
+      rollPercent: 84,
+      semanticVerified: true,
+    },
+  )
+
+  const result = normalizeExtraction(
+    verifiedExtraction,
+    '[9000] Accessories',
+    'Crystal',
+    gears,
+  )
+  assert.equal(result.lines[0].status, 'ignored')
+  assert.deepEqual(pickLine(result.lines[1]), {
+    stat: 'Boss Amplification',
+    value: 2.8,
+    status: 'matched',
+    reason: 'Ready to apply',
+  })
+  assert.deepEqual(getSemanticReviewRowNumbers(result), [])
+  assert.equal(result.confidence, 0.99)
 })
 
 test('rejects a verification read from a different neighboring stat row', () => {
@@ -409,9 +532,27 @@ test('sends unknown attack or damage wording to review instead of silently ignor
     status: 'needs_review',
     reason: 'Choose a matching stat or ignore this line',
   })
+  assert.deepEqual(
+    getSemanticReviewRowNumbers({ lines: [weaponLine, helmetLine] }),
+    [1, 2],
+  )
+
+  const independentlyReread = mergeSemanticVerifiedLineReads(
+    weaponExtraction,
+    [{ rowNumber: 1, rawText: 'Lv. 2 Dual Minimal Damage +144 [65%]' }],
+    [1],
+  )
+  const rereadResult = normalizeExtraction(
+    independentlyReread,
+    '[8000] Weapons',
+    'Weapon',
+    gears,
+  )
+  assert.equal(rereadResult.lines[0].status, 'needs_review')
+  assert.deepEqual(getSemanticReviewRowNumbers(rereadResult), [1])
 })
 
-test('still maps clearly non-damaging option wording to Other', () => {
+test('keeps a confirmed non-damaging option mapped to Other', () => {
   const extraction = {
     gearType: '[8000] Weapons',
     pieceType: 'Weapon',
@@ -421,7 +562,27 @@ test('still maps clearly non-damaging option wording to Other', () => {
     ],
   }
 
-  const [line] = normalizeExtraction(extraction, '[8000] Weapons', 'Weapon', gears).lines
+  const firstPass = normalizeExtraction(extraction, '[8000] Weapons', 'Weapon', gears)
+
+  assert.deepEqual(pickLine(firstPass.lines[0]), {
+    stat: 'Other (Non-damaging)',
+    value: 1,
+    status: 'needs_review',
+    reason: 'Verify the stat wording before treating this as non-damaging',
+  })
+  assert.deepEqual(getSemanticReviewRowNumbers(firstPass), [1])
+
+  const verifiedExtraction = mergeSemanticVerifiedLineReads(
+    extraction,
+    [{ rowNumber: 1, rawText: 'Lv. 2 Physical Defense +144 [65%]' }],
+    [1],
+  )
+  const [line] = normalizeExtraction(
+    verifiedExtraction,
+    '[8000] Weapons',
+    'Weapon',
+    gears,
+  ).lines
 
   assert.deepEqual(pickLine(line), {
     stat: 'Other (Non-damaging)',
