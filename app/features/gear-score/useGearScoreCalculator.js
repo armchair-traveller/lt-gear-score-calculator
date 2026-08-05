@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from '#app'
-import gears from '@/utils/gear.js'
+import gears, { getGearSpreadsheetHref } from '@/utils/gear.js'
 import tiers from '@/utils/tiers.js'
 import {
   decimalStats,
@@ -61,6 +61,7 @@ export function useGearScoreCalculator() {
   const damageCalculatorHref = computed(() => String(runtimeConfig.public.damageCalculatorUrl))
 
   const gearType = ref('[sLv5] Accessories')
+  const gearSpreadsheetHref = computed(() => getGearSpreadsheetHref(gearType.value))
   const pieceType = ref('Cloak')
   const highlightedPiece = ref(['[sLv5] Accessories', 'Cloak'])
   const inputValueMode = ref('value')
@@ -870,6 +871,7 @@ export function useGearScoreCalculator() {
     damageComparisonHref,
     canCompareInDamageCalculator,
     damageComparisonUnavailableReason,
+    gearSpreadsheetHref,
     gearType,
     pieceType,
     highlightedPiece,

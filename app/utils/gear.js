@@ -1715,4 +1715,10 @@ const gears = {
   }
 }
 
+export function getGearSpreadsheetHref(gearType) {
+  const href = gears[gearType]?.['Sheet Link']
+
+  return typeof href === 'string' && href.trim() ? href.trim() : null
+}
+
 export default gears;

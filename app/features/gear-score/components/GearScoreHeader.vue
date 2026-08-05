@@ -8,8 +8,7 @@ import {
 } from '@lucide/vue'
 
 const {
-  gears,
-  gearType,
+  gearSpreadsheetHref,
   damageCalculatorHref,
   damageComparisonHref,
   canCompareInDamageCalculator,
@@ -53,11 +52,15 @@ onBeforeUnmount(unregisterHelpHandler)
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Resources</DropdownMenuLabel>
           <DropdownMenuGroup>
-            <DropdownMenuItem as-child>
-              <a :href="gears[gearType]['Sheet Link']" target="_blank" rel="noreferrer">
+            <DropdownMenuItem v-if="gearSpreadsheetHref" as-child>
+              <a :href="gearSpreadsheetHref" target="_blank" rel="noreferrer">
                 <TablePropertiesIcon />
                 Detailed spreadsheet
               </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem v-else disabled>
+              <TablePropertiesIcon />
+              Detailed spreadsheet unavailable
             </DropdownMenuItem>
             <DropdownMenuItem as-child>
               <a :href="damageCalculatorHref" target="_blank" rel="noreferrer">
