@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-06-13',
   runtimeConfig: {
     public: {
-      damageCalculatorUrl: 'https://kedanao.github.io/lt-damage-calculator/',
+      damageCalculatorUrl: 'https://ltdmg.vercel.app/',
     },
   },
   experimental: {
