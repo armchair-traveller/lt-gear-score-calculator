@@ -1,5 +1,6 @@
 <script setup>
 import {
+  ArrowLeftRightIcon,
   CheckIcon,
   ClipboardIcon,
   ExternalLinkIcon,
@@ -9,6 +10,10 @@ import {
 const {
   gears,
   gearType,
+  damageCalculatorHref,
+  damageComparisonHref,
+  canCompareInDamageCalculator,
+  damageComparisonUnavailableReason,
   disclaimerOpen,
   clipboardTooltip,
   generateURL,
@@ -46,6 +51,7 @@ onBeforeUnmount(unregisterHelpHandler)
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Resources</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuItem as-child>
               <a :href="gears[gearType]['Sheet Link']" target="_blank" rel="noreferrer">
@@ -54,10 +60,24 @@ onBeforeUnmount(unregisterHelpHandler)
               </a>
             </DropdownMenuItem>
             <DropdownMenuItem as-child>
-              <a href="https://kedanao.github.io/lt-damage-calculator/" target="_blank" rel="noreferrer">
+              <a :href="damageCalculatorHref" target="_blank" rel="noreferrer">
                 <ExternalLinkIcon />
                 Damage calculator
               </a>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Advanced</DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuItem v-if="canCompareInDamageCalculator" as-child>
+              <a :href="damageComparisonHref" target="_blank" rel="noreferrer">
+                <ArrowLeftRightIcon />
+                Compare this gear
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem v-else disabled>
+              <ArrowLeftRightIcon />
+              {{ damageComparisonUnavailableReason }}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

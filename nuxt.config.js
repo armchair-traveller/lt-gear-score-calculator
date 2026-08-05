@@ -6,6 +6,11 @@ const appDirectory = fileURLToPath(new URL('./app', import.meta.url))
 export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2026-06-13',
+  runtimeConfig: {
+    public: {
+      damageCalculatorUrl: 'https://kedanao.github.io/lt-damage-calculator/',
+    },
+  },
   experimental: {
     viewTransition: true,
   },

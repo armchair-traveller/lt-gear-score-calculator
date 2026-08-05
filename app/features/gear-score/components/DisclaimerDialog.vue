@@ -3,6 +3,7 @@ import { LinkIcon } from '@lucide/vue'
 
 const {
   disclaimerOpen,
+  damageCalculatorHref,
   acceptDisclaimer,
 } = useGearScoreCalculatorContext()
 </script>
@@ -35,7 +36,7 @@ const {
       <DialogFooter class="flex-col sm:flex-row-reverse">
         <Button @click="acceptDisclaimer">Accept</Button>
         <Button variant="outline" as-child>
-          <a href="https://kedanao.github.io/lt-damage-calculator/" target="_blank" rel="noreferrer">
+          <a :href="damageCalculatorHref" target="_blank" rel="noreferrer">
             <LinkIcon />
             Damage Calculator
           </a>

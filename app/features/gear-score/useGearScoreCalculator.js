@@ -23,6 +23,10 @@ import {
 } from '@/features/gear-score/helpers.js'
 import { buildGearImageImportInputs } from '@/features/gear-score/gear-image-import-inputs.js'
 import {
+  buildGearComparisonUrl,
+  createGearComparisonPayload,
+} from '@/features/gear-score/damage-comparison-interop.js'
+import {
   calculateGearScore,
   createEmptyGearScoreResult,
   findBestQualityOddsOrder,
@@ -50,9 +54,11 @@ import { projectGearPlanEntry } from '@/features/gear-plan/plan-state.js'
 export function useGearScoreCalculator() {
   const route = useRoute()
   const router = useRouter()
+  const runtimeConfig = useRuntimeConfig()
   const gearPlanPersistence = useGearPlanPersistence()
   const upgradeHref = computed(() => router.resolve('/upgrade').href)
   const planHref = computed(() => router.resolve('/plan').href)
+  const damageCalculatorHref = computed(() => String(runtimeConfig.public.damageCalculatorUrl))
 
   const gearType = ref('[sLv5] Accessories')
   const pieceType = ref('Cloak')
@@ -150,6 +156,31 @@ export function useGearScoreCalculator() {
 
     return filledLineCount >= 3 && allInputsValid
   })
+  const damageComparisonPayload = computed(() => createGearComparisonPayload({
+    gearType: gearType.value,
+    pieceType: pieceType.value,
+    enchantLevel: supportsInputEnchantLevel() ? getInputEnchantLevelNumber() : undefined,
+    statTypes: statType.value,
+    statInputs: statInput.value,
+  }))
+  const damageComparisonUnavailableReason = computed(() => {
+    const hasSupportedChanges = Object.keys(
+      damageComparisonPayload.value.candidates[0]?.changes ?? {},
+    ).length > 0
+    if (!hasSupportedChanges) {
+      return 'Add a supported stat to compare'
+    }
+
+    const hasInvalidLine = statType.value.some((_, index) =>
+      hasRolledValue(index) && isInputOverMax(index),
+    )
+    return hasInvalidLine ? 'Fix invalid rolls to compare' : ''
+  })
+  const canCompareInDamageCalculator = computed(() => !damageComparisonUnavailableReason.value)
+  const damageComparisonHref = computed(() => buildGearComparisonUrl(
+    damageCalculatorHref.value,
+    damageComparisonPayload.value,
+  ))
 
   function getPieceNames(category) {
     return Object.keys(gears[category] ?? {}).filter((key) => !['Sheet Link', 'Potential'].includes(key))
@@ -835,6 +866,10 @@ export function useGearScoreCalculator() {
     gears,
     upgradeHref,
     planHref,
+    damageCalculatorHref,
+    damageComparisonHref,
+    canCompareInDamageCalculator,
+    damageComparisonUnavailableReason,
     gearType,
     pieceType,
     highlightedPiece,
