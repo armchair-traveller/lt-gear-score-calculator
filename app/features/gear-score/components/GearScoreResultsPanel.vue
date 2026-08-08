@@ -441,14 +441,25 @@ function getInvalidRowText(index) {
             </EmptyHeader>
           </Empty>
 
-          <div class="order-first flex min-w-0 items-end justify-between gap-3 border-b">
+          <div class="order-first flex min-w-0 items-end justify-between border-b">
             <TabsList
               variant="line"
-              class="h-10 min-w-0 bg-transparent p-0"
+              class="grid h-auto min-h-10 w-full min-w-0 grid-cols-2 bg-transparent p-0"
               aria-label="Result details"
             >
-              <TabsTrigger value="comparison">Lines</TabsTrigger>
-              <TabsTrigger v-if="qualityOddsAvailable" value="quality">Quality odds</TabsTrigger>
+              <TabsTrigger
+                value="comparison"
+                class="min-w-0 whitespace-normal px-2 py-1.5 text-center leading-tight"
+              >
+                Lines
+              </TabsTrigger>
+              <TabsTrigger
+                v-if="qualityOddsAvailable"
+                value="quality"
+                class="min-w-0 whitespace-normal px-2 py-1.5 text-center leading-tight"
+              >
+                Quality odds
+              </TabsTrigger>
             </TabsList>
 
             <span
