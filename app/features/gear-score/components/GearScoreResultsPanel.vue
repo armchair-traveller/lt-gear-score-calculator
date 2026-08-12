@@ -441,7 +441,7 @@ function getInvalidRowText(index) {
             </EmptyHeader>
           </Empty>
 
-          <div class="order-first flex min-w-0 items-end justify-between border-b">
+          <div class="order-first flex min-w-0 border-b">
             <TabsList
               variant="line"
               class="grid h-auto min-h-10 w-full min-w-0 grid-cols-2 bg-transparent p-0"
@@ -461,13 +461,6 @@ function getInvalidRowText(index) {
                 Quality odds
               </TabsTrigger>
             </TabsList>
-
-            <span
-              v-if="hasResults"
-              class="hidden pb-3 text-xs text-muted-foreground sm:inline"
-            >
-              {{ rolledLineIndexes.length }} of {{ statType.length }} entered
-            </span>
           </div>
 
           <TabsContent
