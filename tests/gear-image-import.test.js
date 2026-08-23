@@ -99,6 +99,7 @@ test('requires one extraction result for every visible Lv. row', () => {
   assert.match(prompt, /Count the digits in each value and verify the full digit sequence/)
   assert.match(prompt, /without a percentage in square brackets is still an enchant row/)
   assert.match(prompt, /original position and set rollPercent to 0/)
+  assert.match(prompt, /Lv\. 1 Luck \+1.*occupied enchant line/)
 })
 
 test('keeps the unenchanted fourth row from the Ascended Grendel Helmet screenshot', () => {
@@ -124,6 +125,45 @@ test('keeps the unenchanted fourth row from the Ascended Grendel Helmet screensh
       { stat: 'Strength/Magic', value: 1, rollPercent: 0, ignored: true, status: 'ignored' },
       { stat: 'Critical Damage', value: 129, rollPercent: 77, ignored: false, status: 'matched' },
     ],
+  )
+})
+
+test('keeps level 1 Luck as an occupied non-damaging line', () => {
+  const extraction = {
+    gearType: '[9000] Accessories',
+    pieceType: 'Glasses',
+    confidence: 0.99,
+    lines: [
+      {
+        ...createLine('Lv. 1 Luck +1', 'Luck', 1, 0, 1),
+        ignored: true,
+        ignoreReason: 'Unenchanted placeholder',
+      },
+    ],
+  }
+
+  const [line] = normalizeExtraction(
+    extraction,
+    '[9000] Accessories',
+    'Glasses',
+    gears,
+  ).lines
+
+  assert.deepEqual(
+    {
+      stat: line.stat,
+      value: line.value,
+      ignored: line.ignored,
+      status: line.status,
+      reason: line.reason,
+    },
+    {
+      stat: 'Other (Non-damaging)',
+      value: 1,
+      ignored: false,
+      status: 'other',
+      reason: 'Mapped to non-damaging option',
+    },
   )
 })
 

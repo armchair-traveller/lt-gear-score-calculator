@@ -12,13 +12,28 @@ export function buildGearImageImportInputs(lines, item) {
   for (let index = 0; index < maximumGearLines; index += 1) {
     const line = importLines[index]
     const lineStat = item?.Stats?.[line?.stat] ? line.stat : ''
-    const selectedStat = getAvailableStat(lineStat, options, usedStats)
+    const selectedStat = getAvailableLineStat(lineStat, options, usedStats)
 
     statTypes[index] = selectedStat
     statInputs[index] = getImportValue(line, lineStat, selectedStat)
 
     if (selectedStat && !repeatableStats.includes(selectedStat)) {
       usedStats.add(selectedStat)
+    }
+  }
+
+  // Fill unused slots only after reserving every recognized source row. Otherwise an
+  // unresolved row can consume a stat that appears later and detach all following values.
+  for (let index = 0; index < maximumGearLines; index += 1) {
+    if (statTypes[index]) {
+      continue
+    }
+
+    const fallback = getFallbackStat(options, usedStats)
+    statTypes[index] = fallback
+
+    if (fallback && !repeatableStats.includes(fallback)) {
+      usedStats.add(fallback)
     }
   }
 
@@ -40,11 +55,15 @@ function isUnenchantedPlaceholder(line) {
   return Boolean(line?.ignored && line?.reason === 'Unenchanted placeholder')
 }
 
-function getAvailableStat(stat, options, usedStats) {
+function getAvailableLineStat(stat, options, usedStats) {
   if (stat && options.includes(stat) && (repeatableStats.includes(stat) || !usedStats.has(stat))) {
     return stat
   }
 
+  return ''
+}
+
+function getFallbackStat(options, usedStats) {
   return options.find(option => repeatableStats.includes(option) || !usedStats.has(option)) ?? ''
 }
 

@@ -110,6 +110,64 @@ test('preserves an unenchanted screenshot row as a zero-value quality-odds slot'
   )
 })
 
+test('applies the supplied Glasses rows in source order and keeps Luck as non-damaging', () => {
+  const imported = normalizeExtraction(
+    {
+      gearType: '[9000] Accessories',
+      pieceType: 'Glasses',
+      equipmentVisible: true,
+      confidence: 0.99,
+      lines: [
+        createLine(
+          'Lv. 2 Attack / Elemental Intensity +84 [55%]',
+          'Attack / Elemental Intensity',
+          84,
+          55,
+          2,
+        ),
+        {
+          ...createLine('Lv. 1 Luck +1', 'Luck', 1, 0, 1),
+          ignored: true,
+          ignoreReason: 'Unenchanted placeholder',
+        },
+        createLine(
+          'Lv. 2 Attack / Elemental Intensity +9% [81%]',
+          'Attack / Elemental Intensity',
+          9,
+          81,
+          2,
+        ),
+        createLine('Lv. 2 Dual Minimum Damage +31 [30%]', 'Dual Minimum Damage', 31, 30, 2),
+        createLine('Lv. 2 Dual Accuracy +39 [45%]', 'Dual Accuracy', 39, 45, 2),
+      ],
+    },
+    '[9000] Accessories',
+    'Glasses',
+    gears,
+    { hintProvided: false },
+  )
+  const evaluation = evaluateImportedGear(imported)
+
+  assert.deepEqual(
+    imported.lines.map(({ stat, value, ignored, status }) => ({ stat, value, ignored, status })),
+    [
+      { stat: 'Attack/Intensity', value: 84, ignored: false, status: 'matched' },
+      { stat: 'Other (Non-damaging)', value: 1, ignored: false, status: 'other' },
+      { stat: 'Attack/Intensity %', value: 9, ignored: false, status: 'matched' },
+      { stat: 'Minimum Damage', value: 31, ignored: false, status: 'matched' },
+      { stat: 'Accuracy', value: 39, ignored: false, status: 'matched' },
+    ],
+  )
+  assert.deepEqual(evaluation.statTypes, [
+    'Attack/Intensity',
+    'Other (Non-damaging)',
+    'Attack/Intensity %',
+    'Minimum Damage',
+    'Accuracy',
+  ])
+  assert.deepEqual(evaluation.statInputs, [84, 1, 9, 31, 39])
+})
+
 test('rejects provisional equipment identity rather than silently scoring it', () => {
   const imported = normalizeExtraction(
     {

@@ -71,6 +71,7 @@ const nonOffensivePatterns = [
   'guard',
   'shield',
   'item drop',
+  'luck',
   'ely',
   'exp',
   'skill level',
@@ -100,6 +101,7 @@ export function getExtractorPrompt() {
     'Keep the raw visible stat wording in statText even when translated differently.',
     'Put only the stat name in statText; do not include the level, +value, or [roll%].',
     'For unenchanted placeholder lines like "Lv. 1 Strength / Magic +1", set ignored true with ignoreReason "Unenchanted placeholder".',
+    'A non-damaging enchant such as "Lv. 1 Luck +1" is still an occupied enchant line: set ignored false.',
     'For all other enchant lines, set ignored false.',
   ].join('\n')
 }
@@ -542,7 +544,11 @@ function normalizeLine(line, item, gearType, index) {
   const extractedValue = normalizeNumber(line?.value)
   const rollPercent = normalizeNumber(line?.rollPercent)
   const level = Math.max(0, Math.min(5, parseInt(line?.level) || 0))
-  const unenchantedPlaceholder = level <= 1 && extractedValue <= 1
+  const detectedOption = normalizeStat(detectedStat || rawText, item, rawText)
+  const unenchantedPlaceholder =
+    level <= 1
+    && extractedValue <= 1
+    && detectedOption !== otherStat
   const ignored = unenchantedPlaceholder
   const reconciled = reconcileStatAndValue({
     detectedStat,
