@@ -166,9 +166,9 @@ export async function processGearScoreInteraction({
   loadSnapshotItemImageImpl = loadSnapshotItemImage,
   loadSnapshotFontImpl = loadSnapshotFont,
   fallbackImportModel =
-    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_MODEL || 'gpt-5.6-sol',
+    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_MODEL || 'gpt-6.1-sol',
   fallbackImportReasoningEffort =
-    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT || 'none',
+    process.env.OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT || 'low',
   onModelAttemptImpl = logDiscordModelAttempt,
 }) {
   const startedAt = Date.now()

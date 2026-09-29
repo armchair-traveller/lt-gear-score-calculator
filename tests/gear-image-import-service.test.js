@@ -514,8 +514,8 @@ test('uses one unprimed Sol reread for semantic and numeric review rows', async 
   })
 
   assert.equal(requests.length, 2)
-  assert.equal(requests[1].model, 'gpt-5.6-sol')
-  assert.deepEqual(requests[1].reasoning, { effort: 'none' })
+  assert.equal(requests[1].model, 'gpt-6.1-sol')
+  assert.deepEqual(requests[1].reasoning, { effort: 'low' })
   assert.equal(requests[1].text.verbosity, 'medium')
   assert.equal(requests[1].text.format.name, 'gear_image_semantic_verification')
   assert.deepEqual(
@@ -560,7 +560,7 @@ test('uses one unprimed Sol reread for semantic and numeric review rows', async 
     })),
     [
       { stage: 'primary', model: 'gpt-5.6-luna', reasoningEffort: 'low' },
-      { stage: 'semantic_verification', model: 'gpt-5.6-sol', reasoningEffort: 'none' },
+      { stage: 'semantic_verification', model: 'gpt-6.1-sol', reasoningEffort: 'low' },
     ],
   )
 })
@@ -651,7 +651,7 @@ test('keeps semantic transcription failures in safe review without blocking impo
   })
 
   assert.equal(requests.length, 2)
-  assert.equal(requests[1].model, 'gpt-5.6-sol')
+  assert.equal(requests[1].model, 'gpt-6.1-sol')
   assert.deepEqual(
     {
       stat: result.lines[0].stat,

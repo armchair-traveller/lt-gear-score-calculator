@@ -13,6 +13,9 @@ const modelEnvironmentNames = [
   'OPENAI_IMAGE_IMPORT_REASONING_EFFORT',
   'OPENAI_IMAGE_IMPORT_VERIFICATION_MODEL',
   'OPENAI_IMAGE_IMPORT_VERIFICATION_REASONING_EFFORT',
+  'OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_MODEL',
+  'OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_REASONING_EFFORT',
+  'OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_ENABLED',
   'OPENAI_IMAGE_IMPORT_FALLBACK_MODEL',
   'OPENAI_IMAGE_IMPORT_FALLBACK_REASONING_EFFORT',
 ]
@@ -161,8 +164,8 @@ test('runs one independent Sol fallback for parser and evaluation accuracy failu
           importCalls.push(input)
           input.onModelAttempt?.({
             stage: 'primary',
-            model: importCalls.length === 1 ? 'gpt-5.6-luna' : 'gpt-5.6-sol',
-            reasoningEffort: importCalls.length === 1 ? 'low' : 'none',
+            model: importCalls.length === 1 ? 'gpt-5.6-luna' : 'gpt-6.1-sol',
+            reasoningEffort: 'low',
             elapsedMs: 1,
             usage: null,
           })
@@ -190,8 +193,8 @@ test('runs one independent Sol fallback for parser and evaluation accuracy failu
       assert.equal(importCalls[1].gearHint, gearHint)
       assert.equal(importCalls[1].safetyIdentifier, 'safety')
       assert.equal(importCalls[1].signal, importCalls[0].signal)
-      assert.equal(importCalls[1].importModel, 'gpt-5.6-sol')
-      assert.equal(importCalls[1].importReasoningEffort, 'none')
+      assert.equal(importCalls[1].importModel, 'gpt-6.1-sol')
+      assert.equal(importCalls[1].importReasoningEffort, 'low')
       assert.equal(importCalls[1].enableValueVerification, false)
       assert.equal(importCalls[1].enableSemanticVerification, false)
       assert.equal(importCalls[1].trustPrimarySemanticReads, true)
@@ -403,7 +406,7 @@ test('caps primary, row verification, and full fallback at three model requests'
     [
       { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
       { format: 'gear_image_value_verification', model: 'gpt-5.6-luna', effort: 'none' },
-      { format: 'gear_image_import', model: 'gpt-5.6-sol', effort: 'none' },
+      { format: 'gear_image_import', model: 'gpt-6.1-sol', effort: 'low' },
     ],
   )
   assert.doesNotMatch(JSON.stringify(requests[2]), /PRIMARY_OCR_SENTINEL/)
@@ -450,8 +453,8 @@ test('caps primary, semantic verification, and full fallback at three model requ
     })),
     [
       { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
-      { format: 'gear_image_semantic_verification', model: 'gpt-5.6-sol', effort: 'none' },
-      { format: 'gear_image_import', model: 'gpt-5.6-sol', effort: 'none' },
+      { format: 'gear_image_semantic_verification', model: 'gpt-6.1-sol', effort: 'low' },
+      { format: 'gear_image_import', model: 'gpt-6.1-sol', effort: 'low' },
     ],
   )
   assert.doesNotMatch(JSON.stringify(requests[2]), /PRIMARY_SEMANTIC_SENTINEL/)

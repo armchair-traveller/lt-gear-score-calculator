@@ -70,9 +70,9 @@ export async function importGearImage({
   verificationReasoningEffort =
     process.env.OPENAI_IMAGE_IMPORT_VERIFICATION_REASONING_EFFORT || 'none',
   semanticVerificationModel =
-    process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_MODEL || 'gpt-5.6-sol',
+    process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_MODEL || 'gpt-6.1-sol',
   semanticVerificationReasoningEffort =
-    process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_REASONING_EFFORT || 'none',
+    process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_REASONING_EFFORT || 'low',
   enableValueVerification = true,
   enableSemanticVerification = getEnvironmentBoolean(
     process.env.OPENAI_IMAGE_IMPORT_SEMANTIC_VERIFICATION_ENABLED,
