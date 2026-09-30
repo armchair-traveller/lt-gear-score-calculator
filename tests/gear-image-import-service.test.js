@@ -423,7 +423,7 @@ test('marks a parsing fallback as unresolved when no identity or hint is availab
   assert.match(result.equipment.reason, /no equipment hint/i)
 })
 
-test('uses Luna none for one focused request that repairs every roll mismatch', async () => {
+test('uses Luna max for one focused request that repairs every roll mismatch', async () => {
   const requests = []
   const attempts = []
   const responses = [
@@ -457,7 +457,7 @@ test('uses Luna none for one focused request that repairs every roll mismatch', 
 
   assert.equal(requests.length, 2)
   assert.equal(requests[1].model, 'gpt-5.6-luna')
-  assert.deepEqual(requests[1].reasoning, { effort: 'none' })
+  assert.deepEqual(requests[1].reasoning, { effort: 'max' })
   assert.equal(requests[1].text.verbosity, 'medium')
   assert.equal(requests[1].text.format.name, 'gear_image_value_verification')
   assert.deepEqual(
@@ -481,7 +481,7 @@ test('uses Luna none for one focused request that repairs every roll mismatch', 
     })),
     [
       { stage: 'primary', model: 'gpt-5.6-luna', reasoningEffort: 'low' },
-      { stage: 'verification', model: 'gpt-5.6-luna', reasoningEffort: 'none' },
+      { stage: 'verification', model: 'gpt-5.6-luna', reasoningEffort: 'max' },
     ],
   )
 })

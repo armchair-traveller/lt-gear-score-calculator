@@ -405,7 +405,7 @@ test('caps primary, row verification, and full fallback at three model requests'
     })),
     [
       { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
-      { format: 'gear_image_value_verification', model: 'gpt-5.6-luna', effort: 'none' },
+      { format: 'gear_image_value_verification', model: 'gpt-5.6-luna', effort: 'max' },
       { format: 'gear_image_import', model: 'gpt-6.1-sol', effort: 'low' },
     ],
   )
