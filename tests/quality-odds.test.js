@@ -45,6 +45,65 @@ function assertClose(actual, expected, tolerance = 1e-12) {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} should be close to ${expected}`)
 }
 
+test('entered lines project only remaining upgrades into final values and percentages', () => {
+  const upgradedItem = {
+    ...item,
+    Stats: {
+      ...item.Stats,
+      Power: { ...item.Stats.Power, Potential: [2, 2] },
+    },
+  }
+  const partial = getOdds({
+    item: upgradedItem,
+    statInputs: ['6'],
+    futurePotentialMultiplier: 3,
+    remainingPotentialMultiplier: 2,
+  }).lines[0]
+
+  assert.equal(partial.projectedValue, 10)
+  assertClose(partial.maxRollPercent, 62.5)
+
+  const complete = getOdds({
+    item: upgradedItem,
+    statInputs: ['10'],
+    futurePotentialMultiplier: 3,
+    remainingPotentialMultiplier: 0,
+  }).lines[0]
+
+  assert.equal(complete.projectedValue, 10)
+  assertClose(complete.maxRollPercent, 62.5)
+})
+
+test('final roll details omit blanks but retain entered non-damaging lines', () => {
+  const result = getOdds({
+    item: {
+      ...item,
+      Stats: {
+        ...item.Stats,
+        Other: { Value: 10, DI: 0, Potential: [2, 2] },
+      },
+    },
+    statTypes: ['Power', 'Other'],
+    statInputs: ['', '7'],
+    lineOrder: [0, 1],
+    futurePotentialMultiplier: 3,
+    remainingPotentialMultiplier: 2,
+  })
+
+  assert.equal(result.lines[0].projectedValue, null)
+  assert.equal(result.lines[0].maxRollPercent, null)
+  assert.equal(result.lines[1].status, 'ignored')
+  assert.equal(result.lines[1].projectedValue, 11)
+  assertClose(result.lines[1].maxRollPercent, 68.75)
+})
+
+test('final roll details preserve values and percentages above the maximum', () => {
+  const line = getOdds({ statInputs: ['12'] }).lines[0]
+
+  assert.equal(line.projectedValue, 12)
+  assertClose(line.maxRollPercent, 120)
+})
+
 test('quality outcomes separate target, kept miss, and destruction', () => {
   const result = getOdds()
 

@@ -11,11 +11,17 @@ import {
 } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { getQualityTargetPresetValues } from '@/features/gear-score/data.js'
-import { formatProbability } from '@/features/gear-score/helpers.js'
+import {
+  formatMaxRollPercent,
+  formatProbability,
+  formatStatValue,
+  getMaxRollPercentClass,
+} from '@/features/gear-score/helpers.js'
 import { cn } from '@/lib/utils'
 
 const {
   gearType,
+  statType,
   qualityPlanEnchantMethod,
   qualityLineEnchantMethods,
   results,
@@ -43,6 +49,10 @@ const planAnnouncement = ref('')
 const compactNumberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 })
+const abbreviatedCountFormatter = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumSignificantDigits: 3,
+})
 
 const materialPaths = [
   {
@@ -56,6 +66,16 @@ const materialPaths = [
 ]
 
 const odds = computed(() => results.value.qualityOdds)
+const expectedStartsText = computed(() =>
+  Number.isFinite(odds.value.expectedStarts) && odds.value.expectedStarts >= 1000
+    ? abbreviatedCountFormatter.format(odds.value.expectedStarts)
+    : formatCount(odds.value.expectedStarts),
+)
+const filledLines = computed(() =>
+  odds.value.lines
+    .filter((line) => line.projectedValue !== null)
+    .sort((a, b) => a.index - b.index),
+)
 const pendingLines = computed(() => odds.value.lines.filter((line) => line.status === 'new'))
 const activePendingLines = computed(() =>
   pendingLines.value.filter((line) => line.attemptChance > 0),
@@ -421,38 +441,30 @@ function formatRangeText(range) {
       {{ liveAnnouncement }}
     </p>
 
-    <Collapsible v-model:open="planDetailsOpen">
-      <div
-        class="overflow-hidden rounded-2xl bg-gradient-to-br from-surface-inset to-info-surface/70"
-      >
+    <Collapsible
+      v-model:open="planDetailsOpen"
+      class="@container/quality overflow-hidden rounded-2xl border bg-card"
+    >
+      <div>
         <Collapsible :open="targetDetailsOpen" @update:open="setTargetDetailsOpen">
-          <section aria-labelledby="quality-outcome-heading">
+          <section
+            class="bg-gradient-to-br from-surface-inset to-info-surface"
+            aria-labelledby="quality-outcome-heading"
+          >
             <div class="p-4 sm:p-5">
-              <div class="flex min-w-0 items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <h3
-                    id="quality-outcome-heading"
-                    class="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
-                  >
-                    {{ outcomeLabel }}
-                  </h3>
-                  <MotionValue
-                    :motion-key="odds.totalChanceText"
-                    as="div"
-                    class="motion-tabular mt-1 text-4xl font-bold tracking-[-0.05em]"
-                  >
-                    {{ odds.totalChanceText }}
-                  </MotionValue>
-                  <p v-if="outcomeSummary" class="mt-1 text-sm text-muted-foreground">
-                    {{ outcomeSummary }}
-                  </p>
-                </div>
+              <div class="flex min-w-0 items-center justify-between gap-3">
+                <h3
+                  id="quality-outcome-heading"
+                  class="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
+                >
+                  {{ outcomeLabel }}
+                </h3>
 
                 <CollapsibleTrigger as-child>
                   <Button
                     variant="outline"
                     size="sm"
-                    class="h-8 shrink-0 bg-background/70 px-2.5 shadow-sm"
+                    class="shrink-0 px-2.5"
                     :aria-label="targetDisclosureLabel"
                   >
                     <TargetIcon data-icon="inline-start" aria-hidden="true" />
@@ -469,54 +481,60 @@ function formatRangeText(range) {
                 </CollapsibleTrigger>
               </div>
 
-              <div v-if="odds.targetState === 'active'" class="mt-3">
-                <p
-                  id="quality-average-heading"
-                  class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
-                >
-                  Average to succeed
-                </p>
-                <dl
-                  class="mt-1.5 grid min-w-0 grid-cols-[minmax(5.5rem,0.65fr)_minmax(0,1.35fr)] divide-x"
-                  aria-labelledby="quality-average-heading"
-                >
-                  <div class="min-w-0 pr-3 sm:pr-5">
-                    <dt
-                      class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
-                    >
-                      Matching copies
-                    </dt>
-                    <dd
-                      class="motion-tabular mt-1 text-lg font-semibold tracking-[-0.03em] sm:text-xl"
-                    >
-                      ≈{{ formatCount(odds.expectedStarts) }}
-                    </dd>
-                  </div>
-                  <div class="min-w-0 pl-3 sm:pl-5">
-                    <dt
-                      class="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
-                    >
-                      Materials
-                    </dt>
-                    <dd class="mt-1 grid min-w-0 gap-1 text-[11px] sm:text-xs">
-                      <span
-                        v-for="path in targetMaterialPaths"
-                        :key="path.key"
-                        class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-2"
+              <div class="mt-3 grid gap-5 @min-[42rem]/quality:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] @min-[42rem]/quality:items-center">
+                <div class="min-w-0">
+                  <MotionValue
+                    :motion-key="odds.totalChanceText"
+                    as="div"
+                    class="motion-tabular text-[2.75rem] font-semibold leading-none tracking-[-0.05em] @min-[42rem]/quality:text-5xl"
+                  >
+                    {{ odds.totalChanceText }}
+                  </MotionValue>
+                  <p v-if="outcomeSummary" class="mt-2 text-sm text-muted-foreground">
+                    {{ outcomeSummary }}
+                  </p>
+                </div>
+
+                <div v-if="odds.targetState === 'active'" class="min-w-0">
+                  <p id="quality-average-heading" class="text-xs font-medium text-muted-foreground">
+                    Average to succeed
+                  </p>
+                  <dl
+                    class="mt-2 grid min-w-0 grid-cols-[minmax(5rem,0.55fr)_minmax(0,1.45fr)] gap-3"
+                    aria-labelledby="quality-average-heading"
+                  >
+                    <div class="min-w-0">
+                      <dt class="text-[11px] text-muted-foreground">Matching copies</dt>
+                      <dd
+                        class="motion-tabular mt-1 break-words text-xl font-semibold tracking-[-0.03em]"
+                        :title="formatCopyCount(odds.expectedStarts)"
+                        :aria-label="`Approximately ${formatCopyCount(odds.expectedStarts)}`"
                       >
-                        <span class="text-muted-foreground">{{ path.label }}</span>
-                        <span class="motion-tabular min-w-0 break-words text-right font-semibold">
-                          {{ formatMaterialPath(path) }}
+                        ≈{{ expectedStartsText }}
+                      </dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-[11px] text-muted-foreground">Materials</dt>
+                      <dd class="mt-1 grid min-w-0 gap-1 text-[11px]">
+                        <span
+                          v-for="path in targetMaterialPaths"
+                          :key="path.key"
+                          class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-2"
+                        >
+                          <span class="text-muted-foreground">{{ path.label }}</span>
+                          <span class="motion-tabular min-w-0 break-words text-right font-medium">
+                            {{ formatMaterialPath(path) }}
+                          </span>
                         </span>
-                      </span>
-                    </dd>
-                  </div>
-                </dl>
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
               </div>
 
               <template v-if="odds.targetState === 'active'">
                 <div
-                  class="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted"
+                  class="mt-5 flex h-1.5 overflow-hidden rounded-full bg-muted"
                   aria-hidden="true"
                 >
                   <span
@@ -538,7 +556,7 @@ function formatRangeText(range) {
 
                 <dl
                   v-if="hasAlternateOutcomes"
-                  class="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs"
+                  class="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-[11px]"
                   aria-label="Other attempt outcomes"
                 >
                   <div v-if="hasKeptMissOutcome" class="flex items-center gap-1.5">
@@ -564,53 +582,9 @@ function formatRangeText(range) {
                 </dl>
               </template>
             </div>
-
-            <div
-              v-if="odds.targetState === 'active' && activePendingLines.length"
-              class="border-t border-border/60 px-4 py-2.5 sm:px-5"
-            >
-              <div
-                class="grid min-w-0 gap-2.5 sm:grid-cols-[minmax(9rem,0.55fr)_minmax(0,1.45fr)] sm:items-center"
-              >
-                <div class="min-w-0">
-                  <h4 id="quality-common-method-label" class="text-xs font-semibold">
-                    {{ commonMethodLabel }}
-                    <span class="sr-only">
-                      for all rolls; selecting a method clears per-line overrides
-                    </span>
-                  </h4>
-                </div>
-
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  :spacing="1"
-                  :model-value="qualityPlanEnchantMethod"
-                  class="grid w-full gap-1"
-                  :style="methodGridStyle"
-                  aria-labelledby="quality-common-method-label"
-                >
-                  <ToggleGroupItem
-                    v-for="method in currentOddsEnchantMethodOptions"
-                    :key="method.value"
-                    :value="method.value"
-                    class="min-w-0 gap-1 px-1.5 text-xs"
-                    :aria-label="`${method.label}: ${method.successRate * 100}% success; ${formatAttemptCost(method)}`"
-                    @click="updateAllEnchantMethods(method.value)"
-                  >
-                    <span class="truncate font-semibold">{{ method.label }}</span>
-                    <span
-                      class="motion-tabular hidden shrink-0 text-[10px] text-muted-foreground min-[360px]:inline"
-                    >
-                      {{ method.successRate * 100 }}%
-                    </span>
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-            </div>
           </section>
 
-          <CollapsibleContent class="border-t border-border/60 bg-background/25">
+          <CollapsibleContent class="border-t border-border/60 bg-surface-inset/50">
             <div class="p-4 sm:p-5">
               <FieldGroup class="grid grid-cols-[minmax(6.5rem,0.7fr)_minmax(0,1.3fr)] gap-2">
                 <Field
@@ -734,23 +708,113 @@ function formatRangeText(range) {
           </CollapsibleContent>
         </Collapsible>
 
-        <CollapsibleTrigger as-child>
-          <Button
-            variant="ghost"
-            class="h-auto w-full justify-start rounded-none border-t border-border/60 px-4 py-2.5 text-left sm:px-5"
+        <Separator />
+        <div
+          :class="cn(
+            'grid gap-4 p-4 sm:gap-5 sm:p-5',
+            filledLines.length && '@min-[38rem]/quality:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]',
+          )"
+        >
+          <template v-if="filledLines.length">
+            <section class="grid w-full max-w-sm content-start gap-3" aria-labelledby="quality-final-lines-heading">
+              <div class="flex items-center justify-between gap-3">
+                <h3 id="quality-final-lines-heading" class="text-[13px] font-semibold">
+                  Final enchant lines
+                </h3>
+                <span
+                  class="motion-tabular shrink-0 text-xs text-muted-foreground"
+                  :aria-label="`${filledLines.length} of ${statType.length} lines entered`"
+                >
+                  {{ filledLines.length }} / {{ statType.length }}
+                </span>
+              </div>
+              <ol class="grid gap-2.5">
+                <li
+                  v-for="line in filledLines"
+                  :key="`final-quality-line-${line.index}`"
+                  class="motion-tabular grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-xs"
+                >
+                  <span class="min-w-0 truncate">{{ line.stat }}</span>
+                  <span class="font-medium">{{ formatStatValue(line.projectedValue, line.stat) }}</span>
+                  <span
+                    v-if="formatMaxRollPercent(line.maxRollPercent)"
+                    :class="cn('shrink-0 font-medium', getMaxRollPercentClass(line.maxRollPercent))"
+                  >
+                    [{{ formatMaxRollPercent(line.maxRollPercent) }}]
+                    <span class="sr-only">of final max</span>
+                  </span>
+                </li>
+              </ol>
+            </section>
+            <Separator class="@min-[38rem]/quality:hidden" />
+            <Separator orientation="vertical" class="hidden @min-[38rem]/quality:block" />
+          </template>
+
+          <section
+            :class="cn(
+              'grid w-full content-start gap-3',
+              filledLines.length
+                ? 'max-w-sm'
+                : '@min-[38rem]/quality:grid-cols-[minmax(0,1fr)_12rem] @min-[38rem]/quality:items-end',
+            )"
+            aria-labelledby="quality-plan-heading"
           >
-            <SparklesIcon data-icon="inline-start" aria-hidden="true" />
-            <span class="min-w-0 flex-1 text-xs font-semibold">{{ planLabel }}</span>
-            <ChevronDownIcon
-              data-icon="inline-end"
-              :class="cn('transition-transform', planDetailsOpen && 'rotate-180')"
-              aria-hidden="true"
-            />
-          </Button>
-        </CollapsibleTrigger>
+            <h3
+              id="quality-plan-heading"
+              :class="cn('text-[13px] font-semibold', !filledLines.length && '@min-[38rem]/quality:col-span-2')"
+            >
+              {{ planLabel }}
+            </h3>
+
+            <div v-if="odds.targetState === 'active' && activePendingLines.length" class="@container/methods grid w-full max-w-sm gap-2">
+              <h4 id="quality-common-method-label" class="text-xs text-muted-foreground">
+                {{ commonMethodLabel }}
+                <span class="sr-only">
+                  for all rolls; selecting a method clears per-line overrides
+                </span>
+              </h4>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                :spacing="1"
+                :model-value="qualityPlanEnchantMethod"
+                class="grid w-full gap-1"
+                :style="methodGridStyle"
+                aria-labelledby="quality-common-method-label"
+              >
+                <ToggleGroupItem
+                  v-for="method in currentOddsEnchantMethodOptions"
+                  :key="method.value"
+                  :value="method.value"
+                  class="min-w-0 gap-1 px-1.5"
+                  :aria-label="`${method.label}: ${method.successRate * 100}% success; ${formatAttemptCost(method)}`"
+                  @click="updateAllEnchantMethods(method.value)"
+                >
+                  <span class="truncate">{{ method.label }}</span>
+                  <span class="motion-tabular hidden shrink-0 text-[10px] text-muted-foreground @min-[18rem]/methods:inline">
+                    {{ method.successRate * 100 }}%
+                  </span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+
+            <CollapsibleTrigger as-child>
+              <Button variant="outline" size="sm" class="w-full justify-start">
+                <SparklesIcon data-icon="inline-start" aria-hidden="true" />
+                <span class="min-w-0 flex-1 text-left">{{ planDetailsOpen ? 'Hide details' : 'Plan details' }}</span>
+                <ChevronDownIcon
+                  data-icon="inline-end"
+                  :class="cn('transition-transform', planDetailsOpen && 'rotate-180')"
+                  aria-hidden="true"
+                />
+              </Button>
+            </CollapsibleTrigger>
+          </section>
+        </div>
       </div>
 
-      <CollapsibleContent>
+      <CollapsibleContent class="px-4 sm:px-5">
         <section
           v-if="odds.targetState === 'active' && pendingLines.length > 1"
           class="border-t py-5"

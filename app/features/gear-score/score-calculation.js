@@ -524,6 +524,7 @@ export function calculateQualityOdds({
     lines.push({
       index: lineIndex,
       stat,
+      projectedValue,
       range: shouldRollLine ? formatRange(lineMinValue, lineMaxValue, stat) : 'Ignored',
       rollText: !shouldRollLine ? 'not rolled' : hasValue ? linePotentialMultiplier > 0 ? 'already rolled' : 'complete' : 'needs base roll',
       status: !shouldRollLine ? 'ignored' : hasValue ? 'upgrade' : 'new',
