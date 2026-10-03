@@ -41,6 +41,18 @@ const {
 
 const imageImportOpen = ref(false)
 const recommendationsOpen = ref(false)
+const ratingSummary = computed(() => {
+  if (!currentItem.value) {
+    return ''
+  }
+
+  const selectedRating = getSelectedRating().toFixed(2)
+  const maxRating = currentItem.value.DI.toFixed(2)
+
+  return selectedRating === maxRating
+    ? `Max rating ${maxRating}%`
+    : `Selected rating ${selectedRating}% / ${maxRating}%`
+})
 const inputEnchantLevelIndex = computed(() => Math.max(
   0,
   currentInputEnchantLevelOptions.value.findIndex((option) => option.value === inputEnchantLevel.value),
@@ -75,7 +87,7 @@ function setStatPickerOpen(index, value) {
                   {{ pieceType }} {{ gearType }}
                 </span>
                 <span class="motion-tabular block text-sm text-muted-foreground">
-                  Max rating {{ currentItem?.DI.toFixed(2) }}% / selected stats {{ getSelectedRating().toFixed(2) }}%
+                  {{ ratingSummary }}
                 </span>
               </span>
             </span>
@@ -165,9 +177,9 @@ function setStatPickerOpen(index, value) {
         <div class="flex flex-wrap items-end justify-between gap-2">
           <div>
             <Label id="input-value-mode-label" class="text-sm font-bold text-foreground">
-              Current enchant values
+              Enchant values
             </Label>
-            <p class="mt-0.5 text-xs text-muted-foreground">Choose a stat, then enter the value shown in game.</p>
+            <p class="mt-1 text-xs text-muted-foreground">Enter the values shown on your item.</p>
           </div>
           <ToggleGroup
             :model-value="inputValueMode"
@@ -214,7 +226,7 @@ function setStatPickerOpen(index, value) {
           :get-stat-step="getStatStep"
           :get-max-value="getInputMaxValue"
           :value-mode="inputValueMode"
-          :value-placeholder="inputValueMode === 'percent' ? 'Percent' : 'Value'"
+          value-placeholder="—"
           :get-line-max-summary-text="getLineMaxSummaryText"
           :is-input-over-max="isInputOverMax"
           :is-stat-selected-on-other-line="isStatSelectedOnOtherLine"
@@ -222,30 +234,35 @@ function setStatPickerOpen(index, value) {
           @update-input="setStatInput"
           @update-picker-open="setStatPickerOpen"
         />
+      </CardContent>
 
-        <div class="grid grid-cols-2 gap-2">
-          <Button variant="secondary" size="sm" @click="imageImportOpen = true">
+      <CardFooter class="flex-col items-stretch gap-3 px-4 pb-4 pt-0">
+        <div class="flex items-center gap-3">
+          <Button variant="secondary" class="flex-1" @click="imageImportOpen = true">
             <ScanTextIcon data-icon="inline-start" />
             Import screenshot
           </Button>
-          <Button variant="outline" size="sm" @click="clearStatInputs">
+          <Button variant="ghost" @click="clearStatInputs">
             <RefreshCcwIcon data-icon="inline-start" />
             Clear
           </Button>
+        </div>
+
+        <template v-if="currentRecommendations">
+          <Separator />
           <Collapsible
-            v-if="currentRecommendations"
             v-model:open="recommendationsOpen"
             :key="`${gearType}-${pieceType}`"
-            class="col-span-2"
           >
             <CollapsibleTrigger as-child>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
                 class="w-full justify-between"
-                :class="{ 'rounded-b-none': recommendationsOpen }"
               >
-                {{ recommendationsOpen ? 'Hide recommended options' : 'Recommended options' }}
+                <span class="flex items-center gap-2">
+                  <SparklesIcon data-icon="inline-start" class="text-muted-foreground" />
+                  Recommended options
+                </span>
                 <ChevronRightIcon
                   data-icon="inline-end"
                   class="transition-transform"
@@ -258,39 +275,20 @@ function setStatPickerOpen(index, value) {
               <Transition name="motion-swap">
                 <div
                   v-if="recommendationsOpen"
-                  class="grid gap-3 rounded-b-2xl border border-t-0 bg-surface-inset p-3"
+                  class="px-3 pb-2 pt-3"
                 >
-                  <div class="grid gap-2">
-                    <div class="text-xs font-medium text-muted-foreground">Main</div>
-                    <div class="flex flex-wrap gap-1.5">
-                      <Badge
-                        v-for="stat in currentRecommendations.main"
-                        :key="`main-${stat}`"
-                        variant="secondary"
-                      >
-                        {{ stat }}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div class="grid gap-2">
-                    <div class="text-xs font-medium text-muted-foreground">Secondary</div>
-                    <div class="flex flex-wrap gap-1.5">
-                      <Badge
-                        v-for="stat in currentRecommendations.secondary"
-                        :key="`secondary-${stat}`"
-                        variant="outline"
-                      >
-                        {{ stat }}
-                      </Badge>
-                    </div>
-                  </div>
+                  <dl class="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 text-xs leading-relaxed">
+                    <dt class="text-muted-foreground">Main</dt>
+                    <dd>{{ currentRecommendations.main.join(' · ') }}</dd>
+                    <dt class="text-muted-foreground">Secondary</dt>
+                    <dd>{{ currentRecommendations.secondary.join(' · ') }}</dd>
+                  </dl>
                 </div>
               </Transition>
             </CollapsibleContent>
           </Collapsible>
-        </div>
-      </CardContent>
+        </template>
+      </CardFooter>
     </Card>
 
     <GearImageImportDialog v-model:open="imageImportOpen" />

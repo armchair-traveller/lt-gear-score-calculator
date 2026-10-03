@@ -182,152 +182,153 @@ watch(
 </script>
 
 <template>
-  <div class="grid gap-2">
-    <div
+  <FieldGroup class="gap-0">
+    <template
       v-for="(_, index) in statTypes"
       :key="`stat-line-${index}`"
-      class="grid gap-2 rounded-2xl border bg-surface-raised p-2"
     >
-      <div
-        role="group"
-        :aria-label="`Line ${index + 1}`"
-        :class="[
-          'group/line grid gap-1',
-          getLineMaxPercentText
-            ? 'grid-cols-[minmax(0,1fr)_minmax(140px,170px)]'
-            : 'grid-cols-[minmax(0,1fr)_minmax(120px,145px)]',
-        ]"
+      <Separator v-if="index > 0" />
+      <Field
+        class="gap-2 py-3"
+        :data-invalid="isInputOverMax(index) || undefined"
+        :data-disabled="disabled || undefined"
       >
-        <Popover
-          :open="pickerOpen[index] || false"
-          @update:open="emit('update-picker-open', index, $event)"
-        >
-          <PopoverTrigger as-child>
-            <Button
-              :id="`stat-${index}`"
-              variant="ghost"
-              role="combobox"
-              :disabled="disabled"
-              :aria-label="`Line ${index + 1} stat`"
-              :aria-expanded="pickerOpen[index] || false"
-              class="h-12 w-full justify-between rounded-l-3xl rounded-r-none bg-surface-inset px-3 font-normal shadow-none hover:bg-accent focus-visible:ring-inset"
-            >
-              <span class="flex min-w-0 items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  class="shrink-0 text-xs font-semibold text-muted-foreground"
-                >
-                  {{ index + 1 }}
-                </span>
-                <span class="min-w-0 flex-1 text-left">
-                  <span class="block truncate">
-                    {{ statTypes[index] || 'Select stat...' }}
-                  </span>
-                  <span class="motion-tabular mt-0.5 block truncate text-[10px] text-muted-foreground">
-                    {{ getLineMaxSummaryText(index) }}
-                    <template v-if="getOptionalLineMaxPercentText(index)">
-                      · <span :class="getOptionalLineMaxPercentClass(index)">{{ getOptionalLineMaxPercentText(index) }}</span>
-                    </template>
-                  </span>
-                </span>
-              </span>
-              <ChevronDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-[var(--reka-popover-trigger-width)] gap-0 p-0" align="start">
-            <Command :model-value="statTypes[index]" highlight-on-hover>
-              <CommandInput placeholder="Search stat..." />
-              <ScrollArea type="always" class="max-h-72">
-                <CommandList class="max-h-none overflow-visible pr-3">
-                  <CommandEmpty>No stat found.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      v-for="stat in statOptions"
-                      :key="stat"
-                      :value="stat"
-                      :text-value="stat"
-                      :disabled="isStatSelectedOnOtherLine(stat, index)"
-                      @select="emit('select-stat', index, stat)"
-                    >
-                      <CheckIcon
-                        :class="[
-                          'size-4',
-                          statTypes[index] === stat ? 'opacity-100' : 'opacity-0',
-                        ]"
-                      />
-                      <span class="truncate">{{ stat }}</span>
-                    </CommandItem>
-                  </CommandGroup>
-                </CommandList>
-              </ScrollArea>
-            </Command>
-          </PopoverContent>
-        </Popover>
-
         <div
-          :class="[
-            'h-12 rounded-l-none rounded-r-3xl border border-transparent bg-surface-inset transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30',
-            isInputOverMax(index)
-              ? 'border-destructive ring-3 ring-inset ring-destructive/30'
-              : '',
-          ]"
+          role="group"
+          :aria-label="`Line ${index + 1}`"
+          class="group/line grid grid-cols-[minmax(0,1fr)_minmax(110px,120px)] items-center gap-3"
         >
-          <InputGroup
-            class="h-full rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0 has-[[data-slot][aria-invalid=true]]:border-transparent has-[[data-slot][aria-invalid=true]]:ring-0"
+          <Popover
+            :open="pickerOpen[index] || false"
+            @update:open="emit('update-picker-open', index, $event)"
           >
-            <InputGroupInput
-              :id="`line-${index}-value`"
-              :model-value="getInputModelValue(index)"
-              type="number"
-              :disabled="disabled"
-              :step="getInputStep(index)"
-              min="0"
-              :max="getInputMax(index)"
-              inputmode="decimal"
-              :placeholder="valuePlaceholder"
-              :aria-label="`Line ${index + 1} value`"
-              :aria-invalid="isInputOverMax(index)"
-              :aria-describedby="isInputOverMax(index) ? `line-${index}-value-error` : undefined"
-              class="motion-tabular min-w-0"
-              @focus="focusInput(index)"
-              @blur="blurInput(index)"
-              @update:model-value="updateInput(index, $event)"
-            />
-            <InputGroupAddon v-if="hasInputValue(index) || isPercentMode" align="inline-end" class="pr-3 text-xs">
-              <Tooltip v-if="hasInputValue(index)">
-                <TooltipTrigger as-child>
-                  <InputGroupButton
-                    size="icon-xs"
-                    variant="ghost"
-                    :aria-label="`Clear line ${index + 1} value`"
-                    class="shrink-0 opacity-80 transition-opacity hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-focus-within/line:opacity-100 sm:group-hover/line:opacity-100"
-                    @click="clearInput(index)"
-                  >
-                    <XIcon />
-                  </InputGroupButton>
-                </TooltipTrigger>
-                <TooltipContent>Clear value</TooltipContent>
-              </Tooltip>
-              <InputGroupText
-                v-if="isPercentMode"
-                class="text-xs font-semibold"
+            <PopoverTrigger as-child>
+              <Button
+                :id="`stat-${index}`"
+                variant="ghost"
+                role="combobox"
+                :disabled="disabled"
+                :aria-label="`Line ${index + 1} stat`"
+                :aria-expanded="pickerOpen[index] || false"
+                class="h-12 w-full justify-between rounded-l-3xl rounded-r-none pl-0 pr-2 focus-visible:ring-inset"
               >
-                %
-              </InputGroupText>
-            </InputGroupAddon>
-          </InputGroup>
+                <span class="flex min-w-0 items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    class="w-4 shrink-0 text-center text-xs text-muted-foreground"
+                  >
+                    {{ index + 1 }}
+                  </span>
+                  <span class="min-w-0 flex-1 text-left">
+                    <span class="block truncate">
+                      {{ statTypes[index] || 'Select stat...' }}
+                    </span>
+                    <span class="motion-tabular mt-1 block truncate text-xs font-normal text-muted-foreground">
+                      {{ getLineMaxSummaryText(index) }}
+                      <template v-if="getOptionalLineMaxPercentText(index)">
+                        · <span :class="getOptionalLineMaxPercentClass(index)">{{ getOptionalLineMaxPercentText(index) }}</span>
+                      </template>
+                    </span>
+                  </span>
+                </span>
+                <ChevronDownIcon data-icon="inline-end" class="opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[var(--reka-popover-trigger-width)] gap-0 p-0" align="start">
+              <Command :model-value="statTypes[index]" highlight-on-hover>
+                <CommandInput placeholder="Search stat..." />
+                <ScrollArea type="always" class="max-h-72">
+                  <CommandList class="max-h-none overflow-visible pr-3">
+                    <CommandEmpty>No stat found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        v-for="stat in statOptions"
+                        :key="stat"
+                        :value="stat"
+                        :text-value="stat"
+                        :disabled="isStatSelectedOnOtherLine(stat, index)"
+                        @select="emit('select-stat', index, stat)"
+                      >
+                        <CheckIcon
+                          :class="[
+                            'size-4',
+                            statTypes[index] === stat ? 'opacity-100' : 'opacity-0',
+                          ]"
+                        />
+                        <span class="truncate">{{ stat }}</span>
+                      </CommandItem>
+                    </CommandGroup>
+                  </CommandList>
+                </ScrollArea>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <div
+            :class="[
+              'h-12 rounded-l-none rounded-r-3xl border border-transparent bg-surface-inset transition-[color,box-shadow,background-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/30',
+              isInputOverMax(index)
+                ? 'border-destructive ring-3 ring-inset ring-destructive/30'
+                : '',
+            ]"
+          >
+            <InputGroup
+              class="h-full rounded-none border-0 bg-transparent ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0 has-[[data-slot][aria-invalid=true]]:border-transparent has-[[data-slot][aria-invalid=true]]:ring-0"
+            >
+              <InputGroupInput
+                :id="`line-${index}-value`"
+                :model-value="getInputModelValue(index)"
+                type="number"
+                :disabled="disabled"
+                :step="getInputStep(index)"
+                min="0"
+                :max="getInputMax(index)"
+                inputmode="decimal"
+                :placeholder="valuePlaceholder"
+                :aria-label="`Line ${index + 1} value`"
+                :aria-invalid="isInputOverMax(index)"
+                :aria-describedby="isInputOverMax(index) ? `line-${index}-value-error` : undefined"
+                class="motion-tabular min-w-0"
+                @focus="focusInput(index)"
+                @blur="blurInput(index)"
+                @update:model-value="updateInput(index, $event)"
+              />
+              <InputGroupAddon v-if="hasInputValue(index) || isPercentMode" align="inline-end" class="pr-3 text-xs">
+                <Tooltip v-if="hasInputValue(index)">
+                  <TooltipTrigger as-child>
+                    <InputGroupButton
+                      size="icon-xs"
+                      variant="ghost"
+                      :aria-label="`Clear line ${index + 1} value`"
+                      class="shrink-0 opacity-80 transition-opacity hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-focus-within/line:opacity-100 sm:group-hover/line:opacity-100"
+                      @click="clearInput(index)"
+                    >
+                      <XIcon />
+                    </InputGroupButton>
+                  </TooltipTrigger>
+                  <TooltipContent>Clear value</TooltipContent>
+                </Tooltip>
+                <InputGroupText
+                  v-if="isPercentMode"
+                  class="text-xs font-semibold"
+                >
+                  %
+                </InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
+          </div>
         </div>
-      </div>
-      <Transition name="motion-fade">
-        <p
-          v-if="isInputOverMax(index)"
-          :id="`line-${index}-value-error`"
-          class="text-xs text-destructive"
-          aria-live="polite"
-        >
-          Value is over the selected level maximum.
-        </p>
-      </Transition>
-    </div>
-  </div>
+        <Transition name="motion-fade">
+          <p
+            v-if="isInputOverMax(index)"
+            :id="`line-${index}-value-error`"
+            class="text-xs text-destructive"
+            aria-live="polite"
+          >
+            Value is over the selected level maximum.
+          </p>
+        </Transition>
+      </Field>
+    </template>
+  </FieldGroup>
 </template>
