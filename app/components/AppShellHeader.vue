@@ -134,17 +134,6 @@ function retryMobileSession() {
             <span>{{ item.label }}</span>
           </NuxtLink>
         </Button>
-
-        <span class="parade-primary-nav-active-labels" aria-hidden="true">
-          <span
-            v-for="item in navItems"
-            :key="`active-${item.value}`"
-            class="parade-primary-nav-active-label"
-          >
-            <component :is="item.icon" />
-            <span>{{ item.label }}</span>
-          </span>
-        </span>
       </nav>
 
       <div class="parade-utilities">
