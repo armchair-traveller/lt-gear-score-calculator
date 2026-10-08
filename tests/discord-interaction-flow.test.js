@@ -366,100 +366,78 @@ test('does not escalate a focused verifier upstream failure to the full fallback
   assert.equal(edits[0].file, undefined)
 })
 
-test('caps primary, row verification, and full fallback at three model requests', async () => {
-  const requests = []
-  const edits = []
-  const extraction = createWeaponMismatchExtraction()
-  extraction.primarySentinel = 'PRIMARY_OCR_SENTINEL'
-  const responses = [
-    { output_text: JSON.stringify(extraction) },
-    { output_text: 'not valid json' },
-    { output_text: JSON.stringify(createWeaponMismatchExtraction()) },
-  ]
-  const fetchImpl = async (_url, init) => {
-    requests.push(JSON.parse(init.body))
-    const payload = responses.shift()
-    assert.notEqual(payload, undefined, 'received a fourth model request')
-    return jsonResponse(payload)
-  }
-
-  await processGearScoreInteraction(createProcessOptions({
-    imageBuffer: pngBuffer,
+for (const scenario of [
+  {
+    name: 'caps primary, row verification, and full fallback at three model requests',
+    createExtraction: createWeaponMismatchExtraction,
+    primarySentinel: 'PRIMARY_OCR_SENTINEL',
     gearHint: { gearType: '[8000] Weapons', pieceType: 'Weapon' },
-    importGearImageImpl: input => importGearImage({
-      ...input,
-      apiKey: 'test-key',
-      fetchImpl,
-    }),
-    evaluateImportedGearImpl: evaluateImportedGear,
-    editOriginalDiscordResponseImpl: async input => edits.push(input),
-    onModelAttemptImpl: () => {},
-  }))
-
-  assert.equal(requests.length, 3)
-  assert.deepEqual(
-    requests.map(request => ({
-      format: request.text.format.name,
-      model: request.model,
-      effort: request.reasoning.effort,
-    })),
-    [
-      { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
-      { format: 'gear_image_value_verification', model: 'gpt-5.6-luna', effort: 'max' },
-      { format: 'gear_image_import', model: 'gpt-6.1-sol', effort: 'low' },
-    ],
-  )
-  assert.doesNotMatch(JSON.stringify(requests[2]), /PRIMARY_OCR_SENTINEL/)
-  assert.equal(edits.length, 1)
-  assert.equal(edits[0].file, undefined)
-})
-
-test('caps primary, semantic verification, and full fallback at three model requests', async () => {
-  const requests = []
-  const edits = []
-  const extraction = createCrystalSemanticMismatchExtraction()
-  extraction.primarySentinel = 'PRIMARY_SEMANTIC_SENTINEL'
-  const responses = [
-    { output_text: JSON.stringify(extraction) },
-    { output_text: 'not valid json' },
-    { output_text: JSON.stringify(createCrystalSemanticMismatchExtraction()) },
-  ]
-  const fetchImpl = async (_url, init) => {
-    requests.push(JSON.parse(init.body))
-    const payload = responses.shift()
-    assert.notEqual(payload, undefined, 'received a fourth model request')
-    return jsonResponse(payload)
-  }
-
-  await processGearScoreInteraction(createProcessOptions({
-    imageBuffer: pngBuffer,
+    verificationRequest: {
+      format: 'gear_image_value_verification', model: 'gpt-5.6-luna', effort: 'max',
+    },
+    expectNoFile: true,
+  },
+  {
+    name: 'caps primary, semantic verification, and full fallback at three model requests',
+    createExtraction: createCrystalSemanticMismatchExtraction,
+    primarySentinel: 'PRIMARY_SEMANTIC_SENTINEL',
     gearHint: { gearType: '[9000] Accessories', pieceType: 'Crystal' },
-    importGearImageImpl: input => importGearImage({
-      ...input,
-      apiKey: 'test-key',
-      fetchImpl,
-    }),
-    evaluateImportedGearImpl: evaluateImportedGear,
-    editOriginalDiscordResponseImpl: async input => edits.push(input),
-    onModelAttemptImpl: () => {},
-  }))
+    verificationRequest: {
+      format: 'gear_image_semantic_verification', model: 'gpt-6.1-sol', effort: 'low',
+    },
+    expectNoFile: false,
+  },
+]) {
+  test(scenario.name, async () => {
+    const requests = []
+    const edits = []
+    const extraction = scenario.createExtraction()
+    extraction.primarySentinel = scenario.primarySentinel
+    const responses = [
+      { output_text: JSON.stringify(extraction) },
+      { output_text: 'not valid json' },
+      { output_text: JSON.stringify(scenario.createExtraction()) },
+    ]
+    const fetchImpl = async (_url, init) => {
+      requests.push(JSON.parse(init.body))
+      const payload = responses.shift()
+      assert.notEqual(payload, undefined, 'received a fourth model request')
+      return jsonResponse(payload)
+    }
 
-  assert.equal(requests.length, 3)
-  assert.deepEqual(
-    requests.map(request => ({
-      format: request.text.format.name,
-      model: request.model,
-      effort: request.reasoning.effort,
-    })),
-    [
-      { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
-      { format: 'gear_image_semantic_verification', model: 'gpt-6.1-sol', effort: 'low' },
-      { format: 'gear_image_import', model: 'gpt-6.1-sol', effort: 'low' },
-    ],
-  )
-  assert.doesNotMatch(JSON.stringify(requests[2]), /PRIMARY_SEMANTIC_SENTINEL/)
-  assert.equal(edits.length, 1)
-})
+    await processGearScoreInteraction(createProcessOptions({
+      imageBuffer: pngBuffer,
+      gearHint: scenario.gearHint,
+      importGearImageImpl: input => importGearImage({
+        ...input,
+        apiKey: 'test-key',
+        fetchImpl,
+      }),
+      evaluateImportedGearImpl: evaluateImportedGear,
+      editOriginalDiscordResponseImpl: async input => edits.push(input),
+      onModelAttemptImpl: () => {},
+    }))
+
+    assert.equal(requests.length, 3)
+    assert.deepEqual(
+      requests.map(request => ({
+        format: request.text.format.name,
+        model: request.model,
+        effort: request.reasoning.effort,
+      })),
+      [
+        { format: 'gear_image_import', model: 'gpt-5.6-luna', effort: 'low' },
+        scenario.verificationRequest,
+        { format: 'gear_image_import', model: 'gpt-6.1-sol', effort: 'low' },
+      ],
+    )
+    assert.doesNotMatch(JSON.stringify(requests[2]), new RegExp(scenario.primarySentinel))
+    assert.equal(edits.length, 1)
+    if (scenario.expectNoFile) {
+      assert.equal(edits[0].file, undefined)
+    }
+  })
+}
 
 function createProcessOptions({
   imageBuffer = Buffer.from('image'),

@@ -90,7 +90,7 @@ test('normalizes every enchant line from the supplied Chestplate screenshot', ()
   assert.equal(new Set(result.lines.map((line) => line.stat)).size, 5)
 })
 
-test('requires one extraction result for every visible Lv. row', () => {
+test('instructs the extractor to preserve every visible Lv. row and value digit', () => {
   const prompt = getExtractorPrompt()
 
   assert.match(prompt, /exactly one lines item for every visible row that begins with "Lv\."/)
@@ -217,7 +217,7 @@ test('uses level-aware stat caps as a checksum for the visible rolls', () => {
   })
 })
 
-test('repairs a uniquely provable percent glyph error and rejects an ambiguous dropped digit', () => {
+test('repairs a percent glyph error with one matching candidate and rejects an ambiguous dropped digit', () => {
   const corrupted = structuredClone(screenshotExtraction)
   corrupted.lines[1] = createLine('Lv. 5 Basic Stats +98 [32%]', 'Basic Stats', 98, 32)
   corrupted.lines[4] = createLine('Lv. 5 Basic Stats +2401 [92%]', 'Basic Stats', 2401, 92)

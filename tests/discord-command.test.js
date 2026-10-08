@@ -13,14 +13,18 @@ import {
 } from '../server/utils/discord-command.js'
 import { createDiscordJobLimiter } from '../server/utils/discord-rate-limit.js'
 
-test('registers one user-installed command with every supported equipment choice', () => {
+test('registers one user-installed command with current endgame equipment choices', () => {
   const command = getGearScoreCommandDefinition()
   const choices = getDiscordEquipmentChoices()
 
   assert.equal(command.name, 'gear-score')
   assert.deepEqual(command.integration_types, [1])
   assert.deepEqual(command.contexts, [0, 1, 2])
-  assert.equal(choices.length, 23)
+  assert.ok(choices.length <= 25, 'equipment choices must fit the Discord limit')
+  assert.deepEqual(
+    [...new Set(choices.map(choice => decodeDiscordEquipmentChoice(choice.value).gearType))],
+    ['[sLv5] Accessories', '[9999] Armor', '[9999] Badge 6', '[9000] Accessories', '[8000] Weapons'],
+  )
   assert.equal(new Set(choices.map(choice => choice.name)).size, choices.length)
   assert.equal(new Set(choices.map(choice => choice.value)).size, choices.length)
   assert.equal(
@@ -35,11 +39,18 @@ test('registers one user-installed command with every supported equipment choice
   assert.equal(choices.some(choice => choice.name.includes('[4000] Weapon')), false)
 })
 
-test('decodes only catalog-backed equipment choices', () => {
+test('decodes catalog-backed choices, including legacy hints from older command registrations', () => {
   assert.deepEqual(
     decodeDiscordEquipmentChoice('[9999] Armor::Chestplate'),
     { gearType: '[9999] Armor', pieceType: 'Chestplate' },
   )
+  for (const [gearType, pieceType] of [
+    ['[6000] Armor', 'Chestplate'],
+    ['[7000] Accessories', 'Cloak'],
+    ['[3500] Badge 6', 'Badge'],
+  ]) {
+    assert.deepEqual(decodeDiscordEquipmentChoice(`${gearType}::${pieceType}`), { gearType, pieceType })
+  }
   assert.equal(decodeDiscordEquipmentChoice('[9999] Armor::Missing'), null)
   assert.equal(decodeDiscordEquipmentChoice('[5000] Accessories::Crystal'), null)
   assert.equal(decodeDiscordEquipmentChoice('[9999] Armor::Chestplate::extra'), null)

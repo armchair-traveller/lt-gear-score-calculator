@@ -1715,6 +1715,12 @@ const gears = {
   }
 }
 
+export const legacyGearCategories = Object.freeze([
+  '[6000] Armor',
+  '[7000] Accessories',
+  '[3500] Badge 6',
+])
+
 export function getGearSpreadsheetHref(gearType) {
   const href = gears[gearType]?.['Sheet Link']
 

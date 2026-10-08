@@ -9,10 +9,12 @@ The integration is an outgoing Discord interaction webhook. It does not run a Ga
 `/gear-score` has three options:
 
 - `image` — required PNG, JPEG, or WebP attachment, up to 8 MB.
-- `equipment` — optional hint for a cropped or unclear equipment identity.
+- `equipment` — optional endgame equipment hint for a cropped or unclear equipment identity.
 - `private` — optional boolean; results are public by default and ephemeral when true.
 
 The app is registered as a global user-install command in guild, app-DM, and private-channel contexts. A user who installs it can invoke it in supported Discord contexts without installing a guild bot.
+
+The equipment menu contains 14 current endgame choices: `[9999] Armor`, `[sLv5] Accessories`, `[9999] Badge 6`, `[9000] Accessories`, and `[8000] Weapons`. Replaced `[6000] Armor`, `[7000] Accessories`, and `[3500] Badge 6` remain in the image-recognition and scoring catalog but are hidden from the menu. Their classification lives in `legacyGearCategories` in `app/utils/gear.js`; menu visibility does not change what screenshots can be evaluated. Previously registered commands can still submit these supported legacy hints while a command update propagates.
 
 If equipment identity or any active enchant line cannot be verified, the command gives retry guidance instead of returning a partial or guessed score.
 

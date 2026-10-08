@@ -1,4 +1,4 @@
-import gears from '../../app/utils/gear.js'
+import gears, { legacyGearCategories } from '../../app/utils/gear.js'
 
 export const discordInteractionType = Object.freeze({
   ping: 1,
@@ -24,12 +24,16 @@ export const discordMessageFlags = Object.freeze({
 export const gearScoreCommandName = 'gear-score'
 
 const excludedGearCategories = new Set(['[5000] Accessories', '[4000] Weapon'])
+const hiddenEquipmentChoiceCategories = new Set([
+  ...excludedGearCategories,
+  ...legacyGearCategories,
+])
 const metadataKeys = new Set(['Sheet Link', 'Potential'])
 const choiceSeparator = '::'
 
 export function getDiscordEquipmentChoices(gearCatalog = gears) {
   return Object.entries(gearCatalog).flatMap(([gearType, pieces]) => {
-    if (excludedGearCategories.has(gearType)) {
+    if (hiddenEquipmentChoiceCategories.has(gearType)) {
       return []
     }
 
@@ -79,7 +83,7 @@ export function getGearScoreCommandDefinition(gearCatalog = gears) {
       {
         type: discordApplicationCommandOptionType.string,
         name: 'equipment',
-        description: 'Optional equipment hint when the item identity is cropped or unclear.',
+        description: 'Optional endgame equipment hint when the item identity is cropped or unclear.',
         required: false,
         choices: getDiscordEquipmentChoices(gearCatalog),
       },
